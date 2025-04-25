@@ -167,7 +167,7 @@ $option = "&cateIDX=" . ($isAll ? "none" : $cateIDX) . "&viewType=" . $viewType.
 			$sql = "select b.IDX,b.BRkname,b.BRename  ";
 			$sql.= "from 2011_productInfo as a ";
 			$sql.= "LEFT JOIN 2011_brandInfo AS b ON a.BRIDX = b.IDX LEFT JOIN 2011_brandInfo AS c ON a.BRIDX2 = c.IDX ";
-			$sql.=" where (a.BRIDX != '' OR a.BRIDX != '') AND Pshop='" . $shopID . "' and Pdeleted=0 and Pprice3>0 and Pstate<10  and Pagree=1 and Picon1 IN (" . $cIcon .  ") " .$fnCateIDX;
+			$sql.=" where (a.BRIDX != '' OR a.BRIDX != 'tab_02') AND Pshop='" . $shopID . "' and Pdeleted=0 and Pprice3>0 and Pstate<10  and Pagree=1 and Picon1 IN (" . $cIcon .  ") " .$fnCateIDX;
 			$sql.=" GROUP BY b.IDX ";
 			$sql.=" ORDER BY BRkname ";
 

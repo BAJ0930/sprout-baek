@@ -1,3 +1,5 @@
+<?php include_once $_SERVER['DOCUMENT_ROOT']."/_common.php"; ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
