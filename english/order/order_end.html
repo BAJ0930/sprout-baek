@@ -1,0 +1,279 @@
+<?php
+include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+
+$rOrdNo = addslashes(trim($rOrdNo));
+
+/*=================================================================
+주문정보 가져오기
+=================================================================*/
+$sql = "select a.OpayType as AOpayType, a.*, b.* from 2011_orderInfo as a left join 2011_orderPayment as b on a.IDX = b.OIDX where a.Ocode='" . $rOrdNo . "' AND a.MID = '" . $uid . "' order by b.IDX desc limit 0,1";
+if(!$rs = sql_fetch($sql))
+{
+	echo "<script>alert('ERROR. Please Login and Order again.');document.location.replace('https://english.cheonyu.com');</script>";
+	exit();
+}
+# DB 레코드 결과값 모두 변수로 전환
+foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+
+
+if($dbOpayType==1) $OpayTypeStr="Wire Transfer";
+else if($dbOpayType==5) $OpayTypeStr="Credit Card";
+else if($dbOpayType==6) $OpayTypeStr="Paypal";
+else if($dbOpayType==7) $OpayTypeStr="Alipay";
+else if($dbOpayType==8) $OpayTypeStr="Tenpay";
+
+//echo $dbOpayType;
+
+if($dbAOpayType > 4 and $dbOpayState == '88'){
+	echo "
+		<script>
+			alert('Unfortunately, your payment was declined. If the payment has been made, we will cancel it ASAP.');
+			location.href = 'https://english.cheonyu.com';
+		</script>
+	";
+	exit;
+}
+
+
+$sql = "insert into 2011_orderMemo (OIDX,OMtype,OMMID,OMmemo,OMregdate,OMdeleted) values(";
+$sql.= "'" . $rs['OIDX'] . "',";
+$sql.= "'2',";
+$sql.= "'system',";
+$sql.= "'해외',";
+$sql.= "'" . date(time()) . "',";
+$sql.= "'0')";
+sql_query($sql);
+
+if($dbOpayType > 4) {
+	$trans_id	= htmlspecialchars(trim(strip_tags($dbZEROFEE_YN)));
+	$amount		= htmlspecialchars(trim(strip_tags($dbAMT))); 
+	$apiKey		= base64_encode('live_24C2E64DE033A9259741:');
+	$FIELDS = array(
+		'mid'		=> '24C2E64DE0',
+		'key_field' => 'order_id',
+		'payment'	=> [
+						'order_id' => "{$trans_id}",
+						'currency' => "USD",
+						'amount' => "{$amount}",
+						'transaction_id' => "{$trans_id}",
+						'lang' => "EN"
+					],
+	);
+					
+	$post_data = json_encode($FIELDS);
+	$opts = array(
+		CURLOPT_URL => 'https://api.eximbay.com/v1/payments/retrieve',
+		CURLOPT_POST => true,
+		CURLOPT_POSTFIELDS => $post_data,
+		CURLOPT_RETURNTRANSFER => true,
+		CURLOPT_HTTPHEADER => array("Content-Type: application/json", "Authorization: Basic {$apiKey}"),
+	);
+
+	$CURL = curl_init();
+	curl_setopt_array($CURL, $opts);
+	$response = curl_exec($CURL);
+	curl_close($CURL);
+	$response = json_decode($response,true);
+
+	if($response['rescode'] == '0000') {
+	} else {
+		$sql = "insert into 2011_orderMemo (OIDX,OMtype,OMMID,OMmemo,OMregdate,OMdeleted) values(";
+		$sql.= "'" . $rs['OIDX'] . "',";
+		$sql.= "'2',";
+		$sql.= "'system',";
+		$sql.= "'해외 결제 금액 이상',";
+		$sql.= "'" . date(time()) . "',";
+		$sql.= "'0')";
+		sql_query($sql);
+	}
+}
+?>
+
+<link rel="stylesheet" type="text/css" href="/order/order.css">
+
+<!-- 카트 시작 --->    
+<div id="wrap" >
+
+<!-- 카트 리스트 -->
+<div id="order">
+
+<table width="100%" border="0" cellspacing="0" cellpadding="0">
+	<tr>
+		<td valign="top">
+		
+			<table width="980" border="0" cellspacing="0" cellpadding="0">
+				<tr><td style="padding-bottom:20px;"><img src="/image_2/orderok_01.jpg?20160420" /></td></tr>
+				<tr>
+					<td height="200" background="/image_2/orderok_bg.jpg" align="center" valign="top">
+				
+						<table width="100%" border="0" cellspacing="0" cellpadding="0">
+							<tr><td height="145"> </td></tr>
+							<tr><td class="cart_pblack" style="padding-bottom:1px;" align="center">Your order number is<span class="order_numb"><?=$dbOcode?></span> </td></tr>
+							<tr><td  class="cart_pblack" align="center">You can check Order Detail at <a href="/mypage/shipping.html" class="c"><B>[My page &gt; Orders/Tracking]</B></a></td></tr>
+						</table>
+				
+					</td>
+				</tr>
+				<tr><td style="padding-top:50px;"><img src="/image_2/orderok_02.gif"></td></tr>
+				<tr><td height="2" bgcolor="#204e99"></td></tr>
+				<tr>
+					<td height="7">
+					
+						<table width="100%" border="0" bordercolor=red cellspacing="0" cellpadding="0">
+							<tr>
+								<td width="150" height="35" class='order_tok'  style="padding-left:20px;">Payment Type</td>
+								<td class='order_d' style="padding:0 0 0 15px;"><?=$OpayTypeStr?></td>
+							</tr>
+							<?
+								//======== 무통장 ================================
+								if($dbOpayType==1){
+							?>
+							<tr>
+								<td height="35" class='order_tok' style="padding-left:20px;">Amount of Order</td>
+								<td class='order_d' style="padding:0 0 0 15px;"><font color="#3f6bb3"><B>USD <?=$dbAMT?></B></font></td>
+							</tr>
+							<tr>
+								<td height="35"  class='order_tok' style="padding-left:20px;background-color:#f7f7f7;">Bank Name/Address</td>
+								<td class='order_d' style="padding:0 0 0 15px;"><font color="#2997ff"><B>KOOKMIN BANK  /  5th FL. Kookmin Bank Bldg. 84 Namdaemun-Ro, Jung-gu, Seoul, Korea </B></font> </td>
+							</tr>
+							<tr>
+								<td height="35"  class='order_tok' style="padding-left:20px;background-color:#f7f7f7;">Swift Code of Bank</td>
+								<td class='order_d' style="padding:0 0 0 15px;"><font color="#2997ff"><B>CZNBKRSEXXX</B></font> </td>
+							</tr>
+							<tr>
+								<td height="35"  class='order_tok' style="padding-left:20px;background-color:#f7f7f7;">Beneficiary of Account</td>
+								<td class='order_d' style="padding:0 0 0 15px;"><font color="#2997ff"><B>Cheonyu.com co. Ltd</B></font> </td>
+							</tr>
+							<tr>
+								<td height="35"  class='order_tok' style="padding-left:20px;background-color:#f7f7f7;">Account Number</td>
+								<td class='order_d' style="padding:0 0 0 15px;"><font color="#2997ff"><B>951768-11-001493</B></font> </td>
+							</tr>
+							<tr>
+								<td height="35"  class='order_tok' style="padding-left:20px;background-color:#f7f7f7;">Note</td>
+								<td class='order_d' style="padding:0 0 0 15px;"><font color="red"><B>Overseas wire transfer’s bank commission charge incurred in your territory must be borne by buyer</B></font> </td>
+							</tr>
+							<tr>
+								<td height="35" class='order_tok' style="padding-left:20px;">Sender Name</td>
+								<td class='order_d' style="padding:0px 0 0px 15px;"><?=$dbOdeposit?></td>
+							</tr>
+							<?
+								//======== 카드 ================================
+								}else if($dbOpayType==5){
+							?>
+							<tr>
+								<td height="30" class='order_tok' style="padding-left:20px;">Payment</td>
+								<td class='order_d' style="padding:0 0 0 15px;"><font color="#3f6bb3"><B>USD <?=$dbAMT?></B></font></td>
+							</tr>
+							<tr>
+								<td height="30" class='order_tok' style="padding-left:20px;">Card Type</td>
+								<td class='order_d' style="padding:0 0 0 15px;"><?=$dbCARD_ID?></td>
+							</tr>
+							<tr>
+								<td height="30"  class='order_tok' style="padding-left:20px;">Approval Date</td>
+								<td class='order_d' style="padding:0 0 0 15px;"><?=substr($dbAPPROVAL_YMDHMS,0,4)?>-<?=substr($dbAPPROVAL_YMDHMS,4,2)?>-<?=substr($dbAPPROVAL_YMDHMS,6,2)?> <?=substr($dbAPPROVAL_YMDHMS,8,2)?>:<?=substr($dbAPPROVAL_YMDHMS,10,2)?>:<?=substr($dbAPPROVAL_YMDHMS,12,2)?></td>
+							</tr>
+							<tr>
+								<td height="30" class='order_tok' style="padding-left:20px;">Approval Number</td>
+								<td class='order_d' style="padding:0px 0 0px 15px;"><?=$dbAPPROVAL_NO?></td>
+							</tr>
+							<!--
+							<tr>
+								<td height="30" class='order_tok' style="padding-left:20px;">Receipt</td>
+								<td class='order_d' style="padding:0px 0 0px 15px;">
+								<a href="https://www.eximbay.com/web/invoice/down.jsp?transid=<?=$dbHP_ID?>&ref=<?=$dbZEROFEE_YN?>" target="_blank"><font color=blue>Receipt</font></a></td>
+							</tr>
+							-->
+							<?
+								//======== 카드 ================================
+								// 6 : paypal, 7 : alipay, 8 : tenpay
+								} else if($dbOpayType==6 || $dbOpayType==7 || $dbOpayType==8) {
+
+							?>
+							<tr>
+								<td height="30" class='order_tok' style="padding-left:20px;">Payment</td>
+								<td class='order_d' style="padding:0 0 0 15px;"><font color="#3f6bb3"><B>USD <?=$dbAMT?></B></font></td>
+							</tr>
+							<tr>
+								<td height="30" class='order_tok' style="padding-left:20px;">Payment Type</td>
+								<td class='order_d' style="padding:0 0 0 15px;"><?=$dbOpayType?></td>
+							</tr>
+							<tr>
+								<td height="30"  class='order_tok' style="padding-left:20px;">Approval Date</td>
+								<td class='order_d' style="padding:0 0 0 15px;"><?=substr($dbAPPROVAL_YMDHMS,0,4)?>-<?=substr($dbAPPROVAL_YMDHMS,4,2)?>-<?=substr($dbAPPROVAL_YMDHMS,6,2)?> <?=substr($dbAPPROVAL_YMDHMS,8,2)?>:<?=substr($dbAPPROVAL_YMDHMS,10,2)?>:<?=substr($dbAPPROVAL_YMDHMS,12,2)?></td>
+							</tr>
+							<!--<tr>
+								<td height="30" class='order_tok' style="padding-left:20px;">Approval Number</td>
+								<td class='order_d' style="padding:0px 0 0px 15px;"><?=$dbAPPROVAL_NO?></td>
+							</tr>
+							<tr>
+								<td height="30" class='order_tok' style="padding-left:20px;">Receipt</td>
+								<td class='order_d' style="padding:0px 0 0px 15px;">
+								<a href="https://www.eximbay.com/web/invoice/down.jsp?transid=<?=$dbHP_ID?>&ref=<?=$dbZEROFEE_YN?>" target="_blank"><font color=blue>Receipt</font></a></td>
+							</tr>-->
+							<? } ?>
+						</table>
+						
+					</td>
+				</tr>
+				<tr>
+					<td align="left" class="cart_default" style="padding:10px 0 40px 15px;"><!--* Those who paid by credit card, please print the receipt at [ My page > Order/Tracking > Click Order Number > Order detail ]--></td>
+				</tr>
+				<tr><td style="padding-top:20px;"><img src="/image_2/orderok_03.gif"></td></tr>
+				<tr><td height="2" bgcolor="#204e99"></td></tr>
+				<tr>
+					<td height="7">
+					
+						<table width="100%" border="0" bordercolor=red cellspacing="0" cellpadding="0">
+							<tr>
+								<td width="150" height="30" class='order_tok'  style="padding-left:20px;">Recipient</td>
+								<td class='order_d' style="padding:0 0 0 15px;"><?=$dbOname?></td>
+							</tr>
+							<tr>
+								<td height="30" class='order_tok' style="padding-left:20px;">Mob/Phone Number</td>
+								<td class='order_d' style="padding:0 0 0 15px;"><?=$dbOhp?> / <?=$dbOtel?> </td>
+							</tr>
+							<tr>
+								<td height="30"  class='order_tok' style="padding-left:20px;">Address</td>
+								<td class='order_d' style="padding:0 0 0 15px;"><?=$dbOaddr1?> <?=$dbOaddr2?> </td>
+							</tr>
+							<tr>
+								<td height="30" class='order_tok' style="padding-left:20px;">Memo</td>
+								<td class='order_d' style="padding:0px 0 0px 15px;"><?=$dbOcontent?></td>
+							</tr>
+						</table>
+					
+					</td>
+				</tr>
+				<tr>
+					<td align="left" style="padding:10px 0 40px 15px;"></td>
+				</tr>
+				<tr>
+					<td align="center" style="padding:0px 0 50px 0;">
+						
+						<table border="0" cellspacing="0" cellpadding="0">
+							<tr>
+								<td width="126"><a href="/"><img src="/image_2/btn_orderok01.gif?2" style='cursor:pointer;' /></a></td>
+								<td width="10"></td>
+								<td width="105"><a href="/mypage/shipping.html"><img src="/image_2/btn_orderok02.gif?2" style='cursor:pointer;' /></a></td>                
+							</tr>
+						</table>
+					
+					</td>
+				</tr>
+			</table>
+			
+		</td>
+	</tr>
+</table>
+
+</div>
+<!-- //카트 리스트 -->
+
+
+
+</div>   
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

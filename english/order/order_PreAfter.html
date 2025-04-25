@@ -1,0 +1,225 @@
+<?php
+include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+ob_clean();
+# Get 로 넘어오는 문자열 변수로 저장
+foreach ($_POST as $GetName => $GetValue)$$GetName = $GetValue;
+
+$mode = addslashes(trim($mode));
+$inOdirectGet = addslashes(trim($inOdirectGet));
+
+if($mode=="pre")
+{
+	
+	//-- 주문번호 생성
+	$randCode = ceil(rand(100000,700000));
+	$ORDER_NO = "P" . substr(date("Y"),2).date("m").date("d")."-".$randCode;
+
+	$sql = " SELECT IDX FROM 2011_orderInfo WHERE Ocode = '" . $ORDER_NO . "' ";
+	if(sql_fetch($sql)){
+		for($i = 0; $i < 10; $i ++){
+			$randCode = ceil(rand(100000,700000));
+			$ORDER_NO = "P" . substr(date("Y"),2).date("m").date("d")."-".$randCode;
+			$sql2 = " SELECT IDX FROM 2011_orderInfo WHERE Ocode = '" . $ORDER_NO . "' ";
+			if(!sql_fetch($sql2)) break;
+		}
+	}
+
+	/*=================================================================================
+	결제전 처리 (주문서 / 주문상품 / 배송정보 / 기타 할인 정보 저장
+	=================================================================================*/
+	//-- 결재상태는 무조건 준비중코드 - 99... 였는데 99가 신용이네... 88 로 변경!
+	$inOdepositCheck = 88;
+	
+	//-- 기존 처리중이던 코드 삭제
+	$sql = "select IDX from 2011_orderInfo  where OsessionCode='" . session_id() . "' and OpayState=" . $inOdepositCheck;
+	if($rs = sql_fetch($sql))
+	{
+		$sql = "delete from 2011_orderInfo where IDX='" . $rs["IDX"] . "'";
+		@sql_query($sql);
+		
+		$sql = "delete from 2011_orderProduct where OIDX='" . $rs["IDX"] . "'";
+		@sql_query($sql);
+		
+		$sql = "delete from 2011_orderDeliveryInfo where  OIDX='" . $rs["IDX"] . "'";
+		@sql_query($sql);
+	}
+	
+	if($inOdirectGet == 4) {
+		$inOsetColor = 1;
+	}
+	
+	#-- 재고부족 카트 정보 체크
+	$sql = "SELECT a.*, b.Pname, b.PstockCount, b.Pstate, b.PsaveFile1, c.OPname, c.OPvalue, c.OPstock, b.IDX AS PIDX  ";
+	$sql.= " FROM 2011_cartInfo AS a ";
+	$sql.= " LEFT JOIN 2011_productInfo AS b ON a.PIDX = b.IDX ";
+	$sql.= " LEFT JOIN 2011_productOption AS c ON a.OPIDX = c.IDX ";
+	$sql.= " WHERE MID = '" . $uid . "'";
+	$sql.= " AND a.CAstate = 1 AND a.CAorder = 1 ";
+	$sql.= " AND b.PorderMinus != 1 ";
+	$result = sql_query($sql);		
+	$isOver = 0;
+	$arrIDX = "";
+	while($data = sql_fetch_array($result)){
+		if($data['Pstate'] > 9) $isOver = 1;
+		$dbPready = getProductReady($data['PIDX'],$data['OPIDX']);
+		
+		if($data['OPIDX']) $maxStock = $data['OPstock'];
+		else $maxStock = $data['PstockCount'];
+
+		$dbPstockCount = $maxStock - $dbPready;
+		if($dbPstockCount < $data['CAcount']) {
+			$isOver = 1;
+			$arrIDX .= $data['PIDX']."##";
+		}
+	}
+	if($_Minus == 1) $isOver = 0;
+	if($isOver == 1) {
+		echo "##ERROR##".$isOver;
+		exit;
+	}
+	
+	
+	/*=====================================================================================
+		신규주문 기본 정보 저장
+	=====================================================================================*/
+	$sql = "insert into 2011_orderInfo (Ocode,MID,OorderName,OorderTel,OorderHP,OorderEmail,Obreakdown,Oname,Otel,Ohp,Odirect,OdirectGet,Opost,Oaddr1,Oaddr2,Ocontent,";
+	$sql.= "Osms,OpayType,OsetColor,OpayState,Oregdate,OsessionCode) values(";
+	$sql.= "'" . $ORDER_NO . "',";
+	$sql.= "'" . $MID . "',";
+	$sql.= "'" . $inOorderName . "',";
+	$sql.= "'" . $inOorderTel . "',";
+	$sql.= "'" . $inOorderHP . "',";
+	$sql.= "'" . $inEmail . "',";
+	$sql.= "'" . $inObreakdown . "',";
+	$sql.= "'" . $inOname . "',";
+	$sql.= "'" . $inOtel . "',";
+	$sql.= "'" . $inOhp . "',";
+	$sql.= "'" . $inOdirect . "',";
+	$sql.= "'" . $inOdirectGet . "',";
+	$sql.= "'" . $inOpost . "',";
+	$sql.= "'" . $inOaddr1 . "',";
+	$sql.= "'" . $inOaddr2 . "',";
+	$sql.= "'" . addslashes($inOcontent) . "',";
+	$sql.= "'" . $inOsms . "',";
+	$sql.= "'" . $inOpayType . "',";	//-- 결제방식
+	$sql.= "'" . $inOsetColor . "',";
+	$sql.= "'" . $inOdepositCheck . "',";	//-- 결제상태
+	$sql.= "'" . date(time()) . "','" . session_id() . "')"; //-- 주문날짜
+	sql_query($sql);
+	
+	//-- IDX값 저장
+	$Oidx = mysqli_insert_id($g5['connect_db']);
+
+	//-- 주문 상품 넣기
+	if($Mlevel>=10)$buyLevel=$Mlevel;
+	else $buyLevel;
+
+	$buyCode = fnGETMemArr();
+	
+	$cartSql = "select ";
+	$cartSql.= " '" . $Oidx . "',a.PIDX,b.Puploader,b.Pshop,b.Pcategory1,b.Pcategory2,b.Pcategory3,b.PsaveFile1,b.Pname,b.PengName,b.MKIDX,b.BRIDX,b.Pprice3, ";
+
+	$cartSql.= " IF(EVdiscount>0,(b.Pprice3-ceil(b.Pprice3 / 100 * b.EVdiscount)), "; 	//기획전, 빅세일 값이 있을 때
+	$cartSql.= " IF(a.CAcount >= b.PboxCount2 && b.PboxCount2 >0, (b.Pprice3 - ceil(b.Pprice3 / 100 * b." . $buyCode[3] . ")) , ";
+	$cartSql.= " IF(a.CAcount >= b.PboxCount && b.PboxCount > 0, (b.Pprice3 - ceil(b.Pprice3 / 100 * b." . $buyCode[2] . ")), (b.Pprice3 - ceil(b.Pprice3 / 100 * b." . $buyCode[1] ." ))))), ";
+
+	$cartSql.= " b.PtaxType,'" . $Mlevel . "','" . $MLV ."', ";
+
+	$cartSql.= " IF(a.CAcount >= b.PboxCount2 && b.PboxCount2 > 0, b.".$buyCode[3]." , IF(a.CAcount >= b.PboxCount && b.PboxCount > 0, b.".$buyCode[2].", b.".$buyCode[1].")), ";
+	$cartSql.= " IF(a.CAcount >= b.PboxCount2 && b.PboxCount2 > 0, b.".$buyCode[3]." , IF(a.CAcount >= b.PboxCount && b.PboxCount > 0, b.".$buyCode[2].", b.".$buyCode[1].")), ";
+	$cartSql.= " IF(a.CAcount >= b.PboxCount2 && b.PboxCount2 > 0, b.PboxCount2 , IF(a.CAcount >= b.PboxCount && b.PboxCount > 0, b.PboxCount, '0' )), ";
+
+	$cartSql.= " TRUNCATE(((b.PsizeWidth/10 * b.PsizeLength/10 * b.PsizeHeight/10) / 6000), 2), ";
+
+	$cartSql.= " a.OPIDX,c.OPname,IF(c.OPvalueEng = '', c.OPvalue, c.OPvalueEng ), ";
+	$cartSql.= " IF(c.OPbox>0,b.Pboxin * a.CAcount,a.CAcount),'2',b.PdeliveryType,b.PdeliveryPrice,'1',IF(b.PdeliveryType=1,'" . $masterSeller . "',IF(b.PdeliveryType=2,ifnull(d.MSID,b.Pshop),b.Puploader)),b.PorderMinus,b.Prack, if(c.OPbarcode,c.OPbarcode,b.Pbarcode) ";
+	$cartSql.= " FROM 2011_cartInfo AS a ";
+	$cartSql.= " LEFT JOIN 2011_productInfo AS b ON a.PIDX = b.IDX ";
+	$cartSql.= " LEFT JOIN 2011_productOption AS c ON a.OPIDX = c.IDX ";
+	$cartSql.= " LEFT JOIN 2011_brandInfo AS e ON b.BRIDX = e.IDX ";
+	$cartSql.= " LEFT JOIN 2011_makerSeller AS d ON e.MKIDX = d.MKIDX ";
+	$cartSql.= " WHERE a.MID = '" . $uid . "' and CAorder=1 and CAstate<=6";
+	
+	$sql = "insert into 2011_orderProduct(OIDX,PIDX,Puploader,ORPshop,ORPcategory1,ORPcategory2,ORPcategory3,ORPimg,ORPname,ORPengName,";
+	$sql.= "MKIDX,BRIDX,ORPprice1,ORPprice2,ORPtaxType,ORPmLevel,ORPmLV,ORPdiscountPer,ORPdiscountBox,ORPBoxCount,ORPweight,ORPoption,ORPoptionName,ORPoptionValue,ORPcount,ORPcountCheck,ORPdeliveryType,ORPdeliveryPay,";
+	$sql.= "ORPgroup,ORPdeliveryUser,ORPminus,ORPrack,ORPbarcode) (" . $cartSql . ")";
+	
+	sql_query($sql);
+	
+	if($_Minus == 1){
+		$arrIDX2 = explode("##",$arrIDX);
+		for($i = 0; $i < count($arrIDX2); $i ++){
+			sql_query(" UPDATE 2011_orderProduct SET ORPminus = '1' WHERE OIDX = '" . $Oidx . "' AND PIDX = '" . $arrIDX2[$i] . "' ");
+		}
+	}
+	
+	$rackSql = sql_query(" SELECT IDX, ORPrack FROM 2011_orderProduct WHERE OIDX = '" . $Oidx . "' ");
+	while($rs2 = sql_fetch_array($rackSql)){
+		$inRack = fnCheckFloorOrder($rs2['ORPrack']);
+		sql_query(" UPDATE 2011_orderProduct SET ORPFloor = '{$inRack}' WHERE OIDX = '{$Oidx}' AND IDX = '" . $rs2['IDX'] . "' ");
+	}
+
+	##-- 배송비 정보 저장
+	$sql = "select a.ORPdeliveryUser,b.MSID,b.MSdeliveryLimit,b.MSdeliveryPay,b.MScomDeliveryLimit,b.MScomDeliveryPay, sum(ORPprice2*ORPcount) as TotPrice,sum(ORPdeliveryPay) as AddDelivery from 2011_orderProduct as a left join 2011_makerSeller as b on a.ORPdeliveryUser = b.MSID where OIDX='" . $Oidx."' group by a.ORPdeliveryUser";
+	$result = sql_query($sql);
+	while($dRs = sql_fetch_array($result))
+	{		
+		$dbORPdeliveryUser = $dRs["ORPdeliveryUser"];
+		$dbMSdeliveryLimit = $dRs["MSdeliveryLimit"];
+		$dbMSdeliveryPay = $dRs["MSdeliveryPay"];
+		$dbMScomDeliveryLimit = $dRs["MScomDeliveryLimit"];
+		$dbMScomDeliveryPay = $dRs["MScomDeliveryPay"];
+		$dbMSID = $dRs["MSID"];
+		
+		$dbTotPrice = $dRs["TotPrice"];
+		$dbAddDelivery = $dRs["AddDelivery"];
+		
+		$Dlimit = 200;		//-- 일반 배송비 조건
+		$DLimitPay = 3;		//-- 일반 배송비
+		$Dpay = 0;
+		
+		if($dbTotPrice<$Dlimit)$Dpay=$DLimitPay;
+		$Dpay = $Dpay + $dbAddDelivery;
+		$Dpay = $Dpay + $inZipMoney;
+		
+		//-- 직접 수령일경우 배송비 0
+		if($inOdirectGet==2 || $inOdirectGet==4) {
+			$Dpay=0;
+		}
+		
+		$sql = "insert into 2011_orderDeliveryInfo (OIDX,ODuser,ODpay,ODstate,ODcom,ODcode,ODdate) values(";
+		$sql.= "'" . $Oidx . "',";
+		$sql.= "'" . $dbORPdeliveryUser  . "',";
+		$sql.= "'" . $Dpay  . "',";
+		$sql.= "'1',";	//-- 배송상태
+		$sql.= "'1',";	//-- 배송사	기본 대한통운 1 => 현대택배 5 로 변경 => 대한통운 1 로 변경(2014-01-15 by Samuel Oh) => 한진택배로 변경 (2015-06-05) -> 대한통운 변경 2016-04-01
+		$sql.= "'',";	 	//-- 송장번호
+		$sql.= "'')";	 	//-- 발송날짜
+		sql_query($sql);
+	}
+	
+	//-- 최종 결재금액 계산 후 돌려주기 (검사용)
+	$TOTPRICE = 0;
+	$sql = "select sum(ORPprice2 * ORPcount) as sumPrice from 2011_orderProduct where OIDX='" . $Oidx . "'";
+	if($rs = sql_fetch($sql)) $TOTPRICE+=$rs['sumPrice'];
+	
+	$sql = "select sum(ODpay) as sumPay  from 2011_orderDeliveryInfo where OIDX='" . $Oidx . "'";
+	if($rs = sql_fetch($sql)) $TOTPRICE+=$rs['sumPay'];
+
+	$TOTPRICE = number_format($TOTPRICE / $shopConfig['CFperDollar'],2,'.','');
+	
+	$AGS_HASHDATA = md5("cheonyu" . $ORDER_NO . $TOTPRICE); 	
+			
+	echo "##OK##" . $ORDER_NO . "##" . $TOTPRICE . "##" . $AGS_HASHDATA;
+	exit();
+}
+else if($mode=="after")
+{
+	/*=================================================================================
+	결제후 처리 ( 주문서 상태 업데이트 )
+	=================================================================================*/
+	//-- 후처리 그냥 action 에서 
+}
+
+
+?>

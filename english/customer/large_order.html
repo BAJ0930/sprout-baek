@@ -1,0 +1,210 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+
+    $pageSelf = 'questionss';
+
+    if($_POST["act"] == "ok"){
+        //IDX PIDX HBMID HBname HBtel HBemail HBmemo HBregdate HBstate HBreply HBdeleted 
+        $hp = $hp1."-".$hp2."-".$hp3;
+        $email = $email1."@".$email2;
+        $mktime = time();	
+        $memo2 = "
+            회사명 : $company \n
+            담당자명 : $name \n
+            회사주소 : $addr \n
+            연락처 : $hp  \n
+            E-mail : $email  \n
+            구매희망상품 \n
+                상품코드 : $a1 , 수량 $a2 \n
+            최종납품일 : $useDate \n
+            상품사용목적 : $use  \n
+            기타문의사항 : 
+                $memo
+        ";
+        $memo2 = addslashes($memo2);
+        $MID = addslashes(strip_tags($MID));
+        $name = addslashes(strip_tags($name));
+        $hp = addslashes(strip_tags($hp));
+        $email = addslashes(strip_tags($email));
+
+        $query = " INSERT INTO 2011_heavyBuying VALUES ('', '', '$MID', '$name', '$hp', '$email', '$memo2', '', '$mktime', '1', '', '0') ";
+        $result = sql_query($query);
+        
+        echo "
+            <script>
+                alert('Your bulk inquiry has been received. We will review it and get back to you as soon as possible.');
+                location.href = '/';
+            </script>
+        ";
+        exit;
+    }
+?>
+
+<link rel="stylesheet" type="text/css" href="/customer/customer.css?250220">
+
+<!-- 고객센터 시작 --->    
+<div id="wrap">
+
+<?
+include_once $_SERVER['DOCUMENT_ROOT']."/customer/menu.html";
+?>
+
+<style>
+    
+    
+</style>
+
+	<!-- customerMain -->
+	<div id="customerMain">
+        <div class="rowbox-wrap commonbox-wrap">
+            <script>
+                function checkForm(){
+                    if(document.getElementById("name").value == ""){
+                        alert('');
+                        document.getElementById("name").focus;
+                        return;
+                    }
+                    if(document.getElementById("hp2").value == "" && document.getElementById("hp3").value == ""){
+                        alert('Please enter your name.');
+                        return;
+                    }
+                    if(document.getElementById("a1").value == "" && document.getElementById("memo").value == ""){
+                        alert('Please list one or more items you wish to purchase.');
+                        return;
+                    }
+                    if(document.getElementById("agreeChk").checked == false){
+                        alert('You must agree to the Privacy Policy.');
+                        return;
+                    }
+                    document.getElementById("xform").submit();
+                }
+            </script>
+            <?
+                if($MID){
+                    $query = " SELECT * FROM 2011_memberInfo WHERE MID = '$MID' ";
+                    $dataS = sql_fetch($query);
+                    $sMHP = explode("-",$dataS[MHP]);
+                    $sMemail = explode("@",$dataS[Memail]);
+                }
+            ?>
+            
+            <!-- 대량구매 -->
+            <div class="bay-proc">
+                <ul class="re-proc">
+                    <li><div><h5><span>Reception</span></h5></div></li>
+                    <li><div><h5><span>Review/<br>Contact</span></h5></div></li>
+                    <li><div><h5><span>Provide Quotation</span></h5></div></li>
+                    <li><div><h5><span>Payment Confirmed</span></h5></div></li>
+                    <li><div><h5><span>Delivery</span></h5></div></li>
+                </ul>
+            </div>
+            <table class="ar-table write-table write-tb" width="100%" cellspacing="0" cellpadding="0">
+                <colgroup>
+                    <col style="width:160px;">
+                    <col>
+                    <col>
+                    <col>
+                </colgroup>
+                <form name="xform" id="xform" method="post" action="<?=$PHP_SELF?>">
+                <input type="hidden" name="act" id="act" value="ok">
+                <tr>
+                    <th>Company </th>
+                    <td><input type="text" name="company" id="company" value="<?=$dataS[McomName]?>" placeholder="Enter your company name" style="width:50%;"></td>
+                </tr>
+                <tr>
+                    <th>Person in Charge </th>
+                    <td><input type="text" name="name" id="name" value="<?=$dataS[Mname]?>" placeholder="Enter the name of the person in charge" style="width:50%;"></td>
+                </tr>
+                <tr>
+                    <th>Company Address</th>
+                    <td colspan="3"><input type="text" name="addr" id="addr" value="<?=$dataS[McomAddr1]?> <?=$dataS[McomAddr2]?>" placeholder="Enter your company address" style="width:100%;"/></td>
+                </tr>
+                <tr>
+                    <th>Contact</th>
+                    <td class="phone-number">
+                        <!--
+                        <select id="hp1" title="번호선택" name="hp1">
+                            <option value="010" <? if($sMHP[0] == "010") echo "selected"; ?>>010</option>
+                            <option value="011" <? if($sMHP[0] == "011") echo "selected"; ?>>011</option>
+                            <option value="016" <? if($sMHP[0] == "016") echo "selected"; ?>>016</option>
+                            <option value="017" <? if($sMHP[0] == "017") echo "selected"; ?>>017</option>
+                            <option value="018" <? if($sMHP[0] == "018") echo "selected"; ?>>018</option>
+                            <option value="019" <? if($sMHP[0] == "019") echo "selected"; ?>>019</option>
+                        </select>
+                        -->
+                        <input id="hp1" name="hp1" type="text" value="<?=$sMHP[0]?>" onkeyup="onlyNumber(this);"/>
+                        <span>&#8722;</span>
+                        <input id="hp2" name="hp2" type="text" value="<?=$sMHP[1]?>" onkeyup="onlyNumber(this);"/>
+                        <span>&#8722;</span>
+                        <input id="hp3" name="hp3" type="text" value="<?=$sMHP[2]?>" onkeyup="onlyNumber(this);" />
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">E-mail</th>
+                    <td class="email">
+                        <input type="text" name="email1" id="email1" value="<?=$sMemail[0]?>" placeholder="name"> <span>@</span> <input type="text" name="email2" id="email2" value="<?=$sMemail[1]?>" placeholder="example.com">
+                    </td>
+                </tr>
+                <tr>
+                    <th>Desired Product</th>
+                    <td colspan="3">
+                        <span class="input-title">Product Number or Product Name</span> 
+                        <input type="text" name="a1" id="a1">
+                        <span class="input-title" style="margin: 10px 0 5px 0;">Quantity</span> 
+                        <input type="text" style="display: inline-block; width:56px;" name="a2" id="a2">
+
+                        <div class="bay-addtxt">
+                            <ul>
+                                <li>If you have multiple items to purchase, please include the item numbers and quantities in the "Additional Inquiries" section.</li>
+                                <li>For products available for bulk purchase, the minimum purchase requirement applies when <u>a single option exceeds 1 million KRW.</u></li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Final Delivery Date</th>
+                    <td colspan="3"><input type="text" name="useDate" id="useDate" style="width:100%;"></td>
+                </tr>
+                <tr>
+                    <th>Purpose of Product Use</th>
+                    <td colspan="3"><input type="text" name="use" id="use" style="margin-bottom:5px;width:100%;">
+                        <span class="input-captiion">e.g.) Corporate Special Sales Delivery, Event Supplies, Product Import, Overseas Export, Government Procurement, School Supplies, etc.</span>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Other Inquiries</th>
+                    <td colspan="3"><textarea name="memo" id="memo" rows="4"></textarea></td>
+                </tr>
+                <tr>
+                    <th>Privacy Policy</th>
+                    <td colspan="3">
+                        <label>
+                            <input type="checkbox" class="check" id="agreeChk" >
+                            <span class="checkbox-custom"></span>
+                            I agree to the Privacy Policy.
+                        </label>
+                        <a href="/customer/privacy.html" class="btn-small ptsans" target="_blank">View Details</a>
+                    </td>
+                </tr>
+            </form>
+            </table>
+        <div class="btn-one">
+            <a href="javascript:;" class="ptsans return">Inquire About Bulk Purchase</a>
+        </div>
+
+
+	</div>
+
+    <script>
+        $('#mypage_inquiry').addClass('on');
+    </script>
+        
+<!-- //고객센터 끝 ---> 
+</div>
+</div>
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

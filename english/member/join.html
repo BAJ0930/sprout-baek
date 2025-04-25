@@ -1,0 +1,200 @@
+<?php
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+
+	if($MID || $Mlevel>1)
+	{
+		echo "<script>document.location='/mypage/mypage.html'</script>";
+		exit();
+	}
+?>
+
+<style>
+
+/*---------- 회원가입  ------------------*/
+#join { width:980px; padding:0; margin:0 auto 30px auto; list-style:none; text-align:center; overflow:hidden; }
+#join input { padding:8px 6px; border:#ccc solid 1px; border-radius:2px; box-sizing:border-box;}
+#join select { padding:8px 10px 8px 6px; border:#ccc solid 1px; border-radius:2px; box-sizing:border-box; }
+#join .member_info { width:100%; margin-top:10px; background:#fafafa; border-radius:5px; overflow:hidden;  }
+#join .member_info > div { width:800px; margin:30px auto; text-align:center; }
+
+#join .member_info .tit { display:block; font-size:24px; font-weight:600; color:#555; padding:15px 0px;} 
+
+#join .member_info table { float:left; width:800px; border:#e2e2e2 solid 1px; margin:0; padding:0; background:#fff; }	
+#join .member_info table th { width:170px; height:30px; border-right:#e2e2e2 solid 1px; border-bottom:#e2e2e2 solid 1px; margin:0; padding:10px; text-align:left; font:normal 13px/13px Verdana, Dotum; color:#333;  }
+#join .member_info table td { width:597px; margin:0; padding:0; height:34px; padding:10px; border-bottom:#e2e2e2 solid 1px; text-align:left; }
+#join .member_info .ico_star { float:left;margin-top:-2px; padding-right:5px; }
+/**/
+a.btn-chkd { color:#828282; font-size:11px; padding:8px; text-decoration:none; background-color:#f9f9f9; border:1px solid #e2e2e2; }
+#join input[type="checkbox"] { padding:0; margin:0; width:14px; height:14px; display:inline-block; vertical-align:middle;} 
+span.underline { text-decoration:underline; color:#0000ff; }
+
+.join-top-box { width:100%; padding:30px 15px; background-image:linear-gradient(to bottom right, #2a40c7, #4158e3); border-radius:5px; }
+.join-top-box, .join-top-box * { box-sizing:border-box; }
+.join-top-box h3 { margin:0; padding:0; font-size:24px; color:#fff; font-weight:600;text-align:center; }
+.join-top-box h3 span { display:block; padding-top:13px; position:relative; font-size:14px; font-weight:500; color:#eee;}
+
+.join-bot-box { width:100%; padding:50px 0 80px 0; text-align:center;overflow:hidden; }
+.join-bot-box a { display:inline-block; background:#2a40c7; color:#f0f0f0; cursor:pointer; padding:15px 40px; font-size:15px; border-radius:5px;font-weight:600; letter-spacing:0; }
+.join-bot-box a:hover { box-shadow:0 5px 12px rgba(55,73,195,.4); }
+</style>
+
+<div id="wrap">
+
+	<?
+		$jType = "C";
+		include_once $_SERVER['DOCUMENT_ROOT']."/member/common.html";
+	?>
+	<!-- 회원가입 도매정보입력 -->
+	<div id="join">
+		<div class="join-top-box">
+			<h3 class="mfont">Create account<span>Welcome<i>!</i> Ready to register with CHEONYU.COM<i>?</i> It's free and simple<i>!</i></span></h3>
+		</div>
+		
+		<div class="member_info">
+			<div>
+				<span class="tit mfont">Personal Information</span>
+				<table border="0" cellspacing="0" cellpadding="0" class="">
+				<col></col>
+				<col />
+					<tr>
+						<th scope="row"><span class="ico_star"><img src="/image/login/ico_star.png"></span>First name</th>
+						<td><input type="text" size="30" name="inMname1" id="inMname1"></td>
+					</tr>
+					<tr>
+						<th scope="row"><span class="ico_star"><img src="/image/login/ico_star.png"></span>Last/Family/Surname</th>
+						<td><input type="text" size="30" name="inMname2" id="inMname2"></td>
+					</tr>
+					<tr>
+						<th scope="row"><span class="ico_star"><img src="/image/login/ico_star.png"></span>ID</th>
+						<td><input type="text" name="inMid" id="inMid" maxlength="15" style='ime-mode:disabled;' onKeyDown='onlyNumEng();idChecked=0;'/> <a href="javascript:void(0)" onClick='fnCheckID()' class="btn-chkd">Check Availability</a>&nbsp;&nbsp<span id='msgID'>Please Enter 4 to 12 Characters</span></td>
+					</tr>
+					<tr>
+						<th scope="row"><span class="ico_star"><img src="/image/login/ico_star.png"></span>Password</th>
+						<td><input type="password" name="inMpw1" id="inMpw1" onKeyUp='fnCheckPW(1)' maxlength=12/>&nbsp;&nbsp;<span id='msgPW1'>Please Enter 4 to 12 Characters </span></td>
+					</tr>
+					<tr>
+						<th scope="row"><span class="ico_star"><img src="/image/login/ico_star.png"></span>Confirm Password</th>
+						<td><input type="password" onKeyUp='fnCheckPW(2)' name="inMpw2" id="inMpw2" maxlength=12/>&nbsp;&nbsp;<span id='msgPW2'>Please re-enter your password.</span></td>
+					</tr>
+					<tr>
+						<th scope="row">Phone Number</th>
+						<td><input name="inMTEL" type="text" id="inMTEL" size="30" style='ime-mode:disabled;'/></td>
+					</tr>
+					<tr>
+						<th scope="row">Mobile Number</th>
+						<td><input name="inMHP" type="text" id="inMHP" size="30" style='ime-mode:disabled;'/></td>
+					</tr>
+					<tr>
+						<th scope="row">E-mail Address</th>
+						<td><input name="inMemail" type="text" id="inMemail" size="60" style='ime-mode:disabled;'/></td>
+					</tr>
+					<tr>
+						<th scope="row" style="border-right:0;"></th>
+						<td><label style="float:left;cursor:pointer;"><input type="checkbox" name="inMemailAgree" id="inMemailAgree" value="1" /></label><span>&nbsp;Sign me up for Cheonyu.com E-mail Updates about new services and special offers!</span></td>
+					</tr>
+					<tr>
+						<th scope="row">Country</th>
+						<td>
+							<select name="inMcomAddr1" id="inMcomAddr1" onChange="fnSelectCountry(this.value);">
+								<option value="">-- Select Country --</option>
+								<?
+									$sql = sql_query(" SELECT EIDX,EName FROM nEMS ORDER BY EName ASC ");
+									while($data = sql_fetch_array($sql)){
+								?>
+								<option value="<?=$data['EIDX'];?>"><?=$data['EName'];?></option>
+								<?
+									}
+								?>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">Zip/Postal Code</th>
+						<td><input name="inMpost" type="text" id="inMpost" size="20" style='ime-mode:disabled;'/></td>
+					</tr>
+					<tr>
+						<th scope="row">Street Address</th>
+						<td><input name="inMaddr2" type="text" id="inMaddr2" size="60" style='ime-mode:disabled;'/></td>
+					</tr>
+					<tr>
+						<th scope="row">City</th>
+						<td><input name="inMaddr1" type="text" id="inMaddr1" size="30" style='ime-mode:disabled;'/></td>
+					</tr>
+					<tr>
+						<th scope="row">State/Province</th>
+						<td>
+							<div id="htmlStateSelect" style="display:none;"><select name="inMcomAddr2_Sel" id="inMcomAddr2_Sel"></select></div>
+							<div id="htmlStateText"><input name="inMcomAddr2" type="text" id="inMcomAddr2" size="30" style='ime-mode:disabled;'/></div>
+						</td>
+					</tr>
+					<tr>
+						<td colspan="2" style="width:100%; border-bottom:0px; height:70px; text-align:center;">
+						<img src="/image/login/ico_star.png"> <label style="cursor:pointer;"><input type="checkbox" name="inMemAgree" id="inMemAgree" value="1" /> I agree to CHEONYU.com <a href="/customer/terms.html" target="_blank"><span class="underline">Terms and conditions of use</a> and <a href="/customer/privacy.html" target="_blank"><span class="underline">privacy policy</a>
+						</span></label>
+						</td>
+					</tr>
+				</table>
+				<input type="hidden" name="inMadvice" id="inMadvice" value="1">
+
+				<div class="join-bot-box"><a href="javascript:void(0)" onClick="fnJoin()" class="ptsans">Sign up for CHEONYU.COM</a></div>
+			</div>
+		</div>
+		
+	</div>
+<!-- //회원가입 도매정보입력-->
+</form>
+
+</div>
+<!-- 회원가입 끝// --->
+<script>
+function fnSelectCountry(v){
+	//console.log(`country: ${v}`);
+
+	if(v){
+			
+		var param = "&vIDX=" + v;
+		$.ajax({
+			url: "../ajax_paypal_state.php",
+			type: "POST",
+			cache: false,
+			data : param,
+			dataType: "text",
+			error: fnErrorAjax,
+			success: function(obj) {
+				let data = JSON.parse(obj);
+				let selectTerm = ""; 
+				$("#inMcomAddr2_Sel option").remove(); 
+				$("#inMcomAddr2").val("");
+				
+				if(data.message == 'Success') {
+					
+					for (let i = 0; i < data.datas.length; i++) {
+						selectTerm += "<option value=" + data.datas[i].PROVINCE_CD + ">" + data.datas[i].PROVINCE + "</option>";
+					}
+	                $("#inMcomAddr2_Sel").append(selectTerm);
+
+					$("#htmlStateText").hide();
+					$("#htmlStateSelect").show();
+				
+				} else {	// state 코드 없음 No Data 포함
+					$("#htmlStateSelect").hide();
+					$("#htmlStateText").show();
+				}
+	
+			}
+		});
+				
+	} else {
+		$("#inMcomAddr2_Sel option").remove(); 
+		$("#inMcomAddr2").val("");
+		$("#htmlStateSelect").hide();
+		$("#htmlStateText").show();
+	}
+}
+</script>
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

@@ -1,0 +1,186 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+?>
+
+<link rel="stylesheet" type="text/css" href="/customer/customer.css?250222">
+
+<!-- 고객센터 시작 --->    
+<div id="wrap">
+	<?	include_once $_SERVER['DOCUMENT_ROOT']."/customer/menu.html";	?>
+
+	<?
+		if($setPost) {
+			$inIRgroup = 1;
+			
+			if(!$inIRMID || strlen($inIRMID) < 4){
+				echo "<script>alert('Please Login!');document.location.replace('/');</script>";
+			}
+			
+			//-- 첨부 파일 업로드
+			for($i=1;$i<=3;$i++){
+				$file=$_FILES["inIRfile" . $i][tmp_name];
+				setlocale(LC_CTYPE, 'C'); 
+				$r_file[$i]=strtolower($_FILES["inIRfile" . $i][name]);
+							
+				if($file){
+					$upPath = "/home/cheonyu/image/_DATA/inquire/";
+					//저장되는 파일 이름 변형(중복 방지)
+					$exe = explode(".",$r_file[$i]);
+					$len = sizeof($exe);
+					$exe = $exe[$len-1];
+					$s_file[$i] = date(time()) . $i . "." . $exe;
+					// 파일 중복 체크
+					while(file_exists($upPath .  $s_file[$i])){
+						$s_file[$i] = date(time()) . rand(100)  . "." . $exe;
+					}
+					$uploadfile= $upPath . $s_file[$i];
+					move_uploaded_file($file, $uploadfile);
+				}
+			}
+			//--- 첨부파일 업로드 끝
+			//$inIRtel = $inIRtel1 . "-" . $inIRtel2 . "-" . $inIRtel3;
+			$inIRemail = $inIRemail1 . "@" . $inIRemail2;
+			if($inIRitem) $inIRitem = "Item Number : " . $inIRitem;
+			$inIRcontent = $inIRitem . "<br/>" . $inIRcontent;
+			
+			
+			$inIRcontent .= "..." . $_SERVER['REMOTE_ADDR'];
+		
+			#======= DB 저장 =============================
+			$sql = "insert into 2011_inquireInfo (IRMID,IRname,IRtel,IRemail,IRgroup,IRkind,IRtitle,IRcontent,IRrealFile1,IRrealFile2,IRrealFile3,";
+			$sql.= "IRsaveFile1,IRsaveFile2,IRsaveFile3,IRstate,IRregdate,IRdeleted) values(";
+			$sql.= "'" . htmlspecialchars(trim($inIRMID)) . "',";
+			$sql.= "'" . htmlspecialchars(trim($inIRname)) . "',";
+			$sql.= "'" . htmlspecialchars(trim($inIRtel)) . "',";
+			$sql.= "'" . htmlspecialchars(trim($inIRemail)) . "',";
+			$sql.= "'" . htmlspecialchars(trim($inIRgroup)) . "',";
+			$sql.= "'" . htmlspecialchars(trim($inIRkind)) . "',";
+			$sql.= "'" . htmlspecialchars(trim($inIRtitle)) . "',";
+			$sql.= "'" . htmlspecialchars(trim($inIRcontent)) . "',";
+			
+			$sql.= "'" . $r_file[1]  . "',";
+			$sql.= "'" . $r_file[2]  . "',";
+			$sql.= "'" . $r_file[3]  . "',";
+			
+			$sql.= "'" . $s_file[1]  . "',";
+			$sql.= "'" . $s_file[2]  . "',";
+			$sql.= "'" . $s_file[3]  . "',";
+			
+			$sql.= "'1',";
+			$sql.= "'" . date(time()) . "',";
+			$sql.= "'0')";		
+			sql_query($sql);
+			
+			echo "<script>alert('Your Message has been sent!\\n\\nThank you!\\n\\nWe will get to you as soon as possible.');document.location.replace('/');</script>";
+		}
+	?>
+	
+	<!-- customerMain -->
+	<div id="customerMain">
+	
+	<!-- 도매문의 -->
+	<script>
+	
+		function fnIRsave() {
+			if(document.getElementById("inIRname").value == ""){
+				alert('Please enter your name');
+				document.getElementById("inIRname").focus();
+				return;
+			}
+			if(document.getElementById("inIRemail1").value == ""){
+				alert('Please enter email address');
+				document.getElementById("inIRemail1").focus();
+				return;
+			}
+			if(document.getElementById("inIRemail2").value == ""){
+				alert('Please enter email address');
+				document.getElementById("inIRemail2").focus();
+				return;
+			}
+			if(document.getElementById("inIRtitle").value == ""){
+				alert('Please enter title');
+				document.getElementById("inIRtitle").focus();
+				return;
+			}
+			if(document.getElementById("inIRcontent").value == ""){
+				alert('Please enter message');
+				document.getElementById("inIRcontent").focus();
+				return;
+			}
+
+			document.getElementById("IRform").submit();
+		}
+	</script>
+	<?
+		if($MID){
+			$query = " SELECT * FROM 2011_memberInfo WHERE MID = '$MID' ";
+			$data = sql_fetch($query);
+			$hpArr = $data[MHP];
+			$eMailArr = explode("@",$data[Memail]);
+		}
+	?>
+	<div class="bay_info" style="margin-top:20px;" >
+		<h3 style="font:bold 16px Verdana, Dotum; color:#204e99; ">Leave an inquiry</h3>
+		<table border="0" cellspacing="0" cellpadding="0" class="">
+		<form method="post" enctype="multipart/form-data" name="IRform" id="IRform">
+		<input type="hidden" name="inIRMID" value="<?=$MID?>">
+		<input type="hidden" name="inIRkind" value="2">
+		<tr>
+			<th width="110" scope="row">Name<font color="#FF0000">*</font></th>
+			<td><input name='inIRname' id='inIRname' value="<?=$data[McomName]?>"> ex. Name or Company name</td>
+		</tr>
+		<tr>
+			<th scope="row">Phone</th>
+			<td>
+				<input name="inIRtel" id="inIRtel" type="text" style="width:200px;" value="<?=$hpArr?>" />
+			</td>
+		</tr>
+		<tr>
+			<th scope="row">E-mail<font color="#FF0000">*</font></th>
+			<td><input name="inIRemail1" id="inIRemail1" type="text" style="width:100px;" value="<?=$eMailArr[0]?>"> @ <input name="inIRemail2" id="inIRemail2" type="text" style="width:150px;" value="<?=$eMailArr[1]?>"></td>
+		</tr>
+		<tr>
+			<th scope="row">Subject<font color="#FF0000">*</font></th>
+			<td><input  type="text" name="inIRtitle" id="inIRtitle" style="width:90%;"></td>
+		</tr>
+		<tr>
+			<th scope="row">Item Number</th>
+			<td><input  type="text" name="inIRitem" id="inIRitem" style="width:90%;"></td>
+		</tr>
+		<tr>
+			<th scope="row">Message<font color="#FF0000">*</font></th>
+			<td><textarea rows="8" style="width:90%;height:150px;" name="inIRcontent" id="inIRcontent"></textarea></td>
+		</tr>
+		<tr>
+			<th scope="row">File1</th>
+			<td><input type="file" name='inIRfile1' id='inIRfile1' style="border:1; background-color:#FFF; padding:3px;" size="20" /> &nbsp;&nbsp;<span>* Maximum upload file size 2MB</span></td>
+		</tr>
+		<tr>
+			<th scope="row">File2</th>
+			<td><input type="file" name='inIRfile2' id='inIRfile2' style="border:1; background-color:#FFF; padding:3px;" size="20" /> &nbsp;&nbsp;<span>* Maximum upload file size 2MB</span></td>
+		</tr>
+		<tr>
+			<th scope="row">File3</th>
+			<td><input type="file" name='inIRfile3' id='inIRfile3' style="border:1; background-color:#FFF; padding:3px;" size="20" /> &nbsp;&nbsp;<span>* Maximum upload file size 2MB</span></td>
+		</tr>
+	</form>
+	</table>
+         
+	<div class="div_btn"><a href="javascript:fnIRsave();"><img src="/img/customer/btn_submit_send.gif" alt="SEND"></a></div>
+	
+	</div>
+	<!-- //대량구매 -->
+	
+	<p>&nbsp;</p>
+	<p>&nbsp;</p>
+</div>
+<!-- //고객센터 끝 ---> 
+
+<!-- //고객센터 끝 ---> 
+</div>
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

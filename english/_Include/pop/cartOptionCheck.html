@@ -1,0 +1,531 @@
+<?php
+include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+ob_clean();
+
+$uid2 = htmlspecialchars(trim($MID));
+if(!$uid2){
+	echo "<script> alert('Please log in before adding items to your cart.'); fnClosePopup(); </script>";
+	exit;
+}
+
+$sql = "select a.*,b.IDX as PIDX,b.Pboxin,b.Pboxin2,b.PboxCount,b.PboxCount2,b.PstockCount,b.PoptionUse,b.PengName,b.BRIDX,b.PstockView,b.PsaveFile1,b.Pprice1,b.Pprice2,b.Pprice3,b.Pdiscount,b.Pdiscount10,b.Pdiscount20,b.Pdiscount30,b.Pdiscount40,b.Pdiscount50,b.Pdiscount60,b.Pdiscount70,b.Pdiscount80,b.Pdiscount90,b.Pdiscount100,b.Pdiscount110,b.Pdiscount120, b.PorderMinus, b.Picon1, b.Pregdate, b.PdeliveryPriceType  ";
+$sql.= " from 2011_cartInfo as a left join 2011_productInfo as b on a.PIDX=b.IDX where MID='" . htmlspecialchars(trim($uid)) . "' and a.OPIDX=0 and a.CAstate=0 and a.CAregdate='" . htmlspecialchars(trim($cartCode)) . "'";
+/*	b.PoptionUse=2 and	*/
+$result = sql_query($sql);
+
+$fnbrand = fnLoadBrandName();
+
+function viewOPcolor($color){
+	if($color){
+		if($color == "#ffffff") $addWhite = "class=\"white_border\" ";
+		else $addWhite = "";
+		$txt = "<span " . $addWhite . " style='background:".$color."'></span>";
+		return $txt;
+	} else {
+		return "&nbsp;";
+	}
+}
+?>
+
+
+<script type="text/javascript">
+$(document).ready(function(){
+	var obj = $("table[id='opSelectedList']");
+	var objLen = obj.length;
+	var inIDXtxt = $("input[id='inIDXPOP']");
+	var param="";
+
+	for(k=0;k<objLen;k++)
+	{
+		var caIDX = inIDXtxt.eq(k).val();
+		var inOPTR = obj.eq(k).find("tr[id=inOptionTR]");
+		var opLen = inOPTR.length;
+		var opStr='';
+		var c = 0;
+		
+		for(j=0;j<opLen;j++)
+		{
+			var inObj3 = inOPTR.eq(j).find("input[id=optionCHKPOP]");
+			if(inObj3.is(':disabled') != true) {
+				inObj3.eq(0).attr('checked', true);
+			}
+		}
+	}
+});
+
+	function chkOption(obj){
+		myID = obj.id;
+		nNum = $("td[id='" + myID + "']").index(obj);
+		var optCheck = $("input[id='optionCHKPOP']").eq(nNum).is(':checked');
+		(optCheck) ? $("input[id='optionCHKPOP']").eq(nNum).attr('checked',false) : $("input[id='optionCHKPOP']").eq(nNum).attr('checked',true);
+		fnSumTotalPrice();
+	}
+
+	//=== 옵션 사용시 수량 + - =====================================
+	function fnPcountPlusPop(obj,v)
+	{
+		//-- 자신이 몇번째 객체 인지 체크
+		myID = obj.id;
+		nNum = $("img[id='" + myID + "']").index(obj);
+		inputObj = $("input[id='inOPcount']").eq(nNum);
+		var optCheck = $("input[id='optionCHKPOP']").eq(nNum).is(':checked');
+		if(!optCheck) $("input[id='optionCHKPOP']").eq(nNum).attr('checked',true);
+		inputObj.val(parseFloat(inputObj.val())+v);
+		if(parseFloat(inputObj.val())<1)inputObj.val(1);
+		fnPcountCheckPop(obj);
+	}
+
+	//=== 옵션 사용시 수량 체크 =====================================
+	function fnPcountCheckPop(obj)
+	{
+		//-- 자신이 몇번째 객체 인지 체크
+		myID = obj.id;
+		nNum = $("img[id='" + myID + "']").index(obj);
+		if(nNum<0)nNum = $("input[id='" + myID + "']").index(obj);
+
+		var optCheck = $("input[id='optionCHKPOP']").eq(nNum).is(':checked');
+		if(!optCheck) $("input[id='optionCHKPOP']").eq(nNum).attr('checked',true);
+
+		obj = $("input[id='inOPcount']").eq(nNum);
+		objIDX = $("input[id='inOPidx']").eq(nNum).val();
+
+		var maxCount = $("input[id='inOPMaxStock']").eq(nNum).val();
+		var PorderMinus = $("Input[id='inPorderMinus']").eq(nNum).val();
+		if( (obj.val()>parseFloat(maxCount)) && (PorderMinus != "1") )
+		{
+			alert("The current quantity available for purchase is " + maxCount + " EA.");
+			obj.val(maxCount);
+		}
+
+		var boxCountOpt = $("input[id='boxCountOpt']").eq(nNum).val();
+		var boxCountOpt2 = $("input[id='boxCountOpt2']").eq(nNum).val();
+		var Pprice2Box = $("input[id='indcPer']").eq(nNum).val();
+		var Pprice2Box2 = $("input[id='indcPer2']").eq(nNum).val();
+		var jsMLV = "<?=$MLV?>";
+
+		if(!boxCountOpt) boxCountOpt = 0;
+		if(!boxCountOpt2) boxCountOpt2 = 0;
+
+		if(obj.val() >= parseFloat(boxCountOpt2) && Pprice2Box2 > 0 && boxCountOpt2 > 0 && jsMLV){		//박스 주문
+			var perend = Pprice2Box2;
+			$("[id='htmlPricePOP']").eq(nNum).html($("input[id='indcPrice2']").eq(nNum).val());
+		} else if(obj.val() >= parseFloat(boxCountOpt) && Pprice2Box > 0 && boxCountOpt > 0 && jsMLV){		//박스 주문
+			var perend = Pprice2Box;
+			$("[id='htmlPricePOP']").eq(nNum).html($("input[id='indcPrice']").eq(nNum).val());
+		} else {
+			var perend = $("input[id='inoPer']").eq(nNum).val();
+			$("[id='htmlPricePOP']").eq(nNum).html($("input[id='inoPrice']").eq(nNum).val());
+		}
+		$("[id='htmlDC']").eq(nNum).html(perend + "<span>%</span>");
+		fnSumTotalPrice();
+	}
+
+	//======= 선택한 옵션 DB 에 저장 =====================
+	function setOption()
+	{
+		fnSumTotalPrice();
+
+		obj = $("table[id='opSelectedList']");
+		objLen = obj.length;
+		inIDXtxt = $("input[id='inIDXPOP']");
+		param="";
+
+		for(k=0;k<objLen;k++)
+		{
+			caIDX = inIDXtxt.eq(k).val();
+			inOPTR = obj.eq(k).find("tr[id=inOptionTR]");
+			opLen = inOPTR.length;
+			opStr='';
+			var c = 0;
+
+			for(j=0;j<opLen;j++)
+			{
+				inObj1 = inOPTR.eq(j).find("input[id=inOPidx]");
+				inObj2 = inOPTR.eq(j).find("input[id=inOPcount]");
+				inObj3 = inOPTR.eq(j).find("input[id=optionCHKPOP]");
+				inOption = inObj1.eq(0).val();
+				inOptionCount = inObj2.eq(0).val();
+				optionChk = inObj3.eq(0).is(':checked');
+				console.log(opLen, optionChk);
+				if(!optionChk) continue;
+				if(opStr)opStr+="|";
+				opStr+=inOption + "," + inOptionCount;
+				c = 1;
+			}//-- end for
+
+			/*
+			if(c == 0){
+				alert('옵션 또는 상품을 선택해주세요.');
+				return;
+			}
+			*/
+
+			if(caIDX)
+			{
+				if(param)param+="##";
+				param+=caIDX + "@@" + opStr;
+			}
+		}//-- end for
+
+		if(param)param="&addStr=" + param;
+		//-- ajax 전송
+
+		//alert("해당기능 점검 중 입니다. ----\n\n" + param);
+		//return;
+
+		fnCheckCartIn('',6,'<?=$cartCode?>',param);
+		//-- 전체 종료
+	}
+
+	function closeCartIn()
+	{
+		if(confirm("Being add to cart is not completed.\n\nDo you want to close tab?"))
+		{
+			fnClosePopup();
+		}
+		return;
+	}
+
+	//-- 종합가격 계산
+	function fnSumTotalPrice()
+	{
+		var len = $("[id=htmlPricePOP]").length;
+		var totPrice = 0;
+		var v = 0;
+		var s = "";
+		var cnt = 0;
+		for(k=0;k<len;k++)
+		{
+			var optionChk = $("input[id='optionCHKPOP']").eq(k).is(':checked');
+			if(!optionChk) continue;
+
+			s = $("[id='htmlPricePOP']").eq(k).html();
+			cnt = $("input[id='inOPcount']").eq(k).val();
+			v = s.replace(' USD', '');
+
+			totPrice += (parseFloat(v) * parseFloat(cnt));
+		}
+
+		jQuery("#totalPriceSpan").html(commify(totPrice));
+	}
+</script>
+
+<body>
+
+
+<!--일괄담기 시작 -->
+<div class="pop-layer-wrap">
+	<h1 class="pop-tit ntsans">Bulk Add<!--span>Please check the quantity and options for the products you wish to purchase.</span--></h1>
+	<a href="javascript:closeCartIn();" class="btn-pop-close"><img src="/image_1/ico_close.svg"></a>
+
+	<!-- 상품 반복 -->
+	<?
+		while($rs=sql_fetch_array($result)){
+
+			# DB 레코드 결과값 모두 변수로 전환
+			foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+
+			$fPosition = explode("/",$dbPsaveFile1);
+			$thumb = $fPosition[0] . "/thumb/" . $fPosition[1];
+			$pImg = "<img src='/_DATA/product/" . $thumb . "' width='72' height='72' border=0 />";
+
+			//-- 가격계산
+			$priceInfo = fnCalPrice($dbPprice3,$rs);
+
+			$oPer = $priceInfo["dcPer"];
+			$dcPer = $priceInfo["dcPerBox"];
+			$dcPer2 = $priceInfo["dcPerBox2"];
+
+			$oPrice = $priceInfo["dcDollar_txt"];
+			$dcPrice = $priceInfo["dcDollarBox_txt"];
+			$dcPrice2 = $priceInfo["dcDollarBox2_txt"];
+
+			$getInfo = getListInfo($rs, $dbPstockCount);
+
+			$icon = $getInfo['icon'];
+			$icon2 = $getInfo['icon2'];
+
+			#-- 박스 수량이 있을경우  처리
+			$boxin="";
+			$boxin3="";
+			if($dbPboxCount2 > 0) { $boxin3 = ", ".$dbPboxCount2."ea"; }
+			if($_Minus == 1) $dbPorderMinus = 1;
+
+			$boxPer2 = fnGetPriceMem("2");
+			$boxPer = fnGetPriceMem("1");
+
+			$sql = "Select a.*,b.Pready from 2011_productOption as a left join (select ORPoption,sum(ORPcount) as Pready from 2011_orderProduct where ORPcountCheck=1 and PIDX='" . $dbPIDX . "' and ORPdeleted=0 group by ORPoption) as b on a.IDX = b.ORPoption where a.PIDX='" . $dbPIDX . "' and a.OPhidden =0 order by a.IDX ASC";
+			$opResult = sql_query($sql);
+			//-- 옵션 배열화
+			$opValueCount=0;
+			$opNowName="";
+			$opNameCnt=0;
+			while($opRs = sql_fetch_array($opResult)) {
+
+				$opArray[$opValueCount]["IDX"]		=	$opRs["IDX"];
+				$opArray[$opValueCount]["name"]	=	$opRs["OPname"];
+				$opArray[$opValueCount]["value"]	=	$opRs["OPvalueEng"];
+				$opArray[$opValueCount]["stock"]	=	$opRs["OPstock"] - $opRs["Pready"];
+				$opArray[$opValueCount]["color"]	=	$opRs["OPcolor"];
+
+				//-- 차후 옵션 추가급액도 고려... 잠시 딜레이
+				//$opArray[$opValueCount]["addPrice"]	=	$opRs["addPrice"];
+				$opArray[$opValueCount]["addPrice"]	=	0;
+
+				$opValueCount++;
+				if($opNowName!=$opRs["OPname"])	{
+					$opNameCnt++;
+					$opNowName = $opRs["OPname"];
+				}
+			}
+	?>
+	<div class="pop-layer-content">
+		<div class="content-detail">
+			<div class="product_info">
+				<div style="display: flex; gap: 16px; align-items: center;">
+					<figure><?=$pImg?></figure>
+					<figcaption>
+						<div class="item-info1">
+							<span class="coc_brd_name"><?=$fnbrand[$dbBRIDX]?></span>
+							<div class="icon">
+								<span>
+									<? if($dbPboxin){ ?>
+									<span class='hint hint--bottoml' data-hint='Cartonbox' >
+										<img src="/image_3/boxinBG.gif" style="display:inline-block; vertical-align: sub;"><?=$dbPboxin?> ea
+									</span>
+									<? } ?>
+									<? if($dbPboxin2){ ?>
+										<span class='hint hint--bottoml' data-hint='Innerbox' style="margin-left: 6px;">
+											<img src="/image_3/boxinBG2.gif" style="display: inline-block; vertical-align: sub;"><?=$dbPboxin2?> ea
+										</span>
+									<? } ?>
+								</span>
+							</div>
+						</div>
+						
+						<p class="item-name"><?=$dbPengName . $boxin?></p>
+					</figcaption>
+				</div>
+				<div class="subject">
+					<? if($dbPdeliveryPriceType==4){ ?><img src='/images/delivery_charge.png'></p><? } ?>
+
+					<div class="price_info">
+						<?
+							$PboxCountTxt = "";
+							$PboxCountColor = "<span>";
+							$PboxCountColor2 = "<span>";
+							if(!$dbPboxCount && !$dbPboxCount2) {
+								$PboxCountTxt = " or more ";
+								$PboxCountColor2 = "<span class='count_color'>";
+							}
+							if(!$dbPboxCount2) $PboxCountColor = "<span class='count_color'>";
+							if(!$MID || ${'dbPdiscount'.$boxPer} == $priceInfo["dcPer"]) {
+								$PboxCountTxt = " or more ";
+								$PboxCountColor2 = "<span class='count_color'>";
+							}
+						?>
+						
+						<table class="dcper_table">
+							<tbody>
+								<tr>
+									<td class="dcper_table_f left"><?=$PboxCountTxt?>Buy <span style="font-weight: 600;">1</span> item</th>
+									<td class="dcper_per"><?=$PboxCountColor2?><?=$priceInfo["dcPer"]?><span>%</span></span></td>
+									<td style="text-align: right; width: 96px;">USD <strong><span class="sky_blue"><?=$priceInfo["dcDollar_txt"]?></span></strong></td>
+								</tr>
+								<? if($MID && $dbPboxCount > 0 && ${'dbPdiscount'.$boxPer} != $priceInfo["dcPer"]) { ?>
+								<tr>
+									<td class="dcper_table_f">Buy <span style="font-weight: 600;"><?=$dbPboxCount?></span> item or more</th>
+									<td class="dcper_per"><?=$PboxCountColor?><?=${'dbPdiscount'.$boxPer}?><span>%</span></span></td>
+									<td style="text-align: right; width: 96px;">USD <strong><span class="sky_blue"><?=$priceInfo["dcDollarBox_txt"]?></span></strong></td>
+								</tr>
+								<? } ?>
+								<? if($MID && $dbPboxCount2 > 0 && ${'dbPdiscount'.$boxPer2} != ${'dbPdiscount'.$boxPer}) { ?>
+								<tr>
+									<td class="dcper_table_f">Buy <span style="font-weight: 600;"><?=$dbPboxCount2?></span> item or more</th>
+									<td class="dcper_per"><span class='count_color'><?=${'dbPdiscount'.$boxPer2}?><span>%</span></span></td>
+									<td style="text-align: right; width: 96px;">USD <strong><span class="sky_blue"><?=$priceInfo["dcDollarBox2_txt"]?></span></strong></td>
+								</tr>
+								<? } ?>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="popup_ow option_wrap">
+			<table class="option_table" id="opSelectedList">
+				<input type='hidden' name='inIDXPOP' id='inIDXPOP' value="<?=$dbIDX?>">
+				<colgroup>
+					<col style="width:22px;">
+					<col>
+					<col style="width:31px;">
+					<col style="width:80px;">
+					<col style="width:40px;">
+					<col style="width:82px;">
+				</colgroup>
+				<tbody>
+				<?
+				/*===========================================================================================
+				설정한 옵션이 있을때 인터페이스
+				===========================================================================================*/
+				if($dbPoptionUse > 1){
+					$nOpname="";
+					$opCheck=0;
+					for($k=0;$k<$opNameCnt;$k++){
+
+						for($i=$opCheck;$i<$opValueCount;$i++){
+							if($nOpname!=$opArray[$i]["name"] && $i>$opCheck)break;
+							if(!$dbPstockCount){
+								if($dbPorderMinus == 1) $opArray[$i]["stock"]=1;
+								else $opArray[$i]["stock"]=0;
+							}
+							if($opArray[$i]["stock"]<1  && $dbPorderMinus != 1) {
+								$opSU = "0";
+							} else {
+								if($dbPorderMinus == 1) {
+									$opSU = $dbCAcount;
+								} else {
+
+									if($opArray[$i]["stock"] >= $dbCAcount){
+										$opSU = $dbCAcount;
+									} else {
+										$opSU = $opArray[$i]["stock"];
+									}
+								}
+							}
+							//else $opSU = "1";
+				?>
+				<tr id="inOptionTR">
+					<td>
+						<label class="check-box">
+							<input id="optionCHKPOP" class="cart_chk" type="checkbox" onClick="fnSumTotalPrice();" value='<?=$opArray[$i]["IDX"]?>' <?if($opArray[$i]["stock"]<1 && $dbPorderMinus != 1) echo " disabled ";?>>
+						</label>
+					</td>
+					<td id='tdOption' class="option_txt" <?if($opArray[$i]["stock"]<1 && $dbPorderMinus != 1) {} else { echo "onClick='chkOption(this);'"; } ?>><?=$opArray[$i]["value"]?><?if($dbPorderMinus != 1 && ($dbPstockView==2 || ($opArray[$i]["stock"] < 6 && $opArray[$i]["stock"] > 0)))echo " (" . $opArray[$i]["stock"] . "ea)";?><?if($opArray[$i]["stock"]<1 && $dbPorderMinus != 1)echo " - SOLD OUT ";?></td>
+					<td class="opt_color"><?=viewOPcolor($opArray[$i]["color"])?></td>
+					<td>
+						<div class="opt_cnt2">
+							<span class="arrow" onclick='fnPcountPlusPop(this,-1)' <?if($opArray[$i]["stock"]<1 && $dbPorderMinus != 1)echo " disabled ";?> style='cursor:pointer;'>
+                                <img src="/img/ico/ico-item-minus.svg" alt="down">
+                            </span>
+							
+							<input type='hidden' name='inOPidx' id='inOPidx' value='<?=$opArray[$i]["IDX"]?>'>
+							<input type='hidden' name='inOPMaxStock' id='inOPMaxStock' value='<?=$opArray[$i]["stock"]?>'>
+							<input type='hidden' name='inOPaddPrice' id='inOPaddPrice' value='<?=$opArray[$i]["addPrice"]?>'>
+							<input type='hidden' name='boxCountOpt' id='boxCountOpt' value='<?=$dbPboxCount?>'>
+							<input type='hidden' name='boxCountOpt2' id='boxCountOpt2' value='<?=$dbPboxCount2?>'>
+							<input type='hidden' name='inoPer' id='inoPer' value='<?=$oPer?>'>
+							<input type='hidden' name='indcPer' id='indcPer' value='<?=$dcPer?>'>
+							<input type='hidden' name='indcPer2' id='indcPer2' value='<?=$dcPer2?>'>
+							<input type='hidden' name='inoPrice' id='inoPrice' value='<?=$oPrice?>'>
+							<input type='hidden' name='indcPrice' id='indcPrice' value='<?=$dcPrice?>'>
+							<input type='hidden' name='indcPrice2' id='indcPrice2' value='<?=$dcPrice2?>'>
+							<input type='hidden' name='inPorderMinus' id='inPorderMinus' value='<?=$dbPorderMinus?>'>
+							<input name="inOPcount" type="text" id="inOPcount" maxlength="3" style='ime-mode:disabled;' value='<?=$opSU?>' onkeydown='onlyNum()' onblur='if(!this.value || this.value==0){this.value=1;}fnPcountCheckPop(this);' <?if($opArray[$i]["stock"]<1 && $dbPorderMinus != 1)echo " disabled ";?>>
+							
+                            <span class="arrow" onclick='fnPcountPlusPop(this,1)' <?if($opArray[$i]["stock"]<1 && $dbPorderMinus != 1)echo " disabled ";?> style='cursor:pointer;'>
+                                <img src="/img/ico/ico-item-plus.svg" alt="up">
+                            </span>
+						</div>
+					</td>
+					<td class="per_stk">
+						<div class="dc_wrap">
+							<span class="dc"><em id='htmlDC'><?=$priceInfo["dcPer"]?><span>%</span></em></span>
+						</div>
+					</td>
+					<td class="price">
+						USD <strong id='htmlPricePOP'><?= $priceInfo["dcDollar_txt"] ?></strong>
+					</td>
+				</tr>
+				
+				<?
+							$nOpname = $opArray[$i]["name"];
+						}
+						$opCheck=$i;
+						}
+					}
+				?>
+				<?
+					if($dbPoptionUse == 1){
+						if($dbCAcount >= $dbPboxCount2 && $dbPboxCount2 > 0) {
+							$Per1 = $dcPer2;
+							$Price1 = $dcPrice2;
+						} else if($dbCAcount >= $dbPboxCount && $dbPboxCount > 0) {
+							$Per1 = $dcPer;
+							$Price1 = $dcPrice;
+						} else {
+							$Per1 = $priceInfo["dcPer"];
+							$Price1 = $priceInfo["dcDollar_txt"];
+						}
+				?>
+				<tr id="inOptionTR">
+					<td><label class="check-box"><input type="checkbox" id='optionCHKPOP' onClick="fnSumTotalPrice();" value='<?=$opArray[$i]["IDX"]?>' checked></label></td>
+					<td id='tdOption' class="option_txt" <?if($dbPstockCount<1 && $dbPorderMinus != 1) {} else { echo "onClick='chkOption(this);'"; } ?>>No options <? if($dbPstockCount < 6 && $dbPstockCount > 0) { echo " (" . $dbPstockCount . "ea)"; } ?></td>
+					<td class="opt_color"></td>
+					<td>
+						<div class="opt_cnt2">
+							<span class="arrow" onclick='fnPcountPlusPop(this,-1)' style='cursor:pointer;'>
+                                <img src="/img/ico/ico-item-minus.svg" alt="down">
+                            </span>
+						
+							<input type='hidden' name='inOPidx' id='inOPidx' value='0'>
+							<input type='hidden' name='inOPMaxStock' id='inOPMaxStock' value='<?=$dbPstockCount?>'>
+							<input type='hidden' name='inOPaddPrice' id='inOPaddPrice' value='0'>
+							<input type='hidden' name='boxCountOpt' id='boxCountOpt' value='<?=$dbPboxCount?>'>
+							<input type='hidden' name='boxCountOpt2' id='boxCountOpt2' value='<?=$dbPboxCount2?>'>
+							<input type='hidden' name='inoPer' id='inoPer' value='<?=$oPer?>'>
+							<input type='hidden' name='indcPer' id='indcPer' value='<?=$dcPer?>'>
+							<input type='hidden' name='indcPer2' id='indcPer2' value='<?=$dcPer2?>'>
+							<input type='hidden' name='inoPrice' id='inoPrice' value='<?=$oPrice?>'>
+							<input type='hidden' name='indcPrice' id='indcPrice' value='<?=$dcPrice?>'>
+							<input type='hidden' name='indcPrice2' id='indcPrice2' value='<?=$dcPrice2?>'>
+							<input type='hidden' name='inPorderMinus' id='inPorderMinus' value='<?=$dbPorderMinus?>'>
+							
+							<input name="inOPcount" type="text" id="inOPcount" maxlength="3" style='ime-mode:disabled;' value='<?=$dbCAcount?>' onkeydown='onlyNum()' onblur='if(!this.value || this.value==0){this.value=1;}fnPcountCheckPop(this);'>
+							
+							<span class="arrow btn_plus" onclick='fnPcountPlusPop(this,1)' style='cursor:pointer;'>
+                                <img src="/img/ico/ico-item-plus.svg" alt="up">
+                            </span>
+						</div>
+					</td>
+					<td class="per_stk"><div class="dc_wrap"><span class="dc"><em id='htmlDC'><?=$Per1?><span>%</span></em></span></div></td>
+					<td class="price">USD <strong id='htmlPricePOP'><?= $Price1 ?></strong></td>
+				</tr>
+				<?
+				//== Text 형식 옵션 입력
+					if($dbPoptionUse==3){
+				?>
+				<tr>
+					<td colspan="6">
+					<span>Enter options</span>
+					<center><textarea name='inPoptionText' id='inPoptionText' style='width:90%;height:50px;border:1px solid #afafaf;'></textarea></center>
+					</td>
+				</tr>
+				<?
+						}
+					}
+
+					if($dbPstockCount < 1 && $dbPorderMinus != 1){
+				?>
+				<tr><td colspan="6"><span>Sorry, this product is currently unavailable for purchase.</span></td></tr>
+				<? } ?>
+			</table>
+		</div>
+	</div>
+	<? } ?>
+	<div class="totalPriceSpan">
+		<span class="tps-tit ptsans">Estimated Purchase Amount <em>(Including VAT, Excluding Shipping)</em></span>
+		<div>
+			<span class="ptsans units" style="font-size: 16px;">Total Price:</span>
+			<span class="ptsans units">USD </span><span id="totalPriceSpan" class="total-price">0</span>
+		</div>
+	</div>
+
+	<div class="btn-wrap">
+		<a href="javascript:closeCartIn();" class="btn-style btn-color-cancel">Cancel</a>
+		<a href="javascript:setOption();" class="btn-style btn-color-CTA">Add to cart</a>
+	</div>
+</div>
+<script>
+fnSumTotalPrice();
+</script>

@@ -1,0 +1,842 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+
+	//비회원 -> 회원 장바구니 전환
+	setCardID();
+
+	$sql = "select a.*,b.Pname,b.PengName,b.Pboxin,b.Pboxin2,b.PboxCount,b.PboxCount2,b.BRIDX,b.PstockCount,b.Pprice1,b.Pprice2,b.EVdiscount,b.Puploader,Pweight,";
+	$sql.= "Pdiscount,Pdiscount10,Pdiscount20,Pdiscount30,Pdiscount40,Pdiscount50,Pdiscount60,Pdiscount70,Pdiscount80,Pdiscount90,Pdiscount100,Pdiscount110,Pdiscount120,EVIDX,EVdiscount,  ";
+	$sql.= "PdeliveryType,PdeliveryPriceType,PdeliveryPrice,Pprice3,PsaveFile1,c.OPname,c.OPvalue,c.OPvalueEng,c.OPstock,b.PorderMinus, ";
+	$sql.= " d.MSdeliveryLimit, d.MSdeliveryPay, d.MScomDeliveryLimit, d.MScomDeliveryPay,ifnull(d.MSID,b.Pshop),e.BRename ";
+	
+	$sql.= "from 2011_cartInfo as a left join 2011_productInfo as b on a.PIDX = b.IDX ";
+	$sql.= "left join 2011_productOption as c on a.OPIDX = c.IDX left join 2011_brandInfo as e on b.BRIDX = e.IDX ";
+	$sql.= " left join 2011_makerSeller as d on e.MKIDX = d.MKIDX ";
+	$sql.= " where MID='" . addslashes($uid) . "' and a.CAstate=1 ";
+	//$sql .= " ORDER BY b.PdeliveryType ASC, d.MKIDX desc, a.IDX ASC";
+	$sql .= " ORDER BY d.MKIDX desc, a.PIDX ASC, c.IDX ASC";
+	$result = sql_query($sql);
+	$listStyle = ($listStyle) ? $listStyle : 1;
+
+    /*==================================================================
+	회원일경우 가격계산
+	==================================================================*/
+
+	/*--- 가격계산 함수화 --*/
+	$priceInfo = fnCalPrice($dbPprice3,$rs);
+
+	//-- 자바스크립트에서 계산에 사용될 변수
+	//$jsPrice=$priceInfo['dcPrice'];
+	//$jsPrice2=$priceInfo['dcPrice2'];
+	//$jsPriceBox=$priceInfo['dcPriceBox'];
+	//$jsPriceBox2=$priceInfo['dcPriceBox2'];
+	$jsPrice=$priceInfo['dcDollar'];
+	$jsPrice2 = 0;
+	$jsPriceBox=$priceInfo['dcDollarBox_txt'];
+	$jsPriceBox2=$priceInfo['dcDollarBox2_txt'];
+	$discount = number_format($discount);
+	if($_Minus == 1) $dbPorderMinus = 1;
+
+?>
+<script type="text/javascript">
+	/*=================================================
+	견적서 출력
+	=================================================*/
+	function fn_print() {
+		obj=$("INPUT[id='cartCheck']:checked");
+		len = obj.length;
+		
+		chkObj="";
+		for(k=0;k<len;k++)
+		{
+			if(chkObj!="")chkObj+=",";
+			chkObj+=obj.eq(k).val();
+		}
+		if(chkObj!="") {
+			document.cartForm.cartCode.value = chkObj;
+			window.open("","estimate","width=1020,scrollbars=yes,status=no");
+			document.cartForm.target = "estimate";
+			document.cartForm.submit();
+		} else {
+			alert("Please choose qouted products.");
+			return;
+		}
+	}
+
+	/*=================================================
+	처리를 담당하는 Ajax 파일의 경로 정의
+	=================================================*/
+	ajaxUrl = 'ajaxCart.php';
+
+	//== 기타 수량 컨트롤 함수는 common.js 파일 참고
+	//===================================================
+	//=== 전체 가격 정보 가져오기 
+	//===================================================
+	isOver = 0;	//-- 재고 초과 체크
+	function fnGetTotalInfo(cartCode) {
+		
+		if(!cartCode)
+		{
+			fnGetCheckCart();
+			return;
+		}
+		
+		param='mode=totalPrice&uid=<?=$uid?>';
+		param+="&cartCode=" + cartCode;
+
+		$.ajax({
+ 			url:ajaxUrl,
+ 				type:"POST",
+				data : param,
+				dataType:"text",
+				error:fnErrorAjax,
+				success:function(_response){
+					//alert(_response);
+  				    v = _response.split("##");
+					totPrice = parseFloat(v[2]);
+	 				totCount = parseFloat(v[3]);
+	 				totWeight = parseFloat(v[4]);
+	 				delibery = parseFloat(v[5]);
+	 				addDelibery = parseFloat(v[6]);
+	 				isOver = parseFloat(v[7]);
+	 				
+	 				taxTotal = parseFloat(v[10]);	 				
+	 				freeTotal = parseFloat(v[11]);
+
+					var ret = totPrice + addDelibery + delibery;
+					ret = ret.toFixed(2);
+	 				
+					$("#inTot1").html(taxTotal);	//-- 과세품
+					$("#inTot3").html(freeTotal);	//-- 면세품
+					$("#inTot5").html(totWeight);	//-- 무게
+					$("#inTot6").html(totCount);	//-- 총 수량
+					
+					$("#inTot7").html(totPrice);	//-- 과세+면세
+					$("#inTot8").html(delibery);	//-- 배송비
+					$("#inTot9").html(addDelibery);	//-- 추가배송비
+					$("#inTot10").html(ret);	//-- 총결제액
+
+					GetInfoComplete=1;
+					if(isOver) fnChangeStockPop();
+				}
+			});
+		}
+
+
+	//===================================================
+	//-- 재고 맞지않는 제품 모두 팝업 띄우기
+	//===================================================
+	function fnChangeStockPop()
+	{
+		fnViewPopup("pop_11");
+	}
+	
+	$(document).ready(function(){
+		fnCartCheckAll();
+	});	
+	
+	//===================================================
+	//-- 체크한 카트의 주문내역 불러오기
+	//===================================================
+	function fnGetCheckCart()
+	{
+		obj=$("INPUT[id='cartCheck']:checked");
+		len = obj.length;
+		
+		chkObj="";
+		for(k=0;k<len;k++)
+		{
+			if(chkObj!="")chkObj+=",";
+			chkObj+=obj.eq(k).val();
+		}		
+		//alert(chkObj);		
+		if(chkObj=="")chkObj="none";		
+		fnGetTotalInfo(chkObj);
+	}
+
+	//===================================================
+	//-- 주문변경 여부 체크	후 주문페이지로 이동
+	//===================================================
+	GetInfoComplete=0;
+	function fnSubmitChk()
+	{
+		cChange=0;
+		
+		if(!GetInfoComplete)
+		{
+			alert("Cart is loading...");
+			return;
+		}
+
+		//-- 변경된 주문이 있는지 체크
+		len = $("INPUT[id='checkChange']").length;
+		for(k=0;k<len;k++)if($("INPUT[id='checkChange']").eq(k).val()==1)cChange=1;
+		if(cChange)if(!confirm("There is not applied items after the quantity is changed.\n\nAre you sure to proceed?"))return;
+		
+		if(isOver)
+		{
+			alert("There is more than stock.\n\nPlease try again after adjust quantity.");
+			location.reload();
+			return;
+		}
+		
+		if(totCount<1)
+		{
+			alert("Please check wish item to buy.");
+			return;
+		}
+		
+		document.location='order.html';
+	}
+
+	function fnStateChange(obj,t,v)
+	{
+		//-- 자신이 몇번째 객체 인지 체크
+		myID = obj.id;
+		nNum = $("[id='" + myID + "']").index(obj);
+		$("[id='" + t + "']").val(v);
+	}
+	
+	function fnProductDelete(obj)
+	{
+		try{if(!ajaxUrl){}}
+		catch(E){alert("처리페이지가 정의되지 않았습니다.");return;}
+		//-- 자신이 몇번째 객체 인지 체크
+		myID = obj.id;
+		myTag = obj.tagName;
+		nNum = $(myTag + "[id='" + myID + "']").index(obj);
+		IDX = $("INPUT[id='inPIDX']").eq(nNum).val();
+		param='qIDX=' + IDX + '&mode=delete&nNum='+ nNum;
+		$.ajax({
+		url:ajaxUrl,
+		type:"POST",
+		cache:false,
+		data : param,
+		dataType:"text",
+		error:fnErrorAjax,
+		success:function(_response)
+		{
+			v = _response.split("##");
+			if(v[1]=="OK")
+			{
+				//-- 배송비 계산문제로(rowspan 후 줄 삭제가 되지 않음) 페이지를 리로드 하겠습니다.
+				document.location.reload();
+				try{
+					//fnGetTotalInfo();
+				}catch(E){}
+			}
+			else
+			{
+				//alert(_response);
+				fnErrorAjax();
+			}
+		}
+		});
+	}
+
+	//--- 전체선택 및 체크 삭제
+	function fnCartCheckAll()
+	{
+		obj=$("INPUT[id='cartCheck']");
+		$("INPUT[id='cartCheck']").attr("checked",!$("INPUT[id='cartCheck']").eq(0).attr("checked"));
+		fnGetCheckCart();
+	}
+	
+	function fnCartCheckDel()
+	{
+		try{if(!ajaxUrl){}}
+		catch(E){alert("처리페이지가 정의되지 않았습니다.");return;}
+		//-- 체크된 객체 확인
+		checkObj = $("INPUT[id='cartCheck']:checked");
+		checkLen = checkObj.length;
+		
+		if(!checkLen)
+		{
+			alert("체크된 항목이 없습니다.");
+			return;
+		}
+		
+		qIDXStr="";
+		for(k=0;k<checkLen;k++)
+		{
+			if(qIDXStr)qIDXStr+=",";
+			qIDXStr+=checkObj.eq(k).val();
+		}
+		
+		param='qIDX=' + qIDXStr + '&';
+		param=param+"&mode=delete";
+		
+		$.ajax({
+		url:ajaxUrl,
+		type:"POST",
+		cache:false,
+		data : param,
+		dataType:"text",
+		error:fnErrorAjax,
+		success:function(_response)
+		{
+			v = _response.split("##");
+			if(v[1]=="OK")
+			{
+				//-- 배송비 계산문제로(rowspan 후 줄 삭제가 되지 않음) 페이지를 리로드 하겠습니다.
+				document.location.reload();
+				try{
+					//fnGetTotalInfo();
+				}catch(E){}
+			}
+			else
+			{
+				//alert(_response);
+				fnErrorAjax();
+			}
+		}
+		});
+	
+	}
+</script>
+<form id="cartForm" name="cartForm" action="cart_print.html" method="post">
+<input type="hidden" id="mode" name="mode" value="totalPrice" title="totalPrice" />
+<input type="hidden" id="uid" name="uid" value="<?=$uid?>" title="아이디" />
+<input type="hidden" id="cartCode" name="cartCode" value="" title="상품코드" />
+</form>
+
+<link rel="stylesheet" type="text/css" href="/order/order.css?v=<?= time(); ?>">
+
+<style>
+    #wrap {width: 1200px;}
+    #order {width: 1200px;}
+	#order ul {height: auto; border-left: none;}
+	#order ul a {border: 0; float: none; color: #555555; font: inherit; text-align: left; line-height: 1.3;}
+	#order ul a:hover,
+	#order ul a:active,
+	#order ul a:focus,
+	#order ul a.select {color: inherit; background: none;}
+	#order .list_option {display: flex; justify-content: space-between; float: none; border: 0; background: 0; margin: 0 0 24px 0; line-height: 1; height: auto;}
+	.subTop-A {display: flex; margin: -4px 0 40px; justify-content: space-between;}
+	.subTop-A .subTitle-A {font-size: 22px; line-height: 1; color: #111111; font-family: "PLBold";}
+	.subTop-A .indicator {display: flex; font-size: 16px; font-family: "PLBold"; color: #888888;}
+	.subTop-A .indicator > div {position: relative; margin-right: 36px;}
+	.subTop-A .indicator > div.active-page {color: #555555;}
+	.subTop-A .indicator > div::after {display: block; content: ""; width: 24px; height: 24px; background: url('/img/ico/ico-next-h24.svg') no-repeat; background-size: 24px; position: absolute; right: -30px; top: -3px;}
+	.subTop-A .indicator > div:last-child {margin-right: 0;}
+	.subTop-A .indicator > div:last-child::after {display: none;}
+	.column-div {margin-bottom: 64px; display: flex; gap: 40px; position: relative;}
+	#order .cart-table {height: fit-content;}
+    #order .cart-table .table-header {display: flex; justify-content: space-between; background: #f8f8f8; border-radius: 8px; height: 40px; padding: 10px 0; font-size: 14px; font-weight: 600;}
+    #order .cart-table tr.table-top td {border-top: 2px solid #555555; border-bottom: 1px solid #dedede; height: 40px; font-size: 15px; color: #333333; font-weight: 700;}
+	#order .cart-table tr td {} /* 데이터 없을 경우에도 스타일 먹힘 */
+	#order .cart-table .price-list {
+		border-bottom: 1px solid #dedede; border-left: none; background: #f8f8f8; padding: 6px 10px 8px; 
+		display: flex; gap: 48px; justify-content: center; align-items: center;
+	}
+	#order .cart-table .price-list li {line-height: 22px;}
+	#order .cart-table .price-list li.character {font-size: 32px; font-weight: 700;}
+	#order .cart-table .price-list li span:first-child {font-size: 14px; color: #888888;}
+	#order .cart-table .price-list li span:last-child {font-size: 16px; color: #555555; font-weight: 700;}
+	#order .cart-table .price-list li:last-child span:last-child {color: #111111;}
+	.cartCss {border-bottom: none;}
+	.cart-row {display: flex; align-items: center; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid #dedede; gap: 12px;}
+	.cart-row .cart-cell {font-size: 14px; color: #333333;}
+    .cart-row .cart-cell > a {text-align: left;}
+	.cart-row .cart-cell.numCss {align-self: flex-start; width: 20px; height: 100%;}
+	.cart-row .cart-cell.thumbCss {align-self: flex-start; flex-shrink: 0; height: 100%; border-radius: 8px; overflow: hidden; border: 1px solid #ededed; border-width: 0 1px 1px 1px;}
+	.cart-row .cart-cell.thumbCss .item-num {background: #162A4A; color: #ffffff; font-size: 14px; font-weight: 500; line-height: 20px;}
+    .cart-row .cart-cell.priceCss {display: flex; flex-direction: column; align-items: flex-end; gap: 4px; text-align: right; width: 112px;}
+	.cart-row .cart-cell.priceCss span {display: inline-block; width: fit-content; font-size: 18px; color: #111111;}
+	.cart-row .cart-cell.priceCss span.cart_pblack {font-size: 15px; color: #888888;}
+	.cart-row .cart-cell.priceCss span.cart_pblue {
+		font-size: 12px; color: #FF3838; padding: 0px 4px; border-radius: 4px; font-weight: 700; background: #FFE9E9; margin-bottom: 4px; border: 1px solid rgba(255,56,56,0.1);
+	}
+	.cart-row .cart-cell.qtyCss {display: flex; width: 80px; flex-direction: column; justify-content: center; text-align: center;}
+	.cart-row .cart-cell.weightCss {width: 72px; font-size: 14px;}
+	.cart-row .cart-cell.itemCss {text-align: left; font-size: 15px; flex-grow: 1;}
+	.cart-row .cart-cell.itemCss > a > span {display: inline-block;}
+	.cart-row .cart-cell.itemCss > a > span.info-wrap {font-size: 14px; color: #555555; font-weight: 600; padding-bottom: 8px; display: flex; gap: 8px; align-items: center;}
+	.cart-row .cart-cell.itemCss > a > span.info-wrap > span {display: flex; align-items: center; gap: 4px; margin-right: 12px;}
+    .cart-row .cart-cell.itemCss > a .box-wrap {display: flex; align-items: center; gap: 6px; position: relative;}
+    .cart-row .cart-cell.itemCss > a .box-wrap::before {content: ""; display: block; width: 1px; height: 12px; position: absolute; top: 2px; left:-12px; background: #d4d4d4;}
+    .cart-row .cart-cell.itemCss > a .box-wrap > span {display: flex; gap: 4px; align-items: center; font-weight: 400; font-size: 13px;}
+    .cart-row .cart-cell.itemCss > a > span.option,
+	.cart-row .cart-cell.itemCss > a > span.capacity,
+	.cart-row .cart-cell.itemCss > a > span.capacity + span {color: #888888; font-size: 14px;}
+	.cart-row .cart-cell.itemCss > a span.item-name {font-size: 15px; color: #333333; font-weight: 600;}
+	.cart-row .cart-cell.optCss {width: 104px; font-weight: 500;}
+    .cart-row .cart-cell.deleteBtn {display: flex; width: 20px;}
+	.cart-row .cart-cell .cart-input-wrapper {display:flex; flex-direction:column; align-items:center; gap: 8px; position: relative;}
+	.cart-row .cart-cell .cart-input-wrapper .tooltip {
+		position: absolute; left: 50%; transform: translateX(-50%); top: calc(100% + 8px); width: max-content;
+	}
+	.cart-row .cart-cell .cart-input-wrapper .tooltip span {
+		display: block; padding: 8px 16px; background-color: rgb(233 241 255 / 90%); border-radius: 8px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+		font-size: 13px; color: #005bf1;
+	}
+	.cart-row .cart-cell .cart-input-wrapper .tooltip span strong {color: #ff3838;}
+	.cart-row .cart-cell .cart-input-wrapper .tooltip font {
+		display: block; padding: 8px 16px; background-color: rgb(255 242 242 / 90%); border-radius: 8px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+		font-size: 13px; color: #ff3838;
+	}
+	.cart-row .cart-cell .quantity-controls {display: flex; justify-content: center;}
+	.cart_input {text-align: center; color: #555555; font-size: 14px; width: 32px; border: 1px solid #dedede; border-width: 1px 0; border-radius: 0; line-height: 22px; padding: 0; height: 24px;}
+
+    
+</style>
+
+<!-- 카트 시작 --->    
+<div id="wrap" >
+    
+    <!-- 카트 리스트 -->
+    <div id="order">
+		<div class="subTop-A">
+			<div class="subTitle-A">Shopping Cart</div>
+			<div class="indicator">
+				<div class="active-page">Shopping Cart</div>
+				<div>Checkout</div>
+				<div>Order Complete</div>
+			</div>
+		</div>
+        
+		<div class="list_option">
+			<div class="btn-list">
+				<button type="button" class="btn-style btn-color-white btn-h40 btn-round2" onclick="fnCartCheckAll()"><img src="/img/order/ico_checkAll.svg">Select All</button>
+				<button type="button" class="btn-style btn-color-white btn-h40 btn-round2" onclick="fnCartCheckDel()"><img src="/img/order/ico_trashBin.svg">Delete</button>
+			</div>
+			<button type="button" class="btn-style btn-color-grey btn-h40 btn-round2" onclick='fn_print()'><img src="/img/order/ico_printer.svg">Print Quotation</button>
+		</div>
+
+		<div class="column-div">
+			<!--상품리스트 시작-->
+			<table width="880" border="0" cellspacing="0" cellpadding="0" id="cartTable" class="cart-table">
+				<thead>
+                    <tr class="table-header">
+                        <th class="cart-cell" width="432">Item Info</th>
+                        <th class="cart-cell" width="120">Option</th>
+                        <th class="cart-cell" width="72">Weight</th>
+                        <th class="cart-cell" width="80">Qty</th>
+                        <th class="cart-cell" width="96" style="text-align: right;">Final Price</th>
+                        <th class="cart-cell" width="20"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?
+                        $cnt = 1;
+                        #-- 업체별 배송비 담을 변수
+                        $DVinfo = array();		//-- 업체별 배송비
+                        //-- 첫째자리는 천유 관리자 -- 업로더는 다를 수 있으니 master 로 구분한다.
+                        $DVinfo[0]["com"] = $masterSeller;	//-- 기본 판매자 아이디
+                        $DVinfo[0]["comName"]=$masterSellerName;
+                        $DVinfo[0]["total"] = 0;			//-- 구매 총액
+                        $DVinfo[0]["noFreeDelivery"] = 0;			//-- 구매 총액(무료배송조건제외)
+                        $DVinfo[0]["dlimit1"] = $shopConfig["CFdeliveryLimit"];		//-- 일반 배송비 조건
+                        $DVinfo[0]["dprice1"] = $shopConfig["CFdeliveryPay"];		//-- 일반 배송비
+                        $DVinfo[0]["dlimit2"] = $shopConfig["CFcomDeliveryLimit"];		//-- 도매 배송비 조건
+                        $DVinfo[0]["dprice2"] = $shopConfig["CFcomDeliveryPay"];		//-- 도매 배송비
+                        $DVinfo[0]["rows"] = 0;
+                        
+                        $nMSID="";	
+                        $nPdeliveryType="";
+                        $cnt = 1;
+                        
+                        while($rs=sql_fetch_array($result)){
+                            
+                            # DB 레코드 결과값 모두 변수로 전환
+                            foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+                            
+                            if ($listStyle == '1') {						
+                                $fPosition = explode("/",$dbPsaveFile1);
+                                $thumb = $fPosition[0] . "/thumb/" . $fPosition[1];
+                                $pImg = "<img src='/_DATA/product/" . $thumb . "' width='72' height='72' border=0 />";
+                            } else {
+                                $pImg = "<img src='/_DATA/product/" . $dbPsaveFile1 . "' width='160' border=0 />";
+                            }
+                            
+                            $priceInfo = fnCalPrice($dbPprice3,$rs,1);
+                            $priceInfo2 = fnCalPrice($dbPprice3,$rs,0);
+                            $link = "<a href='/product/view.html?qIDX=" . $dbPIDX . "' class='c'>";
+            
+                            if($dbOPstock)$maxStock = $dbOPstock;
+                            else $maxStock=$dbPstockCount;
+            
+                            $dbPready = getProductReady($dbPIDX);
+                            $maxStock = $maxStock-$dbPready;
+                            $update=0;
+                            if($_Minus == 1) $dbPorderMinus = 1;
+                            if(($dbCAcount > $maxStock) && ($dbPorderMinus != '1')) $update=1;
+            
+                            #==== 배송 방법에 따른 총액 저장
+                            if($dbPdeliveryType==1)
+                            {
+                                #-- 천유 배송 ------------------------------------
+                                $DVinfo[0]["total"]+=$priceInfo["dcDollar_txt"] * $dbCAcount;
+                                $dbMSID = $masterSeller;
+                                if($dbPdeliveryPriceType==4)$DVinfo[0]["noFreeDelivery"] = $priceInfo["dcDollar_txt"] * $dbCAcount;			//-- 구매 총액(무료배송조건제외)
+                                $DVinfo[0]["rows"]++;
+                            }
+                            else
+                            {
+                                #-- 업체 배송 ------------------------------------
+                                #-- 자기 자리 찾기
+                                $size = sizeof($DVinfo);
+                                $comPoint=-1;
+            
+                                for($k=0;$k<$size;$k++)
+                                {
+                                    if($DVinfo[$k]["com"]==$dbMSID)
+                                    {
+                                        $comPoint = $k;
+                                        break;
+                                    }
+                                }
+            
+                                if($comPoint>=0)
+                                {
+                                    #-- 자리 찾았으면 해당 자리에 누적
+                                    $DVinfo[$comPoint]["total"]+=$priceInfo["dcDollar_txt"] * $dbCAcount;
+                                    if($dbPdeliveryPriceType==4)$DVinfo[$comPoint]["noFreeDelivery"] = $priceInfo["dcDollar_txt"] * $dbCAcount;			//-- 구매 총액(무료배송조건제외)
+                                    $DVinfo[$comPoint]["rows"]++;
+                                }
+                                else
+                                {
+                                    #-- 새로운 배열 자리에 밀어넣기
+                                    $DVinfo[$size]["com"]=$dbMSID;
+                                    $DVinfo[$size]["comName"]=$dbMKkname;
+                                    $DVinfo[$size]["total"]=$priceInfo["dcDollar_txt"] * $dbCAcount;
+                                    $DVinfo[$size]["dlimit1"] = $dbMSdeliveryLimit;		//-- 일반 배송비 조건
+                                    $DVinfo[$size]["dprice1"] = $dbMSdeliveryPay;		//-- 일반 배송비
+                                    $DVinfo[$size]["dlimit2"] = $dbMScomDeliveryLimit;		//-- 도매 배송비 조건
+                                    $DVinfo[$size]["dprice2"] = $dbMScomDeliveryPay;		//-- 도매 배송비
+                                    $DVinfo[$size]["rows"] = 1;
+                                    if($dbPdeliveryPriceType==4)$DVinfo[$size]["noFreeDelivery"] = $priceInfo["dcDollar_txt"] * $dbCAcount;			//-- 구매 총액(무료배송조건제외)
+                                }
+                            }
+                            
+                            if($dbPboxCount2 > 0) { $boxin3 = ", ".$dbPboxCount2."pcs"; };
+                            
+                            $boxPer2 = fnGetPriceMem("2");
+                            $boxPer = fnGetPriceMem("1");
+                        ?>
+                        
+                        <?if($listStyle == 1) {?>
+                        <tr>
+                            <td>
+                                <ul>
+                                    <li>
+                                        <div class="cart-row">
+                                            <div style="display: flex; gap: 16px; width: 432px;">
+                                            <div class="cart-cell cartCss numCss">
+                                                <input type="checkbox" name="cartCheck" id="cartCheck" class="check" value="<?=$dbIDX?>" onclick="fnGetCheckCart()" />
+                                            </div>
+                                            <div class="cart-cell cartCss thumbCss">
+                                                <div class="item-num"><?=$dbPIDX?></div>
+                                                <?=$link . $pImg?></a>
+                                            </div>
+                                            <div class="cart-cell cartCss itemCss">
+                                                <?=$link?>
+                                                <span class="info-wrap">
+                                                    <span>
+                                                        <img src="/img/mypage/img-my-brands.svg" alt="Store Icon" width="17">
+                                                        <?=$dbBRename?>
+                                                    </span>
+                                                    <?php if (!empty($dbPboxin) || !empty($dbPboxin2)) { ?>
+                                                        <div class="box-wrap">
+                                                            <span>
+                                                                <?php if (!empty($dbPboxin)) { ?>
+                                                                    <img src="/image_3/boxinBG.svg" alt="Outer carton"><?= $dbPboxin ?> ea
+                                                                <?php } ?>
+                                                            </span>
+                                                            <span>
+                                                                <?php if (!empty($dbPboxin2)) { ?>
+                                                                    <img src="/image_3/boxinBG2.svg" alt="Inner carton"><?= $dbPboxin2 ?> ea
+                                                                <?php } ?>
+                                                            </span>
+                                                        </div>
+                                                    <?php } ?>
+                                                </span>
+                                                <div style="margin-bottom: 8px;">
+                                                    <span class="item-name"><?=$dbPengName?></span>
+                                                </div>
+                                                
+                                                <?php if($dbPdeliveryPriceType == 4): ?>s
+                                                <br><img src="/image_2/price_other.gif">
+                                                <?php endif; ?>
+                                                <?=$boxin . $boxin2?>
+                                                
+                                                <?php if($MID) { ?>
+                                                <div class="price-box">
+                                                    <div>
+                                                        <!-- 1개 구매 시 할인 -->
+                                                        <div class="sale_tit">
+                                                            <span>Price for <span style="color: #005bf1; font-weight: 600;">1</span> item</span>
+                                                            <span>
+                                                                <span class="dc-badge"><?= $priceInfo["dcPer"] ?>%</span>
+                                                                <strong><span class="txt-USD">USD</span> <?= $priceInfo["dcDollar_txt"] ?></strong>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <!-- 2개 이상 구매 시 할인 -->
+                                                        <div class="sale_tit">
+                                                            <span>Price for <span style="color: #005bf1; font-weight: 600;"><?=$dbPboxCount?> or more</span> items</span>
+                                                            <span>
+                                                                <span class="dc-badge2"><?= ${'dbPdiscount' . $boxPer} ?>%</span>
+                                                                <strong><span class="txt-USD">USD</span> <?= number_format($priceInfo["dcDollarBox2_txt"]) ?></strong>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <?php } else { ?>
+                                                <div class="price-box">Login to see price</div>
+                                                <?php } ?>
+                                                
+                                                </a>
+                                            </div>
+                                            </div>
+                                            <div class="cart-cell optCss">
+                                                <?=$dbOPvalueEng?$dbOPvalueEng:$dbOPvalue?>
+                                            </div>
+                                            <div class="cart-cell weightCss">
+                                                <span id="inListWeight"><?=$dbPweight * $dbCAcount?> g</span>
+                                            </div>
+                                            <div class="cart-cell qtyCss">
+                                                <div class="cart-input-wrapper">
+                                                    <?if($dbCAtext){?>
+                                                    <div id="msgDiv" style="position:relative;margin-top:-20px;">
+                                                        <?=$dbCAtext?>
+                                                    </div>
+                                                    <?}?>
+                                                    <div class="quantity-controls">
+                                                        <img src="/img/ico/ico-item-minus.svg" id="btn_minus" style="cursor:pointer;" onclick="fnPcountPlus(this,-1); fnStateChange(this,'checkChange',1);" />
+                                                        <input name="num01" type="text" class="cart_input" id="inPcount" size="3" maxlength="3" value="<?=$dbCAcount?>" style="ime-mode:disabled;" onkeydown="onlyNum()" onblur="fnPcountCheck(this); fnStateChange(this,'checkChange',1);" />
+                                                        <img src="/img/ico/ico-item-plus.svg" id="btn_plus" style="cursor:pointer;" onclick="fnPcountPlus(this,1); fnStateChange(this,'checkChange',1);" />
+                                                    </div>
+                                                    <div>
+                                                        <button id="btn_pCountIcon" class="btn-style btn-round2 btn-color-white btn-h32" onclick="fnPcountSet(this); fnStateChange(this,'checkChange',0);" style="width: 80px;">Edit Qty</button>
+                                                        <div id="msgDiv" class="tooltip" style="color:#005bf1;">
+                                                            <?if($update)echo "<span>Sorry. Current available stock are <strong>" . $maxStock ."</strong> ea. Please verify orders.</span>";?>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <!-- Hidcart-rowden Inputs -->
+                                                <input type="hidden" value="<?=$dbIDX?>" name="inPIDX" id="inPIDX">
+                                                <input type="hidden" value="<?=$maxStock?>" name="inMaxStock" id="inMaxStock">
+                                                <!-- Other hidden inputs -->
+                                            </div>
+                                            <div class="cart-cell priceCss">
+                                                <span id="htmlDCPer" class="cart_pblue"><?=$priceInfo["dcPer"]?>% OFF</span>
+                                                <span id="htmlDCPrice" class="price"><span class="txt-USD">USD</span> <strong><?=$priceInfo["dcDollar_txt"]?></strong></span>
+                                                <span class="cart_pblack"><s>USD <?=$priceInfo["dollar_txt"]?></s></span>
+                                            </div>
+                                            <div class="cart-cell deleteBtn">
+                                                <button type="button" class="btn-delete"><img src="/img/ico/ico_delete.svg" id="btn_del" onclick="fnProductDelete(this)"></button>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    <!--
+                                    <li>
+                                        <ul class="price-list">
+                                            <li>
+                                                <span>Item Price</span><br>
+                                                <span>USD 99.99</span>
+                                            </li>
+                                            <li class="character">-</li>
+                                            <li>
+                                                <span>Savings</span><br>
+                                                <span class="colorMain">USD 22.22</span>
+                                            </li>
+                                            <li class="character">+</li>
+                                            <li>
+                                                <span>Shipping Fee</span><br>
+                                                <span>USD 33.33</span>
+                                            </li>
+                                            <li class="character">=</li>
+                                            <li>
+                                                <span>Subtotal</span><br>
+                                                <span>USD 111.10</span>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                    -->
+                                </ul>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" colspan="6">
+                                
+                            </td>
+                        </tr>
+                        <?
+                            } else {
+                                if($cnt % 5 == 1) echo "<tr>";
+                        ?>
+                            <td width="162" style="padding-top:5px;padding-bottom:5px;" valign="top">
+                            
+                                <table align="center" border="0" style="width:145px;" cellpadding="0" cellspacing="0">
+                                    <tr><td colspan="2"><span style="color:#cccccc;font-size:1.4em;font-weight:bold;"><?=$cnt?></span></td></tr>
+                                    <tr><td align="center" colspan="2" style="padding-bottom:10px;"><?=$link . $pImg?></a></td></tr>
+                                    <tr>
+                                        <td align="center" colspan="2">
+                                            <?=$link . "<span style='color:#666666;font-weight:bold;'>[" . $dbBRename . "]</span><br>"?>
+                                            <div>Item No. <?=$dbPIDX?><br/></div>
+                                            <div id="Pname" style="width:130px;color:#666666;white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?=$dbPengName?><?= $boxin . $boxin2?></div>
+                                            <!--할인 전 가격-->
+                                            <span id="htmlDCPrice" class="cart_pblack"><s>USD <?=$priceInfo["dollar_txt"]?></s>
+                                            <span id="htmlDCPer" class="cart_pblue">(<?=$priceInfo["dcPer"]?>% OFF)</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td id='inListPrice'  class='cart_orange' align="center" style="font-weight:bold;"><span class="cart_orange">USD <?=$dbCAcount*$priceInfo["dcDollar_txt"]?></span></td>
+                                    </tr>
+                                    <tr><td style="height:10px;"></td></tr>
+                                    <tr>
+                                        <td align="center" colspan="2">
+                                            
+                                            <table width="122" border="0" cellspacing="0" cellpadding="0">
+                                                <tr>
+                                                    <td width="30"><input type="checkbox" name="cartCheck" id="cartCheck"  value='<?=$dbIDX?>' onclick='fnGetCheckCart()' /></td>
+                                                    <td width="29"><input name="num01" type="text" class="cart_input" id="inPcount" size="3" maxlength="3" value="<?=$dbCAcount?>" style='ime-mode:disabled;' onkeydown='onlyNum()'  onblur='fnPcountCheck(this);fnStateChange(this,"checkChange",1);'/></td>
+                                                    <td width="20" align="right">
+                                                    
+                                                        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                                            <tr><td><img src="/image_2/newcart_icon1.gif" id='btn_plus' style='cursor:pointer;' onclick='fnPcountPlus(this,1);fnStateChange(this,"checkChange",1);' /></td>	</tr>
+                                                            <tr><td height="1"></td></tr>
+                                                            <tr><td><img src="/image_2/newcart_icon2.gif" id='btn_minus' style='cursor:pointer;' onclick='fnPcountPlus(this,-1);fnStateChange(this,"checkChange",1);' /></td></tr>
+                                                        </table>
+                                                        
+                                                    </td>
+                                                    <td width="43" align="right"><img src="/image_2/newcart_ea.gif" id='btn_pCountIcon' onclick='fnPcountSet(this);fnStateChange(this,"checkChange",0);' style='cursor:pointer;' /></td>
+                                                </tr>
+                                            </table>
+                                            
+                                            <!-- 재고 총합 -->
+                                            <input type='hidden' value='<?=$dbIDX?>' name='inPIDX' id='inPIDX'>
+                                            <input type='hidden' value='<?=$maxStock?>' name='inMaxStock' id='inMaxStock'>
+                                            <input type='hidden' name='inPorderMinus' id='inPorderMinus' value='<?=$dbPorderMinus?>'>
+                                            <!-- 단가 정보 -->
+                                            <input type='hidden' value='<?=$priceInfo["dcDollar_txt"]?>' id='inOnePrice'>
+                                            <input type='hidden' value='<?=$priceInfo2["dcDollarBox_txt"]?>' id='inBoxPrice'>
+                                            <input type='hidden' value='<?=$priceInfo2["dcDollarBox2_txt"]?>' id='inBoxPrice2'>
+                                            <input type='hidden' value='<?=$priceInfo2["dcDollar_txt"]?>' id='inOPrice'>
+                                            <input type='hidden' value='<?=$dbPweight?>' id='inOneWeight'> 							
+                                            <input type="hidden" name="dcbox" id="dcbox" value="<?=$dbPboxCount?>">
+                                            <input type="hidden" name="dcbox2" id="dcbox2" value="<?=$dbPboxCount2?>">
+                                            <input type="hidden" name="dc0" id="dc0" value="<?=$priceInfo2["dcPer"]?>">
+                                            <input type="hidden" name="dc8" id="dc8" value="<?if($dbPboxCount2>0) {  echo ${'dbPdiscount'.$boxPer2}; } else { echo "0"; } ?>">
+                                            <input type="hidden" name="dc9" id="dc9" value="<?if($dbPboxCount>0) {  echo ${'dbPdiscount'.$boxPer}; } else { echo "0"; } ?>">
+                                            <!-- 상태체크 -->
+                                            <input type='hidden' value='0' id='checkChange'>
+                                        </td>
+                                    </tr>
+                                    <tr><td style="height:10px;"></td></tr>
+                                    <tr><td align=center colspan="2"><div id='msgDiv' style='color:blue;position:relative;'><?if($update)echo "<span>Sorry. Current available stock are [" . $maxStock ." pcs]. Please verify orders.</span>";?></div></td></tr>
+                                </table>
+                                
+                            </td>
+                            <?
+                                    if($cnt % 5 == 0) echo "</tr>";
+                                }
+                            $cnt++;	
+                            }
+                            
+                            if ($totalCnt < 5 && $listStyle == 2) {
+                                for($i=$cnt;$i<=5;$i++) echo "<td width='162'>&nbsp;</td>";
+                            }
+                            ?>
+                </tbody>
+			</table>			
+			<input type='hidden' value='<?=$MLV?>' id='jsMLV'> 
+			<!--상품리스트 끝-->
+
+			<div class="order-summary-wrap">
+				<!-- 총 결제 요약 -->
+				<div class="order-summary">
+					<h2 class="order-summary-title">Order Summary</h2>
+					<dl class="order-summary-list">
+						<div class="order-summary-item">
+							<dt class="label">Qty Total</dt>
+							<dd class="value">5 ea</dd>
+						</div>
+						<div class="order-summary-item">
+							<dt class="label">Weight Total</dt>
+							<dd class="value"><span id='inTot5'>0</span> g</dd>
+						</div>
+						<div class="order-summary-item">
+							<dt class="label">Original Total</dt>
+							<dd class="value">USD <span id='inTot7'>0</span></dd>
+						</div>
+						<div class="order-summary-item">
+							<dt class="label">Discounted Total</dt>
+							<dd class="value">USD <span id=''>0</span></dd>
+						</div>
+						<div class="order-summary-item">
+							<dt class="label">You Saved</dt>
+							<dd class="value colorRed"><img src="/img/ico/ico-saleMark.svg?250313" alt="">USD <span id='inTot8'>5.06</span></dd>
+						</div>
+						<div class="order-summary-item">
+							<dt class="label" style="display: flex; gap: 6px; align-items: center;">Shipping Fee 
+								<div class="tooltip-container">
+									<img src="/img/ico/ico-question-mark.svg?250317" alt="" style="vertical-align: middle;">
+									<div class="tooltip-box bgblue sizeS">
+										<img src="img/ico/ico-quesntion-mark.svg?250317" alt="">
+										Shipping Method: EMS / EMS Premium (UPS)
+									</div>
+								</div>
+								
+							</dt>
+							<dd class="value">USD 13.00</dd>
+						</div>
+					</dl>
+					<hr class="divider" />
+					<div class="order-summary-total">
+						<span class="label">Grand Total</span>
+						<span class="value"><span class="txt-USD">USD </span><span id='inTot10'>0</span></span>
+					</div>
+				</div>
+				<div style="width: 280px;">
+					<a class="btn-style btn-round2 btn-color-CTA btn-h56" href='javascript:<?if(!$MID){?>alert("Please use homepage after log-in");<?}else{?>fnSubmitChk()<?}?>' style="margin: 24px 0 8px;"><!--checkout 하러가기-->
+						Proceed to Checkout
+					</a>
+					<a class="btn-style btn-round2 btn-color-sub" href='javascript:<?if(!$MID){?>alert("Please use homepage after log-in");<?}else{?>fnSubmitChk()<?}?>' style=""><!--checkout 하러가기-->
+						Continue to Shop
+					</a>
+				</div>
+				<!-- 총 결제 요약 끝 -->
+			</div>
+		</div>
+	</div> 
+	<!-- //카트 리스트 -->
+</div>
+
+<script>
+	// 모든 .tooltip 요소를 선택
+var targets = document.querySelectorAll('.cart-row .cart-cell .cart-input-wrapper .tooltip');
+
+targets.forEach(function(target) {
+    // MutationObserver 생성
+    var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            // 새로 추가된 노드에서 <font>와 <span>이 있는지 확인
+            mutation.addedNodes.forEach(function(node) {
+                if (node.nodeType === 1 && (node.tagName === 'FONT' || node.tagName === 'SPAN')) {
+                    console.log('New <font> or <span> detected:', node);
+
+                    // 3초 뒤 삭제
+                    setTimeout(function() {
+                        node.remove();
+                    }, 3000);
+                }
+            });
+        });
+    });
+
+    // 각 .tooltip 요소를 감시
+    observer.observe(target, {
+        childList: true, // 자식 노드의 추가/제거 감지
+        subtree: true   // 모든 하위 노드를 감지
+    });
+});
+
+</script>
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

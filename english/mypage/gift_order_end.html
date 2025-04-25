@@ -1,0 +1,101 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+	
+	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/common.html";	
+
+	$sql = "select * from 2011_memberGift as a left join 2011_memberGiftPayment as b on a.IDX = b.GFIDX where MID='" . $MID . "' and a.IDX='" . $gNum . "'";
+	if($rs = sql_fetch($sql)) {
+		foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+	} else {
+		echo "
+			<script> 
+				alert('잘못된 접근입니다.');
+				location.href = '/';
+			</script>
+		";
+		exit;
+	}
+?>
+
+<link rel="stylesheet" type="text/css" href="/mypage/mypage.css?2211">
+<style type="text/css">
+.style5 {color: #FF0000}
+.style13 { color: #0099FF; font-weight: bold; }
+</style>
+
+<!-- 마이페이지 시작 --->
+<div id="wrap">
+	
+	<?
+		include_once $_SERVER['DOCUMENT_ROOT']."/mypage/menu.html";
+	?>
+	
+	<!-- mypageMain -->
+	<div id="mypageMain">
+		<?
+			include_once $_SERVER['DOCUMENT_ROOT']."/mypage/info.html";
+		?>
+		
+		<table width="100%" border="0" cellspacing="0" cellpadding="0">
+			<tr><td height="30"></td></tr>
+			<tr><td height="35" align="left" valign="top"><img src="../image_2/my_26.jpg" width="92" height="17" /></td></tr>
+			<tr>
+				<td align="center">
+				
+					<table width="100%" border="0" cellspacing="0" cellpadding="0">
+						<tr><td height="7" colspan="2" align="left"></td></tr>
+						<tr><td height="1" colspan="2" bgcolor="#CCCCCC"></td></tr>
+						<tr>
+							<td height="35" align="left">&nbsp;&nbsp;&nbsp;&nbsp;주문자성명</td>
+							<td align="left"><?=$Mname?></td>
+						</tr>
+						<tr><td height="1" colspan="2" bgcolor="#CCCCCC"></td></tr>
+						<tr>
+							<td height="35" align="left">&nbsp;&nbsp;&nbsp;&nbsp;결제금액</td>
+							<td align="left"><?=number_format($dbAMT)?> 원</td>
+						</tr>
+						<tr><td height="1" colspan="2" bgcolor="#CCCCCC"></td></tr>
+						<tr>
+							<td height="35" align="left">&nbsp;&nbsp;&nbsp;&nbsp;결제방법</td>
+							<td align="left">무통장입금 : <?=$shopConfig["CFbankName"]?>  <?=$shopConfig["CFbankCode"]?>  <?=$shopConfig["CFbankOrner"]?></td>
+						</tr>
+						<tr><td height="1" colspan="2" bgcolor="#CCCCCC"></td></tr>
+						<tr>
+							<td height="35" align="left">&nbsp;&nbsp;&nbsp;&nbsp;입금자명</td>
+							<td align="left"><?=$dbGFdeposit?></td>
+						</tr>
+						<tr><td height="1" colspan="2" bgcolor="#CCCCCC"></td></tr>
+					</table>
+					
+				</td>
+			</tr>
+			<tr><td height="20" align="left" valign="bottom">* 무통장 입금의 경우 입금 확인 후 바로 적립해 드립니다.</td></tr>
+			<tr><td height="20" align="left">* 충전내역은<span class="style5"> 마이페이지&gt;상품권내역</span> 에서 확인하실 수 있습니다.</td></tr>
+			<tr><td height="50" align="left">&nbsp;</td></tr>
+			<tr>
+				<td height="80" align="center" valign="middle">
+					
+					<table width="250" border="0" cellspacing="0" cellpadding="0">
+						<tr>
+							<td width="105"><img src="/image_2/my_bt07.jpg" width="116" height="42" style='cursor:pointer;' onclick='document.location="/mypage/point.html"' /></td>
+							<td>&nbsp;</td>
+							<td width="105"><img src="/image_2/my_bt08.jpg" width="116" height="42" style='cursor:pointer;' onclick='document.location="/mypage/gift_Partner.html"' /></td>
+						</tr>
+					</table>
+					
+				</td>
+			</tr>
+		</table>
+
+	<!-- //나의포인트내역 -->
+	</div>             
+
+</div>   
+<!-- //마이페이지 끝 ---> 
+
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

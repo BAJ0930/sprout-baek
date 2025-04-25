@@ -1,0 +1,97 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+	
+	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/common.html";	
+?>
+
+<link rel="stylesheet" type="text/css" href="/mypage/mypage.css?2211">
+
+<!-- 마이페이지 시작 --->
+<div id="wrap">
+
+	<?
+		include_once $_SERVER['DOCUMENT_ROOT']."/mypage/menu.html";
+	?>
+
+	<!-- mypageMain -->
+	<div id="mypageMain">
+	<?
+		include_once $_SERVER['DOCUMENT_ROOT']."/mypage/info.html";
+	?>
+	<?
+		$query = "select * from 2011_couponList as a left join 2011_couponGroup as b on a.CPIDX = b.IDX where (CPtakeMID='" . $MID . "' or CPuseMID='" . $MID . "') and CPdeleted2=0 and CPdeleted=0 ";
+		$result = sql_query($query);
+		$TotalCount = mysqli_num_rows($result);
+		if (!$page) $page = 1;
+		$CntPerPage = 10;
+		$PagePerList = 5;
+		$StartPos = ($page - 1) * $CntPerPage;
+		$query .= " ORDER BY a.IDX DESC";
+		$query .= " LIMIT ".($page - 1) * $CntPerPage.",".$CntPerPage;
+		$result = sql_query($query);
+	?>
+	<div class="qa_list">
+		<h3><img src="/img/mypage/tit_coupon.gif" alt="쿠폰내역"></h3>
+		<table border="0" cellspacing="0" cellpadding="0">
+			<tr>
+				<th scope="col">NO</th>
+				<th scope="col">쿠폰명</th>
+				<th scope="col">발급일</th>
+				<th scope="col">대기시간</th>
+				<th scope="col">사용일</th>
+				<th scope="col" class="none">유효기간</th>
+			</tr>
+			<?
+				$no = $TotalCount - $StartPos;
+				while($rs = sql_fetch_array($result)){
+					# DB 레코드 결과값 모두 변수로 전환
+					foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+
+					if($dbCPtype==1)$dbCPprice = number_format($dbCPprice) . "원";
+					else if($dbCPtype==2)$dbCPprice = number_format($dbCPprice) . "%";
+					
+					$dbCPregdate = date("Y-m-d",$dbCPregdate);
+					
+					if($dbCPuseDate)$dbCPuseDate = date("Y-m-d",$dbCPuseDate);
+					else $dbCPuseDate="-미사용-";
+					
+					if($dbCPdate2<date(time()) && $dbCPuseDate==0)$dbCPuseDate="기간만료";
+					
+					if($rs["CPIDX"]==7 || $rs["CPIDX"]==8)$dbCPname = "<font color=darkblue><b>" . $dbCPname . "</b></font>";
+			?>
+			<tr>
+				<td><?=$no?></td>
+				<td><?=$dbCPname?></td>
+				<td><font color="blue"><strong><?=$dbCPprice?></strong></font></td>
+				<td><?=$dbCPregdate?></td>
+				<td><?=$dbCPuseDate?></td>
+				<td class="double"><span class="double2"><?=date("Y-m-d",$dbCPdate1)?><br>~ <?=date("Y-m-d",$dbCPdate2)?></span></td>
+			</tr>
+			<? 
+					$no --;
+				}
+			?>                
+		</table>
+		
+		<div align="center" id="paging"><br/><? echo page_nav($TotalCount,$CntPerPage,$PagePerList,$page,$option); ?></div>
+		
+		<div class="add_text_bottom">
+			* 유효기간이 지난 쿠폰은 재발행 되지 않습니다.<br>
+			* 쿠폰사용은 주문/결제 시 각각의 할인쿠폰들을 선택하여 사용하실 수 있습니다.<br>
+			* 장바구니쿠폰과 배송비쿠폰은 1회 주문 시 각각 1장씩만 사용하실 수 있습니다. (중복할인 안됨)
+		</div>
+	</div>
+	
+	<!-- //나의쿠폰내역 -->
+	</div>             
+            
+            
+</div>   
+<!-- //마이페이지 끝 ---> 
+    
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

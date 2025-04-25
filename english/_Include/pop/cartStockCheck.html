@@ -1,0 +1,56 @@
+<?php
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+	ob_clean();
+	if($_Minus != 1) $queryMinus = " and b.PstockCount<1 and b.PorderMinus != '1' ";
+	$sql = "select a.*,b.Pname,b.PengName,b.PsaveFile1 from 2011_cartInfo as a left join 2011_productInfo as b on a.PIDX=b.IDX where MID='" . $uid . "' and a.CAstate=0 " . $queryMinus . " and CAregdate='" . $cartCode . "'";	
+	$result = sql_query($sql);
+?>
+
+<style type="text/css">
+.style4 { color: #1B5891; font-size: 11px; }
+.style5 {font-size: 11px}
+.style6 {color: #1B5891}
+</style>
+
+<table width="500" border="0" cellspacing="0" cellpadding="0">
+	<tr><td height="1" align="right" bgcolor="#E1E1E1"></td></tr>
+	<tr><td height="80" align="center" valign="middle">Please correct your order quantity because is more than stock.</td></tr>
+	<tr>
+		<td>
+		
+			<table width="640" border="0" align="center" cellpadding="0" cellspacing="0">
+				<tr><td height="1" colspan=8 bgcolor="#CCCCCC"></td></tr>
+				<tr bgcolor="#E7E7E7" height="25" >
+					<td width="80" align="center">Image</td>
+					<td width="560" align="center">Item</td>            
+				</tr>       
+				<tr><td height="1"  colspan=8 bgcolor="#CCCCCC"></td></tr>
+				<?
+					$delIDX="";
+					while($rs=sql_fetch_array($result)){
+						foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+
+						$fPosition = explode("/",$dbPsaveFile1);
+						$thumb = $fPosition[0] . "/thumb/" . $fPosition[1];
+						$pImg = "<img src='/_DATA/product/" . $thumb . "' width='60' height='60' vspace='10' border=0 />";
+				?>
+				<tr>
+					<td style='border-bottom:1px solid #afafaf;'><?=$pImg?></td>
+					<td style='border-bottom:1px solid #afafaf;'><?=$dbPengName?></td>
+				</tr>
+				<?	
+						//-- 해당 장바구니 삭제 조건문 작성
+						if($delIDX)$delIDX.=" or ";
+						$delIDX.=" IDX='" . $dbIDX . "' ";
+					}
+					
+					$sql = "delete from 2011_cartInfo where " . $delIDX;
+					sql_query($sql);
+				?>
+			</table>
+			
+		</td>
+	</tr>
+	<tr><td align="center" height="60"><img src="" onclick='fnCheckCartIn("","4","<?=$cartCode?>")' /></td></tr>
+	<tr><td height="40" valign="top" class="style1">&nbsp;</td></tr>
+</table>

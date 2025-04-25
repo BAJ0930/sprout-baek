@@ -1,0 +1,140 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+	
+	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/common.html";	
+
+	$giftLink3 = "gift_order.html?giftNum=1";
+	$giftLink4 = "gift_order.html?giftNum=2";
+	$giftLink5 = "gift_order.html?giftNum=3";
+
+	$giftDisplay1="none";
+	$giftDisplay2="block";
+	
+	$giftButton1="";
+	$giftButton2="_1";
+
+	if($MID)
+	{
+		//상품권
+		$nGift = fnGetMemberTotalGift($MID);
+		$aGift = fnGetMemberAddGift($MID,$shopCode);//--총누적
+		$uGift = fnGetMemberUseGift($MID,$shopCode);//--총사용
+
+		if(!$sYear) $sYear = date("Y");
+		if(!$sMonth && $act != "ok") $sMonth = date("m");
+
+		if($sYear == 0){
+		} else {
+			$dWhere .= " AND FROM_UNIXTIME(a.GFregdate, '%Y') = '$sYear'  ";
+		}
+		if($sMonth == "0" && $act == "ok"){
+		} else {
+			$dWhere .= " AND FROM_UNIXTIME(a.GFregdate, '%m') = '$sMonth'  ";
+		}
+		$option .= "&act=".$act."&sYear=".$sYear."&sMonth=".$sMonth;
+
+		#--- 상품권 구매내역 출력
+		$query = "select a.IDX,a.GFprice,a.GFpoint,a.GFcount,a.GFstate,a.GFregdate,b.GFdepositCheck,GFcontent,b.PAY_TYPE,b.APPROVAL_NO,b.SEQ_NO,b.APPROVAL_YMDHMS,b.GFIDX  from 2011_memberGift  as a left join 2011_memberGiftPayment as b on a.IDX = b.GFIDX where a.MID='" . $MID . "' and a.GFdeleted=0 ". $dWhere;
+
+		$result = sql_query($query);
+		$TotalCount = mysqli_num_rows($result);
+		if (!$page) $page = 1;
+		$CntPerPage = 10;
+		$PagePerList = 5;
+		$StartPos = ($page - 1) * $CntPerPage;
+		$query .= " ORDER BY a.IDX DESC";
+		$qSql = $query;
+		$query .= " LIMIT ".($page - 1) * $CntPerPage.",".$CntPerPage;
+		$result = sql_query($query);
+		//$qSql = $sql." order by ".$order;
+	} else {
+		echo "
+			<script>
+				alert('회원만 구매 가능합니다.');
+				history.go(-1);
+			</script>
+		";
+		exit;
+	}
+?>
+
+
+<link rel="stylesheet" type="text/css" href="/mypage/mypage.css?2211">
+
+<!-- 마이페이지 시작 --->
+<div id="wrap">
+
+	<?
+		include_once $_SERVER['DOCUMENT_ROOT']."/mypage/menu.html";
+	?>
+
+        <!-- mypageMain -->
+        <div id="mypageMain">
+			
+			
+			<?
+				include_once $_SERVER['DOCUMENT_ROOT']."/mypage/info.html";
+			?>      
+			<div class="shipping2">
+            <h3><img src="/img/mypage/tit_gift.gif" alt="상품권 구매"></h3>
+            <div class="add_text_tit">
+			* 현금으로만 구매가능하며, 사이트에서 현금처럼 사용하실 수 있습니다.<br>
+            * 상품권 사용시 환불이 되지 않으며, 미사용시에는 환불이 가능합니다.<br>
+            * 일부업체의 경우 도매고객 특별 할인 상품권 구매가 불가능합니다.<br />
+            </div>
+			
+            <!-- 상품권 구매 개인 -->
+        	<div class="pay_gift">
+			
+                <ul class="tab_02"><li><a href="gift_Partner.html" class="select">도매회원용</a></li></ul> 
+
+             	<div>
+                    <p style="padding-top:20px;"></p>
+                    <!-- <p class="tip">도매고객 특별할인 상품권 (일부등급은 제외됩니다)</p> -->
+                    <p class="gift_img"><img src="/img/mypage/gift_500000.gif" alt="50만원권"></p>
+                    <ul class="gift_info">
+                    <li class="gift_tit">500,000원 천유상품권 <font class="blue">0.6%</font>포인트 적립</li>
+                    <li>도매회원(기업회원)만 구매가능</li>
+                    <!--<li class="gift_sale">1,000,000원&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</li>  -->
+                    <li><font class="blue"><strong>구매가</strong></font> <span class="gift_sale2"><font class="orange2">500,000</font>원</span></li>
+                    <li><a href="<?=$giftLink5?>"><img src="/img/mypage/btn_bay.gif" alt="상품권 구매하기"></a></li>
+					</ul>
+                    <p class="gift_img"><img src="/img/mypage/gift_1000000.gif" alt="100만원권"></p>
+                    <ul class="gift_info">
+                    <li class="gift_tit">1,000,000원 천유상품권 <font class="blue">1%</font>포인트 적립</li>
+                    <li>도매회원(기업회원)만 구매가능</li>
+                    <!--<li class="gift_sale">1,000,000원&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</li>  -->
+                    <li><font class="blue"><strong>구매가</strong></font> <span class="gift_sale2"><font class="orange2">1,000,000</font>원</span></li>
+                    <li><a href="<?=$giftLink3?>"><img src="/img/mypage/btn_bay.gif" alt="상품권 구매하기"></a></li>
+					</ul>
+                    <p class="gift_img"><img src="/img/mypage/gift_2000000.gif" alt="200만원권"></p>
+                    <ul class="gift_info">
+                    <li class="gift_tit">2,000,000원 천유상품권 <font class="blue">1.5%</font>포인트 적립</li>
+                    <li>도매회원(기업회원)만 구매가능</li>
+                    <!--<li class="gift_sale">2,000,000원&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</li>  -->
+                    <li><font class="blue"><strong>구매가</strong></font> <span class="gift_sale2"><font class="orange2">2,000,000</font>원</span></li>
+                    <li><a href="<?=$giftLink4?>"><img src="/img/mypage/btn_bay.gif" alt="상품권 구매하기"></a></li>
+					</ul>
+
+                </div>
+                  
+            </div>  
+          
+          </div>
+
+			<?
+				include_once $_SERVER['DOCUMENT_ROOT']."/mypage/gift_list.html";
+			?>
+  
+<!-- //나의포인트내역 -->
+</div>             
+            
+            
+</div>   
+<!-- //마이페이지 끝 --->    
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

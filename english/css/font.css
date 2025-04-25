@@ -1,0 +1,13 @@
+@font-face {
+    font-family: 'Paperlogy-4Regular';
+    src: url('font/Paperlogy-4Regular.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Paperlogy-7Bold';
+    src: url('font/Paperlogy-7Bold.woff') format('woff');
+    font-weight: 700;
+    font-style: normal;
+}

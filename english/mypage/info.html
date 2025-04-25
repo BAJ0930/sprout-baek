@@ -1,0 +1,10 @@
+<ul class="info_top2">
+	<li class="info_tit"><strong><?php echo $Mname ?></strong>님 환영합니다!<strong> 고객님의 쇼핑정보입니다.</strong></li>
+	<li>나의포인트 <span><a href="/mypage/point.html"><strong><?=number_format($totalPoint)?></strong></a>점</span></li>
+	<li>나의쿠폰 <span><a href="/mypage/coupon.html"><strong><?=number_format($CPrs['cnt'])?></strong></a>장</span></li>
+	<li>상품권 <span><a href="/mypage/gift_Partner.html"><strong><?=number_format($totalGift)?></strong></a>원</span></li>
+	<li>장바구니 <span><a href="/order/cart.html"><strong><?=number_format($cartNumber)?></strong></a>개</span></li>
+	<li>찜한상품 <span><a href="/mypage/wish.html"><strong><?=number_format($WishCount);?></strong></a>개</span></li>
+	<li>찜한브랜드 <span><a href="/mypage/zzim.html"><strong><?=number_format($BrandCount);?></strong></a>개</span></li>
+	<li class="none">알림신청 <span><a href="/mypage/alarm.html"><strong><?=number_format($ALrs['ALcount'])?></strong></a>건</span></li>
+</ul>      

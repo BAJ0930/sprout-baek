@@ -1,0 +1,44 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";	
+	ob_clean();
+	
+	$eventResult = sql_query(" SELECT * FROM 2011_productInfo WHERE IDX = '$_GET[IDX]' " );
+	$eventData = sql_fetch_array($eventResult);
+
+	if(!$eventData[0]){
+		echo "
+			<script>
+				alert('기획전이 존재하지 않거나 종료된 기획전입니다.');
+				parent.location.href='/';
+			</script>
+		";
+		exit;
+	}
+
+	$pContent = $eventData[Pcontent];
+	$pContent = str_replace("http://www.1000u.net","",$pContent);
+	$pContent = str_replace("http://1000u.net","",$pContent);
+?>
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<meta http-equiv="X-UA-Compatible" content="IE=9">
+<meta http-equiv='content-language' content='ko' />
+<title>디자인소품의 모든것! 천유 온라인 도매몰</title>
+<script src='/_Include/js/common.js' ></script>
+<script src='/_Include/js/shoppingmall.js' ></script>
+<script src='/_Include/js/jquery-1.5.1.min.js' ></script>
+<script src='/_Include/js/jquery.newsTicker.js'></script>
+<script src='/_Include/js/popupAction.js' ></script>
+<script src='/_Include/js/popupCore.js' ></script>
+<link href="/style.css" rel="stylesheet" type="text/css">
+<script type="text/javascript" language="javascript" src="/inc/menu.js"></script>
+</head>
+
+<body>
+<div align="center">
+<A href="javascript:self.close();"><? echo $pContent ?></a>
+</div>
+</body>
+</html>

@@ -1,0 +1,401 @@
+<?
+include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+/*==============================================================================
+각 업체들에게 보낸 주문서 확인하기
+==============================================================================*/
+$CATEGORY = new Category();
+$CATEGORY->init();
+
+if($qGRP>1 && $qMKIDX)
+{
+	$sql = "select a.*,b.Pname,b.Pprice2,b.Pprice1,b.Pcategory1,d.MKkname,";
+	$sql.="d.MKperson1,d.MKemail1,d.MKtel1,d.MKfax1,";
+	$sql.="d.MKperson2,d.MKemail2,d.MKtel2,d.MKfax2,";
+	$sql.="d.MKperson3,d.MKemail3,d.MKtel3,d.MKfax3,";
+	$sql.="f.Mname,e.OPbarcode,b.Pbarcode,";
+	
+	$sql.="e.OPvalue from 2011_adminCart as a ";
+	$sql.="left join 2011_productInfo as b on a.ACAPIDX = b.IDX ";
+	$sql.="left join 2011_brandInfo as c on b.BRIDX = c.IDX ";
+	$sql.="left join 2011_makerInfo as d on b.MKIDX = d.IDX ";
+	$sql.="left join 2011_productOption as e on a.ACAoption = e.IDX ";
+	$sql.="left join 2011_memberInfo as f on a.ACAMID = f.MID ";
+	
+	$sql.="where a.ACAgroup='" . $qGRP . "' and d.IDX='" . $qMKIDX . "'";
+	$result = sql_query($sql);
+	
+	#-- 2011.08.31 도아 // 발송된 메일에서 데이터 변경으로 강제 데이터 매칭!!
+	if($qMKIDX==55 && !mysqli_num_rows($result))
+	{
+		echo "<script>document.location='viewProductOrder.html?qGRP=1314837210&qMKIDX=55';</script>";
+	}
+}
+else
+{
+
+	
+	##--- 처리 없음 -----
+	echo "<script>alert('잘못 된 정보입니다.');window.opener ='nothing';window.open('', '_parent', '');window.close();</script>";
+	exit();
+}
+
+#-- 판매자 정보 일단 가져오기
+if($rs = sql_fetch_array($result))
+{
+	# DB 레코드 결과값 모두 변수로 전환
+	foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}		
+	mysqli_data_seek($result,0);
+}
+else
+{
+	
+		
+	//echo $sql;
+	//exit();
+	
+	##--- 처리 없음 -----
+	echo "<script>alert('잘못 된 정보입니다.');window.opener ='nothing';window.open('', '_parent', '');window.close();</script>";
+	exit();	
+}
+
+
+
+if($setPost)
+{
+	##-- 저장하기
+	
+	#-- 그룹코드 생성
+	$sendDate = date(time());
+	$len = sizeof($inACAIDX);
+		
+	$inACAreplyMemo = str_replace("'","",$inACAreplyMemo);
+	$inACAreplyMemo = str_replace('"',"",$inACAreplyMemo);
+		
+	for($k=0;$k<$len;$k++)
+	{
+		#-- 특수문자 제거
+		$inACAmemo2[$k] = str_replace("'","",$inACAmemo2[$k]);
+		$inACAmemo2[$k] = str_replace('"','',$inACAmemo2[$k]);
+		
+		#-- 답변 수량 업데이트
+		$sql = "update 2011_adminCart set ACAreplyCount='" . $inACAreplyCount[$k] . "',";
+		$sql.= "ACAmemo2='" . $inACAmemo2[$k] . "',ACAreplyMemo='" . $inACAreplyMemo . "',ACAreplyDate='" . $inACAreplyDate . "' ";
+		$sql.= " where IDX='" . $inACAIDX[$k] . "'";
+		sql_query($sql);
+	}
+	
+	echo "<script>self.close();</script>";
+	
+	exit();
+}
+
+?>
+
+
+<script>
+	
+	function fnSetPrice()
+	{
+		countObj = $("INPUT[id='inACAreplyCount']");
+		priceObj = $("INPUT[id='inACAreplyPrice']");
+		priceTD = $("TD[id='TDprice1']");
+		
+		len = countObj.length;
+		totPrice=0;
+		
+		for(k=0;k<len;k++)
+		{
+			cnt = countObj.eq(k);
+			pr = priceObj.eq(k);
+			
+			price = cnt.val()*pr.val();
+			totPrice+=price;
+			//-- TD 객체에 할당
+			priceTD.eq(k).html(commify(price));
+		}
+		
+		$("TD[id='TDtotPrice']").eq(0).html(commify(totPrice));
+		
+	}
+	
+	
+	
+	function fnSendOrder()
+	{
+		if(!confirm('천유 담당자가 해당 내용을 확인할 수 있도록\n\n내용을 저장하시겠습니까?'))
+		{
+			return;
+		}
+		document.formObject.submit();
+	}
+	
+	
+</script>
+<script src='<?=__HOME_PATH__?>/_Include/js/calendar.js'></script>
+
+
+<style type="text/css">
+<!--
+body {
+margin-left: 20px;
+margin-top: 20px;
+margin-right: 20px;
+margin-bottom: 20px;
+}
+p {margin:0px;}
+td {
+	font-family:"돋움"; 
+	font-size:12px;
+	padding:0px;
+	margin:0px;
+}	
+
+.wrap { width:810px; border:1px #CCCCCC solid; padding:20px 20px 50px 20px;}
+.btn_p {padding-left:3px;}
+.btn_p2 {padding-left:13px;}
+.line_1 {border-bottom:1px #CCCCCC solid;}
+.line_2 {border:1px #aaaaaa solid; }
+.line_3 {border-top:1px #aaaaaa solid; border-bottom:1px #aaaaaa solid }
+.line_r {border-right:1px #CCCCCC solid; text-align:center;}
+.line_l {border-left:1px #C6C6C6 solid; text-align:center;}
+.pa_1 {padding:50px 0px 10px 0px;border-bottom:1px #CCCCCC solid;}
+.pa_2 {padding:25px 0px;border-bottom:1px #CCCCCC solid;line-height:28px;}
+.pa_3 {padding:30px 0px 15px 10px;}
+.pa_4 {border:1px #CCCCCC solid;}
+.style1 {
+color: #FF0000;
+font-weight: bold;
+}
+.style2 {
+color: #313890
+}
+.style3 {
+font-size:15px; font-weight:bold;
+}
+.style4 {color: #FF0000}
+
+-->
+</style>
+</head>
+
+
+<body>
+
+<center>
+<div class="wrap">
+<table cellpadding="0" cellspacing="0" width="100%" border="0">
+<form name='formObject' method='post'>
+	<tr>
+		<td>
+		
+			<table cellpadding="0" cellspacing="0" width="810px" border="0">
+				<tr>
+					<td align="left"><? if($dbACAreturn == 1) { ?><img src="img/logo2.gif" /><? } else { ?><img src="img/logo.gif" /><? } ?></td>
+					<td align="right"><img src="img/btn_save.gif" onclick='fnSendOrder()'  style="cursor:pointer;" /></td>
+					<td class="btn_p" width="62px" align="right" ><img src="img/btn_close.gif" onClick="window.opener ='nothing';window.open('', '_parent', '');window.close();" style="cursor:pointer;"/></td>
+				</tr>
+			</table> 
+			
+		</td>
+	</tr>
+	<tr>
+		<td class="pa_1" align="center">
+			
+			<table cellpadding="0" cellspacing="0" width="790px" border="0"> 
+				<tr>
+					<td >No. <?if($dbACAgroup>1){echo date("Y-m-d-His",$dbACAgroup);}else{echo "-미발송-";}?></td>
+					<td align="right">주문 작성자 : <?=$dbMname?>(인)</td>
+				</tr>
+			</table>
+		
+		</td>
+	</tr>
+	<tr>
+		<td class="pa_2" align="center">
+			
+			<table cellpadding="0" cellspacing="0" width="790px" border="0"> 
+				<tr>
+					<td><p>발 신 : 천유(051-502-2405~7, fax.502-2408)</p><p>수 신 : <?=$dbMKkname?> (<?=$dbMKtel1?> / fax : <?=$dbMKfax1?> )</p><p>도 착 지 : <span class="style4">[611-800] 부산광역시 연제구 거제대로 270 종근당빌딩 지하 1층 주식회사 천유닷컴</span></p></td>
+					<td align="right" width="150px"><p align="left">일자 : <?=date("Y년 m월 d일",$dbACAgroup)?></p>
+					<p align="left">담당MD : <?=$dbACAReceiver?></p></td>
+				</tr>
+			</table>
+		
+		</td>
+	</tr> 
+	<tr>
+		<td class="pa_3" align="center">
+			
+			<script>
+				function CalAdd(wdate){
+					document.getElementById("inACAreplyDate").value = wdate;
+				}
+			</script>
+			<table cellpadding="0" cellspacing="0" width="790px" border="0"> 
+				<tr>
+					<td width="170px">발송예정일 : <input name='inACAreplyDate' id='inACAreplyDate' value='<?=$dbACAreplyDate?>' readonly style="height:20px;width:80px;cursor:pointer;"></td>
+					<td width="58px" class="btn_p2"><img src="img/btn_1.gif" onClick="CalAdd('<?=date("Y-m-d");?>');" style="cursor:pointer;" /></td>
+					<td width="68px" class="btn_p"><img src="img/btn_2.gif" onClick="CalAdd('<?=date("Y-m-d", strtotime("+2 day"));?>');" style="cursor:pointer;" /></td>
+					<td class="style1 btn_p2">예정일 기입 후 "내용정장/회신하기 버튼"을 눌러주세요.</td>
+				</tr>
+			</table>
+			
+		</td>
+	</tr> 
+	<tr>
+		<td  align="center" >
+		
+			<table cellpadding="0" cellspacing="0" width="790px"> 
+				<tr>
+					<td class="line_2">
+						
+						<input type='hidden' name='inACAgroup' value='<?=$dbACAgroup?>'>
+						<table cellpadding="0" cellspacing="0" width="790px"> 
+							<tr>
+								<td class="line_r" height="40px"  bgcolor="f4f4f4">바코드</td>
+								<td class="line_r"  bgcolor="f4f4f4">품 명</td>
+								<td class="line_r"  bgcolor="f4f4f4">주문수량</td>
+								<td class="line_r"  bgcolor="f4f4f4">실출고수량</td>      
+								<td class="line_r"  bgcolor="f4f4f4">소비자가</td>
+								<td class="line_r"  bgcolor="f4f4f4">주문단가</td>
+								<td align="center"  bgcolor="f4f4f4">주문합계</td>       
+							</tr>
+							<tr><td colspan="7" class="line_3" height="1" ></td><tr>
+				
+							<?while($rs=sql_fetch_array($result)){
+								# DB 레코드 결과값 모두 변수로 전환
+								foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}	
+								
+								$opStr="";
+								if($dbOPvalue)$opStr=" (" . $dbOPvalue . ")";
+								
+								$dbPname = str_replace("[특가]","",$dbPname);
+								$CATEGORY->setCategoryPosition($dbPcategory1);
+								
+								
+								$cateStr="-";
+								for($j=2;$j>=0;$j--)
+								{
+									$cateStr = $CATEGORY->_CATE_LOCATION_[$j]["Kname"];
+									if($cateStr)break;
+								}
+								
+								#-- 임시 입고가격
+								//$dbPprice1=100;
+								$dbPprice1= $dbPprice2;
+								if(empty($dbACAreplyCount))$dbACAreplyCount=$dbACAcount;
+								if(empty($dbACAreplyPrice))$dbACAreplyPrice=$dbPprice1;
+
+								if($dbOPbarcode){
+									$barcode = $dbOPbarcode;
+								} else {
+									$barcode = $dbPbarcode;
+								}
+								
+							?>
+							<tr>
+								<td class="line_r" height="40px"><?=$barcode?></td>
+								<td class="line_r"><?=$dbPname . $opStr?></td>
+								<td class="line_r"><?=$dbACAcount?></td>
+								<td class="line_r"><input type='text' name='inACAreplyCount[]' id='inACAreplyCount' value='<?=$dbACAreplyCount?>' size=3 maxlength=4 style='ime-mode:disabled;' onkeydown='onlyNum()' onblur='if(this.value=="")this.value=0;fnSetPrice();'  style="height:16px;width:50px"></td>      
+								<td class="line_r"><?=number_format($dbPprice2)?></td>
+								<td class="line_r"><?=number_format($dbPprice1)?></td>
+								<td align="center"><?=number_format($dbACAreplyPrice * $dbACAcount)?></td>       
+								<input type='hidden' name='inACAIDX[]' id='inACAIDX' value='<?=$dbIDX?>'>
+								<input type='hidden' name='inACAreplyPrice[]' id='inACAreplyPrice' value='<?=$dbACAreplyPrice?>' >
+								<input type='hidden' name='inACAmemo2[]' value='<?=$dbACAmemo2?>'>
+							</tr>
+							<tr><td colspan="7" height="1" style="border:1px #c6c6c6 solid;"></td><tr>
+							<?
+								$totPrice+=$dbACAreplyPrice * $dbACAreplyCount;
+							}
+							
+							#-- 열었음 표시하기
+							if(!$dbACAreadDate && !$noCheck && !$kind)
+							{
+								$sql = "update 2011_adminCart set ACAreadDate='" . date(time()) . "' where ACAgroup='" . $qGRP . "'";
+								sql_query($sql);
+								$dbACAreadDate = date(time());
+							}
+
+							?>
+							<tr>
+								<td height="40px" colspan="5" class="btn_p2 line_1 style2">출고수량이 부족한경우 실출고량을 수정하여 주시면 감사하겠습니다.</td>
+								<td colspan="2" class="style3 btn_p2 line_1" >합 계 : <?=number_format($totPrice)?></td>
+							<tr>
+							<tr><td height="40px" colspan="7" class="btn_p2" bgcolor="#f4f4f4" align="center">발송일시(<?=date("Y-m-d H:i:s",$dbACAsendDate)?>)/수신일(<?=date("Y-m-d H:i:s",$dbACAreadDate)?>)/발송수단(E-mail)</td><tr>     
+						</table>
+						
+					</td>
+				</tr>     
+			</table>
+			
+		</td>
+	</tr>
+	<?if($dbACAcommonMemo){?>
+	<tr>
+		<td style="padding-top:35px;" align="center">
+			
+			<table cellpadding="0" cellspacing="0" width="790px" border="0"> 
+				<tr><td height="22px">※천유닷컴메모</td></tr>
+				<tr>
+					<td>
+						<?																									
+							if($dbACAcommonMemo)echo "<br>".nl2br($dbACAcommonMemo);
+							else echo "<br>-";
+						?>
+					</td>
+				</tr>
+			</table>
+		
+		</td>
+	</tr> 
+	<?}?>
+	<tr>
+		<td style="padding-top:25px;" align="center">
+		
+			<table cellpadding="0" cellspacing="0" width="790px" border="0"> 
+				<tr><td height="22px">※전달사항(천유측으로 전달하실 내용이 있으면 작성해 주세요.)  <span class="style4">ex)품절,단종상품 출시일정 등</span></td></tr>
+				<tr><td><textarea id='inACAreplyMemo' name='inACAreplyMemo' cols="96" rows="7" style="border:1px #aaaaaa solid;"><? echo $dbACAreplyMemo;	?></textarea></td></tr>     
+			</table>
+			
+		</td>
+	</tr> 
+	<tr>
+		<td style="padding-top:20px;" align="center">
+			
+			<table cellpadding="0" cellspacing="0" width="790px" border="0"> 
+				<tr>
+					<td align="center"><span class="btn_p"><img src="img/btn_save.gif" onclick='fnSendOrder()'  style="cursor:pointer;" /></span><span class="btn_p"><img src="img/btn_excel.gif" onClick="document.location='viewProductOrderExcel.html?qGRP=<?=$qGRP?>&qMKIDX=<?=$qMKIDX?>'" style="cursor:pointer;" /></span><span class="btn_p"><img src="img/btn_print.gif" onCLick="window.print();" style="cursor:pointer;" /></span><span class="btn_p"><img src="img/btn_close.gif" onClick="window.opener ='nothing';window.open('', '_parent', '');window.close();" style="cursor:pointer;"/></span></td>
+				</tr>     
+			</table>
+			
+		</td>
+	</tr> 
+</form>
+</table>
+</div>
+</center>
+
+<script>
+$(function() {
+	$( "#inACAreplyDate" ).datepicker({
+		dateFormat: 'yy-mm-dd',
+		prevText: '이전 달',
+		nextText: '다음 달',
+		monthNames: ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
+		monthNamesShort: ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
+		dayNames: ['일','월','화','수','목','금','토'],
+		dayNamesShort: ['일','월','화','수','목','금','토'],
+		dayNamesMin: ['일','월','화','수','목','금','토'],
+		showMonthAfterYear: true,
+		changeMonth: true,
+		changeYear: true,
+		yearRange: 'c-2:c+2',
+		yearSuffix: '년'
+	});
+});
+</script>
+</body>
+</html>

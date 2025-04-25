@@ -1,0 +1,30 @@
+<div class="info_help">
+	<span>
+        <strong>Welcome, <a href="/mypage/myinfo.html" style="color: #005bf1; text-decoration: underline;"><?=$MID?></a>!</strong><br><br>
+        Here you can manage your account <br>
+        and shopping details.
+    </span>
+	<ul>
+		<li onClick="location.href='/order/cart.html'">
+            <div class="content-items">
+                <img src="/img/ico/img-mypage-cart.svg" alt="User's Cart">
+                Cart Items 
+            </div>
+            <span class="content-amount"><?=number_format($cartNumber)?></span>
+        </li>
+		<li onClick="location.href='/mypage/wish.html'">
+            <div class="content-items">
+                <img src="/img/ico/img-mypage-wish.svg" alt="User's Wishlist">
+                Wishlist
+            </div>
+            <span class="content-amount"><?=number_format($WishCount);?></span>
+        </li>
+		<li onClick="location.href='/mypage/zzim.html'">
+            <div class="content-items">
+                <img src="/img/ico/img-mypage-brand.svg" alt="User's Favorite Brands">
+                Favorite Brands
+            </div>
+            <span class="content-amount"><?=number_format($BrandCount);?></span>
+        </li>
+	</ul>
+</div>

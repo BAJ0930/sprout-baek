@@ -1,0 +1,278 @@
+<?
+#========== 저장 처리 ===============================
+if($setPost && $isSave)
+{
+	
+	if(!$inMid)
+	{
+		echo "<script>alert('ERROR. Please contact our customer service center.');document.location.replace('/');</script>";
+		exit();
+	}
+	
+	//-- 생일 생성  // english.cheonyu.com 에서 회원가입
+	$birthDay = "1";
+
+	if(!$inMpw1) exit;
+	
+	if(strlen($inMid) < 3) exit;
+	if(strlen($inMid) > 12) exit;
+
+	if(!$inMtax) $inMtax = 0;
+	$jKindValue = "A";
+	
+	if($inMcomAddr1 == '36' && substr(strtolower(trim($inMaddr1)), 0, 7) == 'toronto') $jKindValue = "C";
+
+	$rr = sql_fetch(" SELECT * FROM 2011_memberInfo WHERE MID = '{$inMid}' ");
+	if($rr['IDX']) exit;
+	
+	$sql = "insert into 2011_memberInfo (";
+	$sql.= "MID,MPWD,Mname,Mjumin,MCI,MDI,Mbirthday,MbirthdayType,MTEL,MHP,Mpost,Maddr1,Maddr2,Memail,MaccountEmail,MemailAgree,MsmsAgree,McomArea,";
+	$sql.= "McomName,McomCode,McomCeo,McomPost,McomAddr1,McomAddr2,McomItem,McomType,McomURL,McomDetail,Madvice,Mlevel,MLV,Mpermit,Mtax,MwriteIP,Mrank,Mregdate";
+	$sql.= ") values(";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMid) . "',";
+	$sql.= "old_password('" . mysqli_real_escape_string($g5['connect_db'], $inMpw1) . "'),";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMname1) . "',";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMname2) . "',";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMCI) . "',";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMDI) . "',";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $birthDay) . "',"; //-- 생일
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMbirthdayType) . "',"; //-- 생일 Type
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMTEL) . "',";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMHP) . "',";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMpost) . "',";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMaddr1) . "',";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMaddr2) . "',";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMemail) . "',";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMaccountEmail) . "',";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMemailAgree) . "',";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMsmsAgree) . "',";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMcomArea) . "',";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMcomName) . "',";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMcomCode1) . "-" . mysqli_real_escape_string($g5['connect_db'], $inMcomCode2) . " - " . mysqli_real_escape_string($g5['connect_db'], $inMcomCode3) . "',";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMcomCeo) . "',";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMcomPost1) . "-" . mysqli_real_escape_string($g5['connect_db'], $inMcomPost2) . "',";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMcomAddr1) . "',";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMcomAddr2) . "',";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMcomItem) . "',";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMcomType) . "',";
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMcomURL) . "',";
+	$sql.= "'',";	//-- ComDetail
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMadvice) . "',";	//-- ComDetail
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMlevel) . "',";	//-- 레벨
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $jKindValue) . "',";	//-- 레벨New
+	$sql.= "'1',";		//-- 승인여부
+	$sql.= "'" . mysqli_real_escape_string($g5['connect_db'], $inMtax) . "',";	//-- tax
+	$sql.= "'" . $_SERVER['REMOTE_ADDR'] . "',";		//-- IP기록
+	$sql.= "'step11',";		//-- IP기록
+	$sql.= "'" . date(time()) . "')";
+	sql_query($sql);
+
+	
+	#========= 메일 발송 =======================================
+	/*if($inMemailAgree==1)
+	{
+		if($inMlevel>=10)$mailLevel = "도매";
+		else $mailLevel = "일반";
+		
+		include $_SERVER["DOCUMENT_ROOT"] . "/_Include/ClassSendmail.inc";
+		$dMail = new Sendmail; 
+		$dMail->setUseSMTPServer(true); 
+		$dMail->setSMTPServer("smtp.cafe24.com"); 
+		$dMail->setSMTPUser("system@cheonyu.com"); 
+		$dMail->setSMTPPasswd("gmlakd609"); 
+		$dMail->setFrom('sales@cheonyu.com', '[cheonyu.com]');
+		$dMail->setSubject('Welcome to Cheonyu.com!'); 
+		$dMail->addTo($inMemail, $inMname); 
+		$mailForm = $_SERVER["DOCUMENT_ROOT"] . "/mail/mail_01.html";
+		$dMail->sendMailJoin($mailForm,$inMname,$mailLevel,date("Y-m-d"),$inMid,substr($inMpw1,0,3) . "****");
+	}*/
+
+	#========= 페이지 이동 =======================================
+	echo "<script>document.location.replace('joinEnd.html');</script>";
+	exit();
+	
+	
+}
+?>
+<script>
+	var idChecked=0;
+	var passChecked=0;
+	function fnCheckID()
+	{
+		v = jQuery("#inMname").val();		
+		if(v=="")str="Please enter user name";
+
+		v = jQuery("#inMid").val();		
+		if(v=="")str="Please enter user id";
+		//-- 길이 체크 		
+		if(v.length<4 || v.length>12)
+		{
+			str = "Please enter characters more than 4 and less than 12.";
+			jQuery("#msgID").html("<font color=red>" + str + "</font>");
+			return;
+		}
+		
+		var regExp = /^[a-z]$/;
+		if(!regExp.test(v.substr(0,1)))
+		{
+			str = "First character of User ID must be English small letter.";
+			jQuery("#msgID").html("<font color=red>" + str + "</font>");
+			return;
+		}
+		
+		var regExp = /^[a-z0-9_]{4,12}$/;
+		
+		if(!regExp.test(v))
+		{
+			str = "User ID should be number or English small letter only.";
+			jQuery("#msgID").html("<font color=red>" + str + "</font>");
+			return;
+		}
+		
+		//====== 가입여부 체크 ====================================
+		var param = "mode=DuplicateID" + "&inMid=" + jQuery("#inMid").val();
+
+		$.ajax({
+			url:'ajaxMemberCheck.php',
+			type:"POST",
+			cache:false,
+			data : param,
+			dataType:"text",
+			error:fnErrorAjax,
+			success:function(_response)
+			{
+				var v = _response.split("##");
+				if(v[1]=="OK")
+				{
+					str = "<font color=blue>User ID is available to use.</font>";
+					jQuery("#msgID").html(str);
+					jQuery("#inMid").attr('readonly', true);
+					idChecked=1;
+				}
+				else if(v[1]=="used")
+				{
+					str = "<font color=red>Your ID is already existed.</font>";
+					jQuery("#msgID").html(str);
+					jQuery("#inMid").attr('readonly', false);
+					idChecked=0;
+				}
+				else
+				{
+					fnErrorAjax();
+				}
+			}
+		});
+	}
+	
+	function fnCheckPW(n)
+	{
+		obj = jQuery("#inMpw" + n);
+		msgObj = jQuery("#msgPW" + n);
+		
+		v = obj.val();
+	
+		if(v.length<4 || v.length>12)
+		{
+			str="Please enter characters more than 4 and less than 12.";
+			msgObj.html("<font color=red>" + str + "</font>");
+			return;
+		}
+		
+		var regExp=/^[A-Za-z]+$/g;
+		var regExp2=/^[0-9]+$/g;
+		if(regExp.test(v) || regExp2.test(v))
+		{
+			str="To complete account is required English small letter and number only.";
+			msgObj.html("<font color=red>" + str + "</font>");
+			return;
+		}
+		else
+		{
+			if(n==1)
+			{
+				str="Your password is available.";
+				msgObj.html("<font color=blue>" + str + "</font>");
+				return;
+			}
+		}
+
+		if(jQuery("#inMpw1").val() != jQuery("#inMpw2").val() && jQuery("#inMpw2").val()!="")
+		{
+			str="Password you entered is not correct.";
+			jQuery("#msgPW2").html("<font color=red>" + str + "</font>");
+			passChecked=0;
+			return;
+		}
+		else if(jQuery("#inMpw2").val()!="")
+		{
+			str="User password is available.";
+			jQuery("#msgPW2").html("<font color=blue>" + str + "</font>");
+			passChecked=1;
+			return;
+		}
+	}
+
+	joinCheck=0;
+	function fnJoin()
+	{
+		if(joinCheck==1)
+		{
+			alert("On Proccessing.\n\nWait a moment.");
+			return;
+		}
+		
+		if(idChecked==0)
+		{
+			alert("Please checkup User ID.");
+			return;
+		}
+		
+		if(passChecked==0)
+		{
+			alert("Password you entered is not valid.");
+			return;
+		}
+		
+		if(!VCheckjQuery(jQuery("#inMid"),"ID"))return;
+		if(!VCheckjQuery(jQuery("#inMpw1"),"Password"))return;
+		if(!VCheckjQuery(jQuery("#inMpw2"),"Password"))return;
+		
+		/*if(!VCheckjQuery(jQuery("#inMemail"),"E-mail address"))return;
+		
+		if(!VCheckjQuery(jQuery("#inMTEL"),"Phone number"))return;
+		
+		if(!VCheckjQuery(jQuery("#inMHP"),"Mobile Number"))return;
+		
+		if(!VCheckjQuery(jQuery("#inMaddr1"),"City"))return;
+		if(!VCheckjQuery(jQuery("#inMaddr2"),"Street Address"))return;*/
+		
+		if($("input:checkbox[id='inMemAgree']").is(":checked") == false){
+			alert("Please check to accept our User Agreement and Privacy Policy.");
+			return;
+		}
+
+		if($("#inMcomAddr2_Sel").val()){
+			$("#inMcomAddr2").val($("#inMcomAddr2_Sel").val());
+		}
+		
+		joinCheck=1;				
+		document.formObject.submit();				
+	}
+	
+	
+	$(document).ready(function(){ 
+		jQuery("#inMname").focus();
+	});
+	
+
+</script>
+
+<form name='formObject' method='post'>
+	<input type='hidden' name='isSave' value='1'>
+	<input type='hidden' name='inMCI' value='<?=$inMCI?>'>
+	<input type='hidden' name='inMDI' value='<?=$inMDI?>'>
+	<input type='hidden' name='jType' value='C'>
+	<input type='hidden' name='jKind' value=''>
+	<?	#-- 회원 등급 지정 -->
+  	if($jType=="C") echo "<input type='hidden' name='inMlevel' id='inMlevel' value='10'>";
+  	else echo "<input type='hidden' name='inMlevel' id='inMlevel' value='1'>";?>

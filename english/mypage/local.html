@@ -1,0 +1,215 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+	
+	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/common.html";	
+?>
+
+<script src="http://dmaps.daum.net/map_js_init/postcode.v2.js"></script>
+<link rel="stylesheet" type="text/css" href="/mypage/mypage.css?2211">
+<script type="text/javascript">
+
+function fnAddressSet(m,qIDX)
+{	
+	param="mode=" + m ;	
+
+	if(m=="EditOK" || m=="AddOK")
+	{
+		//-- 입력값 검사
+		if(!jQuery("#inAname").val())
+		{
+			alert("배송지명을 입력하세요.");
+			jQuery("#inAname").focus();
+			return;
+		}
+		
+		if(!jQuery("#inAuser").val())
+		{
+			alert("수령인을 입력하세요.");
+			jQuery("#inAuser").focus();
+			return;
+		}
+		if(!$("[id='inAhp']").eq(0).val() || !$("[id='inAhp']").eq(1).val() || !$("[id='inAhp']").eq(2).val())
+		{
+			alert("핸드폰번호를 입력하세요.");
+			$("[id='inAhp']").eq(0).focus();
+			return;
+		}
+		
+		if(!$("[id='inAtel']").eq(0).val() || !$("[id='inAtel']").eq(1).val() || !$("[id='inAtel']").eq(2).val())
+		{
+			alert("전화번호를 입력하세요.");
+			$("[id='inAtel']").eq(0).focus();
+			return;
+		}
+		
+		if(!jQuery("#inApost1").val() || !jQuery("#inApost2").val())
+		{
+			alert("우편번호를 입력하세요.");
+			jQuery("#inApost1").focus();
+			return;
+		}
+		
+		if(!jQuery("#inAaddr2").val())
+		{
+			alert("상세주소를 입력하세요.");
+			jQuery("#inAaddr2").focus();
+			return;
+		}
+
+		Aname = jQuery("#inAname").val();
+		Auser = jQuery("#inAuser").val();
+		Ahp = $("[id='inAhp']").eq(0).val() + "-" + $("[id='inAhp']").eq(1).val() + "-" + $("[id='inAhp']").eq(2).val();
+		Atel = $("[id='inAtel']").eq(0).val() + "-" + $("[id='inAtel']").eq(1).val() + "-" + $("[id='inAtel']").eq(2).val();
+		Apost = jQuery("#inApost1").val() + "-" + jQuery("#inApost2").val();
+		Aaddr1 = jQuery("#inAaddr1").val();
+		Aaddr2 = jQuery("#inAaddr2").val();
+		
+		param+= "&inAname=" + Aname;
+		param+= "&inAuser=" + Auser;
+		param+= "&inAhp=" + Ahp;
+		param+= "&inAtel=" + Atel;
+		param+= "&inApost=" + Apost;
+		param+= "&inAaddr1=" + Aaddr1;
+		param+= "&inAaddr2=" + Aaddr2;
+		param+= "&qIDX=" + qIDX;
+	}
+	
+	urlStr = 'ajaxAddress.php';
+	
+	if(m=="Add")
+	{
+		//-- 팝업띄우기
+		fnViewPopup("pop_07",param);
+		return;
+	}
+	else if(m=="Edit")
+	{
+		qIDX = ($("[id='inAddr']:checked").eq(0).val());
+		param+="&qIDX=" + qIDX;
+		//-- 팝업띄우기
+		fnViewPopup("pop_07",param);
+		return;
+	}
+	else if(m=="DeleteOK")
+	{
+		qIDX = ($("[id='inAddr']:checked").eq(0).val());
+		if(qIDX=="Minfo")
+		{
+			alert("기본정보는 삭제하실 수 없습니다.");
+			return;
+		}
+		param+="&qIDX=" + qIDX;
+	}
+	else if(m=="setDefault")
+	{
+		qIDX = ($("[id='inAddr']:checked").eq(0).val());		
+		param+="&qIDX=" + qIDX;
+	}
+
+	$.ajax({
+		url:urlStr,
+		type:"POST",
+		cache:false,
+		data : param,
+		dataType:"text",
+		error:fnErrorAjax,
+		success:function(_response)
+		{
+			v = _response.split("##");
+			if(v[1]=="OK")
+			{
+				if(v[0]=="AddOK" || v[0]=="EditOK" || v[0]=="DeleteOK")
+				{
+					disablePopup();
+					location.reload();
+				}
+				else if(v[0]=="setDefault")
+				{
+					alert("설정되었습니다.");
+					return;
+				}
+			}
+			else
+			{
+				location.reload();
+			}
+		}
+	});	
+}
+
+</script>
+
+<!-- 마이페이지 시작 --->
+<div id="wrap">
+	<? include_once $_SERVER['DOCUMENT_ROOT']."/mypage/menu.html"; ?>
+	
+	<!-- mypageMain -->
+	<div id="mypageMain">
+	<? include_once $_SERVER['DOCUMENT_ROOT']."/mypage/info.html"; ?>      
+
+	<div class="qa_list">
+		<h3><img src="/img/mypage/tit_local.gif" alt="배송지관리"><span>자주 쓰는 배송지를 등록 및 관리 하실 수 있습니다.</span></h3>
+		<?	
+			$sql = " (SELECT IDX, '' AS Mcode, Mname, Mname AS Mname2, Mpost, Maddr1, Maddr2, MTEL, MHP FROM 2011_memberInfo WHERE MID = '" . $MID . "') ";
+			$sql .= " UNION (SELECT IDX, MAdefault AS Mcode, MAname, MAuser, MApost, MAaddr1, MAaddr2, MAtel, MAhp FROM 2011_memberAddr WHERE MID = '" . $MID . "') ";
+			$result = sql_query($sql);
+			$TotalCount = mysqli_num_rows($result);
+			if(!$page) $page = 1;
+			$listSize = 10;
+			$PagePerList = 3;
+			$StartPos = ($page - 1) * $listSize;
+			$sql .= " LIMIT ".($page - 1) * $listSize.",".$listSize;
+			$result = sql_query($sql);
+
+		?>
+		<table width="100%" border="0" cellspacing="0" cellpadding="0">
+			<tr>
+				<th scope="col">선택</th>
+				<th scope="col">배송지</th>
+				<th scope="col">받은사람</th>
+				<th scope="col">주소</th>
+				<th scope="col">연락처</th>
+				<th scope="col" class="none">연락처2</th>
+			</tr>
+			<?
+				$k = 0;
+				while($rs = sql_fetch_array($result)){
+					if($k == 0) {
+						$chk = "checked";
+					} else {
+						if($rs["Mcode"] == "2") $chk = "checked"; 
+						else $chk = "";
+					}
+			?>
+			<tr>
+				<? if($k == 0) { ?><td><input type="radio" name="inAddr" id="inAddr" value="Minfo" <?=$chk?> /></td>
+				<? } else { ?><td><input type="radio" name="inAddr" id="inAddr" value="<?=$rs["IDX"]?>" <?=$chk?> /></td><? } ?>
+				<td><?=$rs["Mname"]?></td>
+				<td><strong><?=$rs["Mname2"]?></strong></td>
+				<td>[<?=$rs["Mpost"]?>] <?=$rs["Maddr1"]?>&nbsp;<?=$rs["Maddr2"]?></td>
+				<td><?=$rs["MTEL"]?></td>
+				<td><?=$rs["MHP"]?></td>
+			</tr>
+			<? 
+					$k ++;
+				}
+			?>              
+		</table>
+	</div>
+	
+	<div align="center" id="paging"><? echo page_nav($TotalCount,$listSize,$PagePerList,$page,$option); ?></div>
+	
+	<div class="list_bottom_btn_left"><a href="javascript:fnAddressSet('setDefault')"><img src="/img/mypage/btn_local_basic.gif" alt="기본배송지로 설정"></a> <a href="javascript:fnAddressSet('Edit')"><img src="/img/mypage/btn_modify3.gif" alt="수정"></a> <a href="javascript:fnAddressSet('DeleteOK')"><img src="/img/mypage/btn_del2.gif" alt="삭제"></a></div>
+	<div class="list_bottom_btn"><a href="javascript:fnAddressSet('Add')"><img src="/img/mypage/btn_local.gif" alt="배송지추가"></a></div>
+	
+	</div>             
+	<!-- mypageMain -->
+
+</div>
+<!-- //마이페이지 끝 --->
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

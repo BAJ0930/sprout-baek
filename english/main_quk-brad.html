@@ -1,0 +1,197 @@
+<?php
+include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+ob_clean();
+?>
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>Quick Brand</title>
+	<link rel="stylesheet" type="text/css" href="/css/style.css?240621">
+	<link rel="stylesheet" type="text/css" href="https://fastly.jsdelivr.net/gh/kenwheeler/slick@1.8.1/slick/slick.css"/>
+	<link rel="stylesheet" type="text/css" href="https://fastly.jsdelivr.net/gh/kenwheeler/slick@1.8.1/slick/slick-theme.css"/>
+	<script src="https://code.jquery.com/jquery-1.11.0.min.js"></script>
+	<script type="text/javascript" src="//fastly.jsdelivr.net/gh/kenwheeler/slick@1.8.1/slick/slick.min.js"></script>
+	<style>
+        body {overflow: hidden;}
+		* {font-family: "Pretendard", sans-serif;}
+
+        .quick-brand {margin: 64px auto 0;}
+        .quick-brand .tit_wrap {display: flex;align-items: center;justify-content: space-between;margin-bottom: 24px; width: 1200px;}
+        .quick-brand .tit_wrap .title {display: flex;align-items: cetner;}
+        .quick-brand .tit_wrap h3 {margin: 0 5px 0 0;font-size: 28px;font-weight: 500;}
+        .quick-brand .tit_wrap b {font-weight:600;}
+        .quick-brand .tit_wrap .m_list_more {margin-top: 3px;}
+        
+        .quick-brand .small_tab {display: flex;gap: 10px;}
+        .quick-brand .small_tab .tablinks {
+            font-family: "PLBold"; font-size: 16px;
+            padding: 0 20px; line-height: 48px; color: #888888; background: #fff; border:1px solid #dedede; border-radius: 24px; cursor: pointer;
+        }
+        .quick-brand .small_tab .tablinks.active {color: #005BF1; background: #E9F5FF; border:1px solid #E9F5FF;}
+
+        .quick-brand .tabs {width: 1200px;}
+        .quick-brand .sub-tab {width: 1200px;margin: 0 auto;}
+        .quick-brand .sub-tab button {height: 56px; border: 0; margin-bottom: 20px; cursor: pointer;}
+        .quick-brand .sub-tab button:nth-child(6n) {border:0;}
+        .quick-brand .sub-tab button::after {content:'';display:block;position: absolute;top: 18px;right: 0;width:1px;height: 20px;background: #BEBEBE;}
+        .quick-brand .sub-tab button:nth-child(6n)::after {content: none;}
+        .quick-brand .sub-tab button img {height: 40px;width:auto;}
+        .quick-brand .sub-tab button.active img {height:45px;filter: grayscale(0);opacity: 1;}
+        .quick-brand .sub-tab button.active::before {
+            content: ''; display: block; position: absolute; width: calc(100% - 16px); height: 100%; 
+            background: rgba(0, 0, 0, 0.05); border-radius: 8px; z-index: 1; top: 0; left: 7px;
+        }
+
+        .subtabcontent {width:100%;height: 230px;}
+        .subtabcontent > div {border:0;border-radius: 0;aspect-ratio:inherit;cursor: default;margin: 0 -10px;}
+
+        .main-tit {
+            margin: 0; position: relative; display: flex; align-items: center; justify-content: space-between; 
+            letter-spacing: 0; line-height: 1;
+        }
+        .main-tit > a {color: #111111; font-size: 28px; font-family: "PLBold"; display: flex;}
+        .main-tit span.btn-seeMore {
+            float: none !important; font-family: "PLRegular"; font-size: 16px; display: inline-block; color: #777777; line-height: 1; 
+            margin-left: 12px; font-weight: normal; background: #f4f4f4; padding: 6px 12px; border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+	<!-- 퀵 브랜드 시작 -->
+	<section class="quick-brand">
+		<div class="tit_wrap">
+            <h2 class="main-tit">
+                <a href="/brand/brand.html" target="_parent">
+                    Trending Brands<span class="btn-seeMore">See more</span>
+                </a>
+            </h2>
+            
+            <!-- 메인 탭 -->
+            <div id="brandTab" class="small_tab">
+                <button class="tablinks" onclick="openTab(event, 'brandTab1')">Stationery</button>
+                <button class="tablinks" onclick="openTab(event, 'brandTab2')">Office Supplies</button>
+                <button class="tablinks" onclick="openTab(event, 'brandTab3')">Character</button>
+            </div>
+        </div>
+        <div class="tabs">
+            <!-- 디자인문구 -->
+            <div id="brandTab1" class="tab-con">
+                <div class="sub-tab">
+				<?php
+				$buttons1 = array();
+				$buttons1[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab1-50\')"><img src="/_DATA/brand/1404957123.jpg" alt="로마네"></button>';						
+				$buttons1[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab1-39\')"><img src="/_DATA/brand/1660006492.jpg" alt="인디고"></button>';
+				$buttons1[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab1-63\')"><img src="/_DATA/brand/1639096844.jpg" alt="아이코닉"></button>';
+				$buttons1[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab1-23\')"><img src="/_DATA/brand/1459321360.gif" alt="바이풀디자인"></button>';
+				$buttons1[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab1-348\')"><img src="/_DATA/brand/1718002739.png" alt="데일리라이크"></button>';
+				$buttons1[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab1-474\')"><img src="/_DATA/brand/1443753951.jpg" alt="쓰임&amp;끌림"></button>';
+				$buttons1[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab1-341\')"><img src="/_DATA/brand/1632383956.jpg" alt="건망증"></button>';
+				$buttons1[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab1-431\')"><img src="/_DATA/brand/1459315712.gif" alt="페이퍼리안"></button>';
+				$buttons1[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab1-574\')"><img src="/_DATA/brand/1528772203.jpg" alt="비온뒤"></button>';
+				$buttons1[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab1-66\')"><img src="/_DATA/brand/1663636879.jpg" alt="잼스튜디오"></button>';
+				$buttons1[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab1-395\')"><img src="/_DATA/brand/1718150961.png" alt="바이나쿠"></button>';
+				$buttons1[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab1-644\')"><img src="/_DATA/brand/1589936580.jpg" alt="안테나샵"></button>';
+				shuffle($buttons1);
+				foreach ($buttons1 as $value ) {
+					echo $value;
+				}
+				?>
+                </div>
+            </div>
+    
+            <!-- 오피스 -->
+            <div id="brandTab2" class="tab-con">
+                <div class="sub-tab">
+				<?php
+				$buttons2 = array();
+				$buttons2[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab2-369\')"><img src="/_DATA/brand/1687333505.jpg" alt="모나미"></button>';
+				$buttons2[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab2-373\')"><img src="/_DATA/brand/1527230054.jpg" alt="유니"></button>';
+				$buttons2[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab2-371\')"><img src="/_DATA/brand/1718943321.png" alt="제브라"></button>';
+				$buttons2[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab2-381\')"><img src="/_DATA/brand/1634089056.jpg" alt="아모스"></button>';
+				$buttons2[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab2-557\')"><img src="/_DATA/brand/1547079426.jpg" alt="종이나라"></button>';
+				$buttons2[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab2-560\')"><img src="/_DATA/brand/1525412767.jpg" alt="피스코리아"></button>';
+				$buttons2[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab2-708\')"><img src="/_DATA/brand/1672634051.jpg" alt="바이하츠"></button>';
+				$buttons2[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab2-590\')"><img src="/_DATA/brand/1643085229.jpg" alt="델리"></button>';
+				$buttons2[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab2-563\')"><img src="/_DATA/brand/1526362886.jpg" alt="3M"></button>';
+				$buttons2[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab2-370\')"><img src="/_DATA/brand/1660005473.jpg" alt="동아"></button>';
+				$buttons2[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab2-740\')"><img src="/_DATA/brand/1717998009.png" alt="파이롯트"></button>';
+				$buttons2[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab2-335\')"><img src="/_DATA/brand/1718943536.png" alt="시스맥스"></button>';
+				shuffle($buttons2);
+				foreach ($buttons2 as $value ) {
+					echo $value;
+				}
+				?>
+                </div>
+            </div>
+    
+            <!-- 캐릭터 -->
+            <div id="brandTab3" class="tab-con">
+                <div class="sub-tab">
+				<?php
+				$buttons3 = array();
+				$buttons3[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab3-675\')"><img src="/_DATA/brand/1647404064.jpg" alt="산리오"></button>';
+				$buttons3[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab3-669\')"><img src="/_DATA/brand/1688086961.jpg" alt="치이카와"></button>';
+				$buttons3[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab3-522\')"><img src="/_DATA/brand/1661751593.jpg" alt="짱구"></button>';
+				$buttons3[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab3-408\')"><img src="/_DATA/brand/1489199372.jpg" alt="포켓몬스터"></button>';
+				$buttons3[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab3-498\')"><img src="/_DATA/brand/1733961415.png" alt="캐치티니핑"></button>';
+				$buttons3[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab3-724\')"><img src="/_DATA/brand/1694479762.jpg" alt="빤쮸토끼"></button>';
+				$buttons3[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab3-527\')"><img src="/_DATA/brand/1572855329.jpg" alt="핑크퐁"></button>';
+				$buttons3[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab3-355\')"><img src="/_DATA/brand/1351833759.jpg" alt="뽀로로"></button>';
+				$buttons3[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab3-465\')"><img src="/_DATA/brand/1572855585.jpg" alt="카카오프렌즈"></button>';
+				$buttons3[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab3-761\')"><img src="/_DATA/brand/1711325198.jpg" alt="피너츠"></button>';
+				$buttons3[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab3-330\')"><img src="/_DATA/brand/1404896651.jpg" alt="미피"></button>';
+				$buttons3[] = '<button class="subtablinks" onclick="openSubTab(event, \'Tab3-765\')"><img src="/_DATA/brand/1711518510.jpg" alt="잔망루피"></button>';
+				shuffle($buttons3);
+				foreach ($buttons3 as $value ) {
+					echo $value;
+				}
+				?>
+                </div>
+            </div>
+            <iframe src="" name="quickBrand" id="Tab-iframe" class="subtabcontent" frameborder="no" style="width: calc(100% + 156px); height: 232px; margin: 0 0 0 -79px; padding: 0;" scrolling="no"></iframe>
+        </div>
+	</section>
+	<!-- 퀵 브랜드 끝 -->
+
+	<script type="text/javascript">
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-con");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+
+            var subtabs = document.querySelectorAll(`#${tabName} .sub-tab button`);
+            if (subtabs.length > 0) {
+                subtabs[0].click();
+            }
+        };
+
+        function openSubTab(evt, subTabName) {
+            var i, subtablinks;
+            subtablinks = document.getElementsByClassName("subtablinks");
+            for (i = 0; i < subtablinks.length; i++) {
+                subtablinks[i].className = subtablinks[i].className.replace(" active", "");
+            }
+            //document.getElementById(subTabName).style.display = "block";
+            evt.currentTarget.className += " active";
+						
+			var param = "subTabName=" + subTabName;
+			document.getElementById('Tab-iframe').src = "new_brand_view.html?" + param;
+        };
+
+        document.addEventListener("DOMContentLoaded", function() {
+			const randomNumber = Math.floor(Math.random() * 3);
+            document.querySelectorAll(".tablinks")[randomNumber].click();
+        });
+	</script>
+</body>
+</html>

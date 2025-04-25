@@ -1,0 +1,93 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+	
+	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/common.html";	
+?>
+
+<link rel="stylesheet" type="text/css" href="/mypage/mypage.css?2211">
+
+<!-- 마이페이지 시작 --->
+<div id="wrap">
+
+	<?
+		include_once $_SERVER['DOCUMENT_ROOT']."/mypage/menu.html";
+	?>
+	
+	<!-- mypageMain -->
+	<div id="mypageMain">
+	
+	<?
+		include_once $_SERVER['DOCUMENT_ROOT']."/mypage/info.html";
+	?>
+	
+	<div class="qa_list">
+		<h3><img src="/img/mypage/tit_return.gif" alt="반품접수내역"></h3>
+		
+		<?
+			$query = " select IDX,RTgroup,RTkind,RTtitle,RTreply,RTregdate from 2011_returnInfo where RTMID='" . $MID . "' AND RTdeleted = '0' ";
+			$result = sql_query($query);
+			$TotalCount = mysqli_num_rows($result);
+			if (!$page) $page = 1;
+			$CntPerPage = 10;
+			$PagePerList = 5;
+			$StartPos = ($page - 1) * $CntPerPage;
+			$query .= " ORDER BY RTregdate DESC";
+			$query .= " LIMIT ".($page - 1) * $CntPerPage.",".$CntPerPage;
+			$result = sql_query($query);
+		?>
+		<table width="100%" border="0" cellspacing="0" cellpadding="0">
+			<tr>
+				<td width="100" align="center" height=30>분류</td>
+				<td width=1>|</td>
+				<td align="center" >문의내용</td>
+				<td width=1>|</td>
+				<td width="100" align="center">등록일</td>
+				<td width=1>|</td>
+				<td width="100" align="center">답변여부</td>
+			</tr>
+			<tr><td height="1" colspan="8" bgcolor="#DDDDDD"></td></tr>
+			<?
+				while($rs = sql_fetch_array($result)) {
+					foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+					
+					if($dbRTkind==1)$dbRTkind="상품불량";
+					else if($dbRTkind==2)$dbRTkind="오배송";
+					else if($dbRTkind==3)$dbRTkind="고객변심";
+					
+					if($dbRTreply)$reState = "<font color=green>답변완료</font>";
+					else $reState = "처리중";
+					
+					$dbRTtitle = strcut_utf8($dbRTtitle,55);
+			?>
+			<tr>
+				<td width="100" height="30" align="center" colspan=2><?=$dbRTkind?></td>
+				<td style="text-align:left;" align="left"  colspan=2>&nbsp;<a href="returnView.html?idx=<?=$dbIDX?>&page=<?=$page?>"><?=$dbRTtitle?></a></td>
+				<td width="100" colspan=2 align="center"><?=date("Y-m-d",$dbRTregdate)?></td>
+				<td align=center><?=$reState?></td>
+			</tr>
+			<tr><td style="border-top:1px #DDDDDD solid; height:1px; margin:0; padding:0; border-bottom:0px;" colspan="8"></td></tr>
+            <?}?>
+			<tr>
+				<td height="20" valign="bottom" colspan="8" style="border:0px;">
+					<div style="text-align:right;"><a href="/customer/return.html"><img src="/img/mypage/btn_write_01.gif" border="0"></a></div>
+					
+					<div align="center" id="paging"><? echo page_nav($TotalCount,$CntPerPage,$PagePerList,$page,$option); ?></div>
+				</td>
+			</tr>
+		</table>
+
+		<div class="add_text_bottom">*  고객님의 반품 접수 내역을 한눈에 보실 수 있습니다.</div>
+	</div>
+	
+	<!-- //입고알림신청내역 -->
+	</div>
+
+</div>
+<!-- //마이페이지 끝 --->
+
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

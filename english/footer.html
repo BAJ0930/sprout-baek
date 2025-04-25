@@ -1,0 +1,301 @@
+
+    
+<style>
+    .info-wrap {width: auto;}
+    .info-wrap > div.txt-info {display: flex; flex-direction: column; font-size: 14px;}
+    .info-wrap > div.txt-info > div {display: flex;}
+    .info-wrap > div.txt-info.company-info > div {flex-direction: column; gap: 6px;}
+    .info-wrap > div.txt-info.company-info > div span a {color: #888888;}
+    .info-wrap > div.txt-info span.head {display: inline-block; width: 168px; padding-right: 12px; color: #555555;}
+    .info-wrap > div.txt-info span.con {color: #888888; position: relative; width: calc(100% - 168px);}
+    
+    #footer .info-wrap {width: 1200px; margin: 0 auto; padding: 24px 0 24px 208px; background: url('/img/logo_bottom_gray.png') no-repeat left center; box-sizing: border-box;}
+    #footer .info-wrap > div.txt-info {flex-direction: row; flex-wrap: wrap; width: 992px; margin: 0 auto; font-size: 13px;}
+    #footer .info-wrap > div.txt-info > div {line-height: 20px;}
+    #footer .info-wrap > div.txt-info span.head {width: fit-content;}
+    #footer .info-wrap > div.txt-info span.con {width: fit-content; margin-right: 24px;}
+    #footer .info-wrap > div.txt-info span.con::after {
+        content: ''; display: block; position: absolute; top: 4px; right: -12px; width: 12px; height: 60%; border-right: 1px solid #DEDEDE;
+    }
+    
+    #footer .footer_03 {font-family: 'Pretendard'; font-weight: normal; font-size: 13px; margin: 0;}
+
+    .customer-info-wrap > div {display: flex;}
+    #customer.customer-info {padding: 32px 0;}
+    #customer.customer-info .info-wrap h4 {margin: 0 auto 10px;}
+    #customer.customer-info .info-wrap > div {margin-top: 12px; gap: 6px;}
+    #customer.customer-info .info-wrap span.txt-lg {padding-right: 4px;}
+    a.inline-btn {padding: 3px 4px;}
+    .cart-in-btn {padding: 0 24px;}
+</style>
+<!-- footer - -->
+<div id="customer" class="customer-info">
+	<div class="customer-info-wrap">
+        <div style="width: 60%;">
+            <div class="info-wrap">
+                <h4>Customer Service Center</h4>
+                <span class="txt-sm">Open 10:00 ~ 17:00 (KST)</span><br>
+                <span class="txt-sm">MON - FRI (Lunch break 12:00 ~ 13:30, KST)</span><br><br>
+                <span class="txt-lg">1544-7102</span><span class="txt-sm">Korea Domestic Use Only</span><br>
+                <span class="txt-lg">+82-70-4060-5292</span><span class="txt-sm">International Use</span><br><br>
+                <a href="javascript:"><span class="txt-sm">E-mail: </span><span class="txt-lg">mkmd4@cheonyu.com</span></a>
+            </div>
+            <div class="info-wrap">
+                <h4>Wire Transfer</h4>
+                <div class="txt-sm txt-info">
+                    <div><span class="head">Bank Name</span> <span class="con">KOOKMIN BANK</span></div>
+                    <div><span class="head">Bank Address</span> <span class="con">5th FL. Kookmin Bank Bldg.
+                        84 Namdaemun-Ro, Jung-gu, Seoul, Korea</span></div>
+                    <div><span class="head">SWIFT CODE</span> <span class="con">CZNBKRSEXXX</span></div>
+                    <div><span class="head">Bank Account</span> <span class="con">951768-11-001493</span></div>
+                    <div><span class="head">Beneficiary of Account</span> <span class="con">Cheonyu.com co., Ltd</span></div>
+                </div>
+            </div>
+        </div>
+        <div style="width: 40%;">
+            <div class="info-wrap">
+                <h4>Payment Method</h4>
+                <div>
+                    <figure class="txt-sm">
+                        <img src="https://www.dcodes.net/2/payment_icons/visa_flat.png" alt="Visa logo" width="40">
+                        <figcaption>VISA</figcaption>
+                    </figure>
+                    <figure class="txt-sm">
+                        <img src="https://www.dcodes.net/2/payment_icons/mastercard_flat.png" alt="Master logo" width="40">
+                        <figcaption>MASTER</figcaption>
+                    </figure>
+                    <figure class="txt-sm">
+                        <img src="https://www.dcodes.net/2/payment_icons/paypal_flat.png" alt="Paypal logo" width="40">
+                        <figcaption>PAYPAL</figcaption>
+                    </figure>
+                </div>
+            </div>
+            <div class="info-wrap">
+                <h4>Legal Notices & Company Info</h4>
+                <div class="txt-sm txt-info company-info">
+                    <div>
+                        <span><a href="https://cheonyu.com/company/site/en_index.html" target="_blank">About Company</a></span>
+                        <span><a href="/customer/terms.html">User Agreement</a></span>
+                        <span><a href="/customer/privacy.html">Privacy Policy</a></span>
+                        <span><a href="/customer/return.html">Cancel/Exchange/Refund Policy</a></span>
+                        <span>Company Profile
+                            <a href="/download/eng_cheonyu.pdf" download class="button inline-btn">
+                                <img src="/img/en_down_icon_888.svg" style="width:12px; display:inline-block; margin-bottom: -1px;">
+                            </a>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+	</div>
+</div>
+<style>
+	.c-page { border-radius:10px; }
+</style>
+<div id="footer">
+
+	<?
+	$dataEng = sql_fetch("SELECT country FROM ip_country WHERE start_ip_num <= INET_ATON('".$_SERVER['REMOTE_ADDR']."') ORDER BY start_ip_num DESC LIMIT 1");
+	if($dataEng['country'] == "US"){
+		//미국에서 접속했을때
+	}
+	?>
+    <div class="info-wrap">
+        <div class="txt-sm txt-info">
+            <div><span class="head">Company</span> <span class="con">THE CHEONYU</span></div>
+            <div><span class="head">Address</span> <span class="con">Geumsahwasin Bldg 2F, Gongdanseo-ro 8beon-gil 49, Geumjeong-gu, Busan, South Korea[46332]</span></div>
+            <div><span class="head">TEL</span> <span class="con">+82-70-4060-5292</span></div>
+            <div><span class="head">FAX</span> <span class="con">+82-51-502-2408</span></div>
+            <div><span class="head">E-mail</span> <span class="con">mkmd4@cheonyu.com</span></div>
+            <div><span class="head">CEO</span> <span class="con">CHO YOUNGDONG</span></div>
+            <div><span class="head">Personal Information Manager</span> <span class="con">KIM CHEOL</span></div>
+            <div><span class="head">Business license</span> <span class="con">607-86-02860</span></div>
+        </div>
+        <p class="footer_03">Copyright ⓒ 2011 cheonyu.com All rights Reserved. </p>
+    </div>
+</div>
+
+<style>
+    /* 퀵메뉴 */
+    .toggleButton {
+        position: fixed; width: 40px; height: 40px; right: 12px; top: 50%; transform: translateY(-50%); 
+        background-color: rgba(0,0,0,0.1); border: none; cursor: pointer; border-radius: 20px; 
+        z-index: 10000; transition: right 0.5s; text-indent: -999px; overflow: hidden; padding: 0;
+    }
+    .toggleButton::after {
+        content: '';
+        display: block;
+        content: "";
+        border-color: #888888;
+        border-width: 2px 2px 0 0;
+        border-style: solid;
+        width: 10px;
+        height: 10px;
+        transform: rotate(225deg) translate(-4px, 19px);
+    }
+    .banner_r.new-ver.visible + .toggleButton::after {
+        width: 10px;
+        height: 10px;
+        transform: rotate(45deg) translate(1px, -17px);
+    }
+    .banner_r.new-ver.visible {right: 24px;}
+    .banner_r.new-ver {
+        width: 120px; background: #ffffff; border-radius: 20px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2); 
+        display: flex; flex-direction: column; padding: 8px 0 0; top: 50%; left: auto; 
+        transform: translate(0,-50%); z-index: 9999;
+        right: -300px; transition: right 0.5s;
+    }
+    .banner_r.new-ver .qikBtn {}
+    .banner_r.new-ver .qikBtn.lg {margin-bottom: 8px;}
+    .banner_r.new-ver .qikBtn.sm a {
+        flex-direction: row; gap: 6px; justify-content: center; box-sizing: border-box; border-top: 1px solid #dedede; line-height: 40px; 
+    }
+    .banner_r.new-ver .qikBtn a {font-size: 13px; font-family: "PLBold"; color: #555555; display: flex; flex-direction: column; align-items: center;}
+    .banner_r.new-ver .wing_sum {width: auto; border: 0; float: none; padding: 0;}
+    .banner_r.new-ver .wing_sum ul li a img {width: 88px; height: 88px; border-radius: 8px; margin: 0 auto 8px; border: 1px solid #e7e7e7;}
+    .banner_r.new-ver .stv-btn {margin:0 0 8px; border-collapse: collapse; border-spacing: 0; height: 24px; width: calc(100% - 32px);}
+    .banner_r.new-ver .stv-btn tr {display: flex; justify-content: space-between;}
+    .banner_r.new-ver .stv-btn tr td {
+        display: flex; align-items: center; justify-content: center; padding: 0;
+    }
+    .banner_r.new-ver .stv-btn tr td.pager {margin:0; font-size:12px; font-family: "PLRegular"; line-height:24px;}
+    .banner_r.new-ver .stv-btn tr td img {border: 0; width: 24px; height: auto; cursor: pointer;}
+
+    .banner_r.new-ver .no-data {
+        background: #f4f4f4; width: calc(100% - 32px); margin: 0 auto; border-radius: 8px; line-height: 56px; color: #ababab; margin-bottom: 12px;
+    }
+</style>
+
+
+<div class="banner_r new-ver visible">
+	<?
+		$tv_idx = get_session("ss_tv_idx");
+	?>
+    <span class="qikBtn lg"><a href="/order/cart.html"><img src="/img/ico_quick-ico01.svg" alt="Cart"><span>Cart</span></a></span>
+    <span class="qikBtn lg"><a href="/mypage/wish.html"><img src="/img/ico_quick-ico02.svg" alt="WishList"><span>WishList</span></a></span>
+    <span class="qikBtn lg" style="margin-bottom: 16px;"><a href="/customer/dealer.html"><img src="/img/ico_quick-ico03.svg" alt="Inquiry"><span>inquiry</span></a></span>
+    <span class="qikBtn sm"><a href="javascript:;">Recents</a></span>
+    <span class="wing_sum">
+	
+        <?php
+		if ($tv_idx) { // 오늘 본 상품이 1개라도 있을 때 
+			$tv_tot_count = 0;
+			$k = 0;
+			for ($i=1;$i<=$tv_idx;$i++)
+			{
+				$tv_it_idx = $tv_idx - ($i - 1);
+				$tv_it_id = get_session("ss_tv[$tv_it_idx]");
+
+				if ($tv_tot_count % 3 == 0) $k++;
+				$query = "SELECT IDX,Pname,PsaveFile1 FROM 2011_productInfo WHERE IDX = '$tv_it_id' ";
+				$result = sql_query($query);
+				$data = sql_fetch_array($result);				
+				if(!$data['IDX'])
+					continue;
+				$dbPsaveFile1 = $data['PsaveFile1'];
+				if($dbPsaveFile1)	{
+					$fPosition = explode("/",$dbPsaveFile1);
+					$thumb = $fPosition[0] . "/thumb/" . $fPosition[1];							
+					$pImg = "<a href='/product/view.html?qIDX=".$data['IDX']."'><img src='/_DATA/product/" . $thumb . "'></a>";
+				} else {
+					continue;
+				}
+
+				if ($tv_tot_count == 0) echo '<ul id="stv_ul">'.PHP_EOL;
+				echo '<li class="stv_item c'.$k.'">'.PHP_EOL;
+				echo $pImg;
+				echo '</li>'.PHP_EOL;
+
+				$tv_tot_count++;
+			}
+			if ($tv_tot_count > 0) echo '</ul>'.PHP_EOL;
+        ?>
+		<div id="stv_btn" align="center"></div>
+
+        <script>
+        $(function() {
+            var itemQty = <?php echo $tv_tot_count; ?>;
+            var itemShow = 3;
+            if (itemQty > itemShow) {
+                $('#stv_btn').append(`
+                    <table class="stv-btn">
+                        <tr>
+                            <td>
+                                <img src="/img/todayPrev.svg" id="up" class="c-page">
+                            </td>
+                            <td class="pager" style="">
+                                <span id="stv_pg"></span>
+                            </td>
+                            <td>
+                                <img src="/img/todayNext.svg" id="down" class="c-page">
+                            </td>
+                        </tr>
+                    </table>
+                `);
+            }
+            var Flag = 1; // 페이지
+            var EOFlag = parseInt(<?php echo $i-1; ?>/itemShow); // 전체 리스트를 3(한 번에 보여줄 값)으로 나눠 페이지 최댓값을 구하고
+            var itemRest = parseInt(<?php echo $i-1; ?>%itemShow); // 나머지 값을 구한 후
+            if (itemRest > 0) // 나머지 값이 있다면
+            {
+                EOFlag++; // 페이지 최댓값을 1 증가시킨다.
+            }
+            $('.c'+Flag).css('display','block');
+            $('#stv_pg').text(Flag+'/'+EOFlag); // 페이지 초기 출력값
+            $('#up').click(function() {
+                if (Flag == 1)
+                {
+                    alert('The first page.');
+                } else {
+                    Flag--;
+                    $('.c'+Flag).css('display','block');
+                    $('.c'+(Flag+1)).css('display','none');
+                }
+                $('#stv_pg').text(Flag+'/'+EOFlag); // 페이지 값 재설정
+            })
+            $('#down').click(function() {
+                if (Flag == EOFlag)
+                {
+                    alert('Empty.');
+                } else {
+                    Flag++;
+                    $('.c'+Flag).css('display','block');
+                    $('.c'+(Flag-1)).css('display','none');
+                }
+                $('#stv_pg').text(Flag+'/'+EOFlag); // 페이지 값 재설정
+            });
+        });
+        </script>
+
+        <?php } else { // 오늘 본 상품이 없을 때 ?>
+
+        <p class="no-data">EMPTY</p>
+
+        <?php } ?>
+	</span>
+    <span class="qikBtn sm"><a href="https://youtube.com/@cheonyu01?si=s1aQI-KQDaiIz6fz" target="_blank"><img src="/img/ico_youtube.svg" alt="Youtube">Youtube</a></span>
+    <span class="qikBtn sm"><a href="#"><img src="/img/ico_toTop.svg" alt="Top">Top</a></span>
+</div>
+<button id="toggleButton" class="toggleButton" style="right: 156px;">Toggle Menu</button>
+
+<script>
+    document.getElementById('toggleButton').addEventListener('click', function() {
+        var banner = document.querySelector('.banner_r.new-ver');
+        banner.classList.toggle('visible');
+        if (banner.classList.contains('visible')) {
+            this.style.right = '156px';
+        } else {
+            this.style.right = '12px';
+        }
+    });
+</script>
+<!-- //좌,우측 윙배너 -->
+<!-- footer // -->
+
+<iframe src="" name="Hiddenframe" id="Hiddenframe" width="0" height="0" frameborder="no" style="margin:0;padding:0;" scrolling="no"></iframe> 
+
+<div id="popupContact"><table cellspacing="0" cellpadding="0"><tr><td id='popContent'></td></tr></table></div>
+<div id="backgroundPopup"></div>
+
+</body>
+</html>

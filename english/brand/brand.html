@@ -1,0 +1,182 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+
+	$s1 = addslashes($s1);
+
+	/*==============================================
+	  전체 List
+	 ==============================================*/
+	$sql = "select * from 2011_brandInfo where BRshop='1000u' and BRdeleted=0  ";
+	if($s1) {
+		if($s1=="ㄱ"){
+			$where.= "  BRkname>='가' and BRkname<'나' ";
+			$s1Title = "가";
+		} else if($s1=="ㄴ") {
+			$where.= "  BRkname>='나' and BRkname<'다' ";
+			$s1Title = "나";
+		} else if($s1=="ㄷ") { 
+			$where.= "  BRkname>='다' and BRkname<'라' ";
+			$s1Title = "다";
+		} else if($s1=="ㄹ") { 
+			$where.= "  BRkname>='라' and BRkname<'마' ";
+			$s1Title = "라";
+		} else if($s1=="ㅁ") { 
+			$where.= "  BRkname>='마' and BRkname<'바' ";
+			$s1Title = "마";
+		} else if($s1=="ㅂ") { 
+			$where.= "  BRkname>='바' and BRkname<'사' ";
+			$s1Title = "바";
+		} else if($s1=="ㅅ") { 
+			$where.= "  BRkname>='사' and BRkname<'아' ";
+			$s1Title = "사";
+		} else if($s1=="ㅇ") { 
+			$where.= "  BRkname>='아' and BRkname<'자' ";
+			$s1Title = "아";
+		} else if($s1=="ㅈ") { 
+			$where.= "  BRkname>='자' and BRkname<'차' ";
+			$s1Title = "자";
+		} else if($s1=="ㅊ") { 
+			$where.= "  BRkname>='차' and BRkname<'카' ";
+			$s1Title = "차";
+		} else if($s1=="ㅋ") {
+			$where.= "  BRkname>='카' and BRkname<'타' ";
+			$s1Title = "카";
+		} else if($s1=="ㅌ") { 
+			$where.= "  BRkname>='타' and BRkname<'파' ";
+			$s1Title = "타";
+		} else if($s1=="ㅍ") { 
+			$where.= "  BRkname>='파' and BRkname<'파' ";
+			$s1Title = "파";
+		} else if($s1=="ㅎ") {
+			$where.= "  BRkname>='하' and BRkname<'힣' ";
+			$s1Title = "하";
+		} else if($s1=="etc") {
+			$where.= " ((BRkname like '1%' ) or  (BRkname like '2%' ) or  (BRkname like '3%' ) or  (BRkname like '4%' ) or  (BRkname like '5%' ) or  (BRkname like '6%' ) or  (BRkname like '7%' ) or  (BRkname like '8%' ) or  (BRkname like '9%' ) or  (BRkname like '0%')) ";
+			$s1Title = "etc";
+		} else if($s1){
+			$where.= " ((BRename like '" . $s1 . "%' or BRename like '" . strtoupper($s1) ."%' ))";
+			$s1Title = strtoupper($s1);
+		} else {
+			$s1Title = "ALL";
+		}
+	}
+	if(!$s1) $s1Title = "ALL";
+	
+	if($s3)
+	{
+		$where.="  BRkname like '%" . $s3 . "%' or BRename like '%" . $s3 . "%' ";
+	}
+	
+	if($where)$where="  and " . $where;
+	$sql.= $where . " order by BRkname";
+	
+	//echo $sql;		
+	$result = sql_query($sql);
+	$result2 = sql_query($sql);
+	$totCount = mysqli_num_rows($result);
+?>
+
+<script>
+	/*========================================
+ 브랜드 검색 기능(임시)
+========================================*/
+function fnSearchBrand(s1)
+{
+	skey1="";	
+	if(s1)skey1=encodeURIComponent(s1);		
+	document.location='/brand/brand.html?s1=' + skey1;
+}
+
+function fnSearchBrandKeyword(s3)
+{
+	skey3="";	
+	if(s3)skey3=encodeURIComponent(s3);		
+	document.location='/brand/brand.html?s3=' + skey3;	
+}
+</script>
+
+<link rel="stylesheet" type="text/css" href="/brand/brand.css?3">
+
+<!-- 브랜드 시작 --->    
+<div id="wrap">
+
+		<!-- brandAll -->
+        <div id="brandAll">
+			
+            <!-- 브랜드검색 -->
+            <div class="brand_search">
+            
+			  <!-- 검색박스 전체 --> 
+              <div class="brand_box">
+              
+				<!-- 검색박스 -->  
+				<p class="brand_shr">
+                	<input value="<?=$s3?>" id="brandSearch" name="brandSearch" type="text" class="shrinput" onFocus="this.className='search_focus'" onKeyDown="keyFix.acd='';" ><img src="/img/brand/icoSearch.gif" onClick="fnSearchBrandKeyword(document.getElementById('brandSearch').value);" style="cursor:pointer;" class="search" >
+                </p>
+                
+			    <!-- 가나다, 알파벳순 검색 -->  
+                <p class="brand_word">
+                <span class="tit_kor">
+					<a href="javascript:fnSearchBrand('')" <? if(!$s1) echo  "class=\"on\" "; ?>>ALL</a>
+					<a href="javascript:fnSearchBrand('ㄱ')" <? if($s1 == "ㄱ") echo  "class=\"on\" "; ?>>가</a>
+					<a href="javascript:fnSearchBrand('ㄴ')" <? if($s1 == "ㄴ") echo  "class=\"on\" "; ?>>나</a>
+					<a href="javascript:fnSearchBrand('ㄷ')" <? if($s1 == "ㄷ") echo  "class=\"on\" "; ?>>다</a>
+					<a href="javascript:fnSearchBrand('ㄹ')" <? if($s1 == "ㄹ") echo  "class=\"on\" "; ?>>라</a>
+					<a href="javascript:fnSearchBrand('ㅁ')" <? if($s1 == "ㅁ") echo  "class=\"on\" "; ?>>마</a>
+					<a href="javascript:fnSearchBrand('ㅂ')" <? if($s1 == "ㅂ") echo  "class=\"on\" "; ?>>바</a>
+					<a href="javascript:fnSearchBrand('ㅅ')" <? if($s1 == "ㅅ") echo  "class=\"on\" "; ?>>사</a>
+					<a href="javascript:fnSearchBrand('ㅇ')" <? if($s1 == "ㅇ") echo  "class=\"on\" "; ?>>아</a>
+					<a href="javascript:fnSearchBrand('ㅈ')" <? if($s1 == "ㅈ") echo  "class=\"on\" "; ?>>자</a>
+					<a href="javascript:fnSearchBrand('ㅊ')" <? if($s1 == "ㅊ") echo  "class=\"on\" "; ?>>차</a>
+					<a href="javascript:fnSearchBrand('ㅋ')" <? if($s1 == "ㅋ") echo  "class=\"on\" "; ?>>카</a>
+					<a href="javascript:fnSearchBrand('ㅌ')" <? if($s1 == "ㅌ") echo  "class=\"on\" "; ?>>타</a>
+					<a href="javascript:fnSearchBrand('ㅍ')" <? if($s1 == "ㅍ") echo  "class=\"on\" "; ?>>파</a>
+					<a href="javascript:fnSearchBrand('ㅎ')" <? if($s1 == "ㅎ") echo  "class=\"on\" "; ?>>하</a>
+					<a href="javascript:fnSearchBrand('etc')" <? if($s1 == "etc") echo  "class=\"on\" "; ?>>기타</a>
+				</span>
+                <span class="tit_eng">
+					<?
+						#-- 영문은 for 문으로 처리 =========
+						for($k=0;$k<26;$k++){
+					?>
+					<a href="javascript:fnSearchBrand('<?=chr($k+97)?>','<?=chr($k+98)?>');" <?if($s1==chr($k+97)) echo " class='on' ";?> /><?=strtoupper(chr($k+97))?></a>
+					<?
+						}
+						#====================================
+					?>
+					<!--<a href="#">etc</a>-->
+				 </span>
+                </p>
+              </div>
+			  <!-- //검색박스 전체 -->   
+			  <!-- 단어별 브랜드 -->
+              <div class="brand_word_view">
+                <p alt="단어"><?=$s1Title?></p>
+				<?
+					while($data = sql_fetch_array($result2)){
+				?>
+                <span><a href="/brand/brandView.html?s3=<?=$data['IDX']?>"><?=$data[BRename]?></a></span>
+				<?
+					}
+				?>
+              </div>
+			  <!-- //단어별 브랜드 -->
+
+          </div>
+          <!-- //브랜드검색 -->  
+		  <p>&nbsp;</p>
+		  <p>&nbsp;</p>
+            
+        </div>
+        <!-- //brandAll -->
+
+<!-- //브랜드 끝 ---> 
+</div>             
+                    
+    
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

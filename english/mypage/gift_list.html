@@ -1,0 +1,133 @@
+<div class="qa_list">
+	
+<h3><img src="/img/mypage/tit_gift_view.gif" alt="나의상품권내역"><span>구매하신 상품권을 사용한 내역입니다.</span></h3>
+
+<div class="info_mygift">
+	<span class="use_point"><?=number_format($nGift)?> 원</span>
+	<ul class="point_text">
+		<li>총 누적금액 <span><font class="blue"><?=number_format($aGift)?></font> 원</span></li>
+		<li>총 사용금액 <span><font class="blue"><?=number_format($uGift)?></font> 원</span></li>
+	</ul>
+</div>  
+<script>
+	function goSearch(){
+		document.getElementById("xform").submit();
+	}
+</script> 
+
+<form name="xform" id="xform" method="get">
+<input type="hidden" name="act" value="ok">
+<div class="period_select">
+	<strong>월별조회가 가능해요! </strong>
+	<select name="sYear" id="sYear" class="" onclick="">
+		<?
+			$endYear = date("Y") + 2;
+			for($i = 2014; $i < $endYear; $i ++){
+				if($sYear){
+					if($i == $sYear) $sel = "selected";
+					else $sel = "";
+				} else {
+					if($i == date("Y")) $sel = "selected";
+					else $sel = "";
+				}
+		?>
+		<option value="<?=$i?>" <?=$sel?>><?=$i?></option>
+		<? } ?>
+	</select> 년
+	<select name="sMonth" id="sMonth" class="" onclick="">
+		<option value="0">전체</option>
+		<?
+			for($i = 1; $i < 13; $i ++){
+				if(strlen($i) == 1) $iMonth = "0".$i;
+				else $iMonth = $i;
+				if($sMonth){
+					if($iMonth == $sMonth) $sel = "selected";
+					else $sel = "";
+				}
+		?>
+		<option value="<?=$iMonth?>" <?=$sel?>><?=$iMonth?></option>
+		<? } ?>
+	</select>  월
+	<img src="/img/mypage/btn_search.gif" width="41" height="18" alt="검색" onClick="goSearch();" style="cursor:pointer">
+</div>
+</form>
+
+<script>
+function show_receipt_card(approve,send_no,send_dt) {
+	url="http://www.allthegate.com/customer/receiptLast3.jsp"
+	url=url+"?sRetailer_id=cheonyu";
+	url=url+"&approve="+approve;
+	url=url+"&send_no="+send_no;
+	url=url+"&send_dt="+send_dt;
+
+	window.open(url, "window","toolbar=no,location=no,directories=no,status=,menubar=no,scrollbars=no,resizable=no,width=420,height=700,top=0,left=150");
+}
+</script>
+
+	<table border="0" cellspacing="0" cellpadding="0">
+		<tr>
+			<th scope="col">NO</th>
+			<th scope="col">일자</th>
+			<th scope="col">내용</th>
+			<th scope="col">적립금액</th>
+			<th scope="col">사용금액</th>
+			<th scope="col">남은금액</th>
+			<th scope="col" class="none">상태</th>
+		</tr>
+		<?
+			$no = $TotalCount - $StartPos;
+			while($rs = sql_fetch_array($result)){
+				# DB 레코드 결과값 모두 변수로 전환
+				foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+				
+				$GFplus=0;
+				$GFMinus=0;
+				$GFprice=0;
+				$stStr = "";
+				if($dbGFpoint>=0)$GFplus=$dbGFpoint*$dbGFcount;
+				else $GFMinus=$dbGFpoint*$dbGFcount;
+				
+				if($dbGFprice) $GFprice=$dbGFprice*$dbGFcount;
+				if($dbGFstate==2) {
+					$stStr="<font color=green>완료</font>";
+				} else if($dbGFstate==1) {
+					$stStr="<font color=red>대기중</font>";
+				} else if($dbGFstate==3) {
+					$stStr="<font color=red>취소</font>";
+				}
+				$dbOcode="";
+				if(!$dbOcode)$dbOcode=$dbGFcontent ;
+
+				$qq = "select sum(GFpoint * GFcount) as sumPoint from ";
+				$qq.="2011_memberGift where MID='" . $MID . "' and  GFdeleted=0 and GFstate=2 and IDX <= '$dbIDX' group by MID";
+				$qqRow = sql_fetch($qq);
+		?>
+		<tr>
+			<td><?=$no?></td>
+			<td class="qa_time"><?=date("Y/m/d H:i",$dbGFregdate)?></td>
+			<td><?=$dbOcode?></td>
+			<td><?=number_Format($GFplus)?> P</td>
+			<td><?=number_Format($GFMinus)?> P</td>
+			<td><?=number_Format($qqRow[sumPoint])?> P</td>
+			<td style="line-height:130%;"><font class="orange"><?=$stStr?></font>
+			<?
+				if($dbPAY_TYPE == "card" && $dbGFIDX > 17566){
+			?>	
+			<br><a href="javascript:show_receipt_card('<?=$dbAPPROVAL_NO?>','<?=$dbSEQ_NO?>','<?=substr($dbAPPROVAL_YMDHMS2,0,8)?>')">카드결제영수증</a>
+			<?
+				}
+			?>
+			</td>
+		</tr>
+		<? 
+				$no --;
+			}
+		?>                
+	</table>
+	<div class="list_bottom_btn"><br/><a href='javascript:fnConvertExcel("gift","<?=base64_encode($qSql)?>");'><img src="/img/mypage/btn_excel.gif" alt="엑셀변환"></a> <a href='javascript:fnConvertPrint("gift","<?=base64_encode($qSql)?>")'><img src="/img/mypage/btn_print.gif" alt="인쇄하기"></a></div>
+	
+	<!-- paginate_s -->        
+	<div align="center" id="paging"><br/><? echo page_nav($TotalCount,$CntPerPage,$PagePerList,$page,$option); ?></div>
+	<!-- //paginate_s -->
+
+</div>

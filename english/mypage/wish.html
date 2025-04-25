@@ -1,0 +1,166 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+	
+	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/common.html";	
+	
+	if(!$page) $page = 1;
+?>
+
+<script type="text/javascript">
+
+/*====================================================================
+상품즐겨찾기 영역
+====================================================================*/
+function fnFavoriteDelete(FAtype,obj){		
+	
+	//-- 자신이 몇번째 객체 인지 체크
+	if(FAtype==1) {
+		myID = obj.id;
+		nNum = $("[id='" + myID + "']").index(obj);
+		IDX = $("[id='inPIDX']").eq(nNum).val();
+	}
+	var param='qIDX=' + IDX + '&mode=delete&inFAtype=' + FAtype;
+		
+	$.ajax({
+		url:"/product/ajaxAddFavorite.php",
+		type:"POST",
+		cache:false,
+		data : param,
+		dataType:"text",
+		error:fnErrorAjax,
+		success:function(_response)
+		{
+			v = _response.split("##");
+			if(v[1]=="OK1")
+			{
+				location.href = "wish.html?page=<?=$page?>";
+			}
+			else
+			{
+				alert("ERROR.");
+			}
+		}
+	});
+}
+	
+function selectAll(obj) {
+	if($("#" + obj + "_all").is(":checked") == true) {
+		$("input[name=" + obj + "]").each(function(){ $(this).attr("checked", true); });
+	} else {
+		$("input[name=" + obj + "]").each(function(){ $(this).attr("checked", false); });
+	}
+}
+/*====================================================================*/
+
+</script>
+
+<link rel="stylesheet" type="text/css" href="/mypage/mypage.css?250220">
+
+<!-- 마이페이지 시작 --->
+<div id="wrap">
+	<?
+		include_once $_SERVER['DOCUMENT_ROOT']."/mypage/menu.html";
+	?>
+	
+	<!-- mypageMain -->
+	<div id="mypageMain">
+
+		<? include_once $_SERVER['DOCUMENT_ROOT']."/mypage/top.html"; ?>
+
+		<div class="shipping2">
+			<h3><img src="/img/mypage/tit_05.gif" alt="나의 위시리스트"></h3>
+        </div>
+
+        <!-- 리스트 -->
+        <div class="list_box">
+
+            <div class="list_option">
+                <span><input type="checkbox" class="check" name="inPcheck_all" id="inPcheck_all" onClick="selectAll('inPcheck');" /> Select All <strong></strong></span>
+                <span class="list_btn"><a href='javascript:fnCheckCartIn("")'><img src="/img/mypage/btn_wish_all.gif" alt="일괄담기"></a></span>
+			</div>
+			
+			<?
+				$sql = " SELECT a.IDX AS FIDX, b.* FROM 2011_favoriteInfo AS a LEFT JOIN 2011_productInfo AS b ON a.FAIDX = b.IDX WHERE a.MID='" . $uid . "' AND a.FAtype=1 ";
+				$result = sql_query($sql);
+				$TotalCount = mysqli_num_rows($result);
+				$PagePerList = 5;
+				if(!$listSize) $listSize = 10;
+				$StartPos = ($page - 1) * $listSize;
+				$sql .= " ORDER BY a.IDX DESC ";
+				$sql .= " LIMIT ".($page - 1) * $listSize.",".$listSize;
+				$result = sql_query($sql);
+				
+				$fnBrandName = fnLoadBrandName();
+
+				while($rs = sql_fetch_array($result))	{
+					# DB 레코드 결과값 모두 변수로 전환
+					foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+
+					$fPosition = explode("/",$dbPsaveFile1);
+					$thumb = $fPosition[0] . "/thumb/" . $fPosition[1];
+					$pImg = "<img src='/_DATA/product/" . $thumb . "' width='80' height='80' border=0 />";
+
+					$dbPready = getProductReady($dbIDX);
+					$dbPstockCount = $dbPstockCount - $dbPready;
+
+					$getInfo = getListInfo($rs, $dbPstockCount);
+					
+					$icon = $getInfo['icon'];
+					$icon2 = $getInfo['icon2'];
+					$icon3 = $getInfo['icon3'];
+					$boxin2 = $getInfo['boxin2'];
+					$nCount = $getInfo['nCount'];
+					$addCheckMsg = $getInfo['addCheckMsg'];
+					$dbPstockCount = $getInfo['dbPstockCount'];
+
+					$priceInfo = fnCalPrice($dbPprice3,$rs);
+					$link = "<a href='/product/view.html?qIDX=" . $dbIDX . $optionLink ."'  title='" . $dbPname . "'>";
+					
+					$btnDisabled = "";
+					if($_Minus == 1) $dbPorderMinus = 1;	
+					if($dbPstockCount < 1  && $dbPorderMinus != 1) $btnDisabled = " disabled ";
+				?>
+                <div class="box">
+					<span class="chk"><input type="checkbox" name="inPcheck" id="inPcheck" value='<?=$dbIDX?>' value='<?=$dbIDX?>'  <?if(!$dbPstockCount)echo "disabled";?> /></span>
+					<span class="img"><?=$link . $pImg?></a></span>
+					<span class="text_box">
+						<span class="tit">[<?= $fnBrandName[$dbBRIDX]?></a>]</span><br/>
+						<span class="text"><?=$link . $dbPengName?></a><?= $icon . $icon2 . $icon3 . $boxin2 ?></span>
+						<?
+							$data1 = sql_fetch( " SELECT * FROM 2011_categoryInfo WHERE IDX = '$dbPcategory1' " );
+							$data2 = sql_fetch( " SELECT * FROM 2011_categoryInfo WHERE CTlv1 = '$data1[CTlv1]' AND CTlv2 = '0' " );
+							$data3 = sql_fetch( " SELECT * FROM 2011_categoryInfo WHERE CTlv1 = '$data1[CTlv1]' AND CTlv2 = '$data1[CTlv2]' AND CTlv3 = '0' " );
+						?>
+						<span class="text2"><?=$data2[CTename]?> > <?=$data3[CTename]?> > <?=$data1[CTename]?></span>
+					</span>
+					<span class="price">
+						<font class="sale">USD <?=$priceInfo["dollar_txt"]?></font><br/>
+						<font class="point"><strong>USD <?=$priceInfo["dcDollar_txt"]?></strong></font>
+					</span>
+					<span class="percent"><strong><?=$priceInfo["dcPer"]?></strong>%<?=fnGETPricePer($rs); ?></span>
+					<span class="amount_box">
+						Qty <input name="inPcount" type="text" class="amount" id="inPcount"  size="3" maxlength="3"  value='<?=$nCount?>' onkeydown='onlyNum()'  onblur="fnPcountCheck(this)" <?if(!$dbPstockCount)echo "disabled";?> />
+						<span class="arrow"><img src="/img/ico/ico_arrow_up.gif" alt="up" id="btn_plus" style="cursor:pointer" onclick='fnPcountPlus(this,1)'><img src="/img/ico/ico_arrow_down.gif" alt="down" id="btn_minus" style="cursor:pointer" onclick="fnPcountPlus(this,-1)"></span>
+					</span>
+					<span class="delIcon"><img src="../image_3/op_04.gif" width="19" height="19" id='btn_del' onclick='fnFavoriteDelete(1,this)' style='cursor:pointer;' /></span>
+				</div>
+
+                <input type='hidden' name='inMaxStock' id='inMaxStock' value='<?=$dbPstockCount?>'>
+                <input type='hidden' name='inPIDX' id='inPIDX' value='<?=$dbFIDX?>'>
+				<input type='hidden' name='inPorderMinus' id='inPorderMinus' value='<?=$dbPorderMinus?>'>
+            <?}?>
+				
+			<div align="center" id="paging"><? echo page_nav($TotalCount,$listSize,$PagePerList,$page,$option); ?></div>
+		</div>
+        <!-- //위시리스트 -->
+    </div>
+            
+</div>   
+<!-- //마이페이지 끝 ---> 
+    
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

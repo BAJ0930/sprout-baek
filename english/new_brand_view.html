@@ -1,0 +1,170 @@
+<?php
+include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+ob_clean();
+?>
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>테스트</title>
+	<link rel="stylesheet" type="text/css" href="https://fastly.jsdelivr.net/gh/kenwheeler/slick@1.8.0/slick/slick.css"/>
+	<link rel="stylesheet" type="text/css" href="https://fastly.jsdelivr.net/gh/kenwheeler/slick@1.8.0/slick/slick-theme.css"/>
+	<script src="https://code.jquery.com/jquery-1.11.0.min.js"></script>
+	<script type="text/javascript" src="//fastly.jsdelivr.net/gh/kenwheeler/slick@1.8.0/slick/slick.min.js"></script>
+</head>
+<style>
+    .brand_slide {padding: 0 60px 0 62px; height: 100%;}
+    .brand_slide .slick-list, .brand_slide .slick-track {height: 100%;}
+    .brand_slide .slide {border: 1px solid #efebec;border-radius: 5px;position: relative;overflow: hidden;cursor: pointer;margin: 0 10px; opacity: 1; flex:1 1 calc(20% - 8px);aspect-ratio:1;}
+    .brand_slide .item img {width: -webkit-fill-available;height: -webkit-fill-available;}
+    .brand_slide .item a {
+        opacity: 0;display: flex;position: absolute;top: 0;left: 0;width: 100%;height: 100%;text-decoration: 0;color: #ffffff;background: rgba(0, 0, 0, 0.5);
+        padding: 20px 20px 24px;flex-direction: column;justify-content: space-between; box-sizing: border-box;
+    }
+    .brand_slide .item a h4 {margin: 0 0 16px 0;font-size: 15px;line-height: 1.4;font-weight: normal;}
+    .brand_slide .item a div {display: flex;justify-content: space-between;align-items: flex-end;}
+    .brand_slide .item a div:has(span) {margin-bottom: -2px;}
+    .brand_slide .item a .saleRate {color:#ff887a;line-height: 1;}
+    .brand_slide .item a .saleRate span {font-size: 15px;font-weight: 500;margin-bottom: -4px;}
+    .brand_slide .item a .price {font-size: 17px;text-align: right;flex-direction: column;}
+    .brand_slide .item a .price .origin {font-size: 13px;font-weight: 300;text-decoration: line-through;opacity: .8;}
+    .brand_slide .item:hover a {opacity: 1;animation: fadeEffect 0.3s;}
+    .brand_slide .item:hover img {filter: blur(5px);animation: blurEffect 0.3s;}
+    .brand_slide .logo {display: flex;align-items: center;justify-content: center;}
+    .brand_slide .logo div {display: flex;flex-direction: column;align-items: center;margin: 0 0 0 0;gap: 8px;}
+    .brand_slide .logo div a {display: block;padding:16px;}
+    .brand_slide .logo div a img {width:100%}
+    .brand_slide .logo div a.btn_brand {padding: 0 24px 0 15px;background: transparent url(/image/event/dar_tab_next.png) no-repeat 83px 0px;background-size: 28px;text-decoration: none;color: #777777;font-size: 13px;font-weight: 300;border-radius: 100px;border: 1px solid #afafaf;line-height: 30px;position: relative;}
+    .brand_slide .logo div a.btn_brand:hover::before {content:''; display:block; position: absolute; z-index: 99; width:100%; height:100%; background: rgba(0 0 0 / 5%); top:0; left:0; border-radius: 100px;}
+    .brand_slide .slick-prev, .brand_slide .slick-next {width: 40px;height: 40px;background: rgba(0, 0, 0, 0.2);border-radius: 50%;}
+    .brand_slide .slick-prev::before, .brand_slide .slick-next::before {font-size: 0;font-family: Arial, Helvetica, sans-serif;content: none;}
+    .brand_slide .slick-prev {left: 15px;background:rgba(0, 0, 0, .1) url(/image/event/dar_tab_prev.png) no-repeat center/36px auto;}
+    .brand_slide .slick-next {right: 13px;background:rgba(0, 0, 0, .1) url(/image/event/dar_tab_next.png) no-repeat center/36px auto;}
+    .brand_slide .slick-prev {background: rgba(0, 0, 0, .1) url(/image/icon/dar_tab_prev.png) no-repeat center/36px auto;}
+    .brand_slide .slick-next {background: rgba(0, 0, 0, .1) url(/image/icon/dar_tab_next.png) no-repeat center/36px auto;}
+</style>
+<body>
+<?php
+
+$tabs = explode("-", $subTabName);
+$tabs = trim(substr($tabs[1],0,3));
+$rs1 = sql_fetch(" SELECT * FROM 2011_brandInfo WHERE IDX = '" . htmlspecialchars($tabs) . "' ");
+$brandImg = "/_DATA/brand/".$rs1['BRsaveFile1'];
+?>
+<div class="brand_slide">
+<?php
+
+/*
+2024-10-15 박경희 팀장 요청 , 판매수 > 등록순
+*/
+
+$sql = "SELECT * FROM `2011_productInfo` WHERE Pshop='1000u' AND Pdeleted=0 AND Pprice3>0 AND Pstate<10 AND Pagree=1 AND PenglishView = 0 AND  Pweight < '{$checkWeight}'  AND ( (BRIDX = '{$tabs}' OR BRIDX2 = '{$tabs}') ) ORDER BY Pregdate DESC, IDX DESC LIMIT 0,9";
+$result = sql_query($sql);
+while($rs = sql_fetch_array($result)){
+
+    foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+
+    $imgUrl = getImgUrl($dbPsaveFile1);
+    $pImg = "<img src='".$imgUrl."'>";
+
+    $dbPready = getProductReady($dbIDX);
+
+    //2021.02.03 수정
+    $tOPStock =0;
+    $sqlt1 = "SELECT OPStock FROM	2011_productInfo AS a
+    left join  2011_productOption as opTbl on a.IDX = opTbl.PIDX
+    WHERE a.IDX = " . $dbIDX . "";
+
+        $rst1 = sql_query($sqlt1);
+        while($rstdatat1 = sql_fetch_array($rst1)){
+                if($rstdatat1['OPStock'] >0) {
+                        $tOPStock = $tOPStock + $rstdatat1['OPStock'];
+                }
+        }
+        if($tOPStock!=0) {
+                $dbPstockCount = $tOPStock;
+        }
+    //2021.02.03 수정
+
+    $dbPstockCount = $dbPstockCount - $dbPready;
+
+    $getInfo = getListInfo($rs, $dbPstockCount);
+
+    $icon = $getInfo['icon'];
+    $icon2 = $getInfo['icon2'];
+    $icon3 = $getInfo['icon3'];
+    $boxin2 = $getInfo['boxin2'];
+    $nCount = $getInfo['nCount'];
+    $addCheckMsg = $getInfo['addCheckMsg'];
+    $dbPstockCount = $getInfo['dbPstockCount'];
+    $iconNew = $getInfo['iconNew'];
+    $soldout = $getInfo['soldout'];
+    $reservation = $getInfo['reservation'];
+
+    $priceInfo = fnCalPrice($dbPprice3,$rs);
+    $link = "<a href='/product/view.html?qIDX=" . $dbIDX . $optionLink ."'  title='" . $dbPengName . "' target='_top'>";
+
+    $dbPname_list = $dbPengName;
+
+    $btnDisabled = "";
+    if($_Minus == 1) $dbPorderMinus = 1;
+    if($dbPstockCount < 1  && $dbPorderMinus != 1) $btnDisabled = " disabled ";
+    if(!$MID) $btnDisabled = " disabled ";
+    $dbPengName = strcut_utf8($dbPengName,36,"","..");
+?>
+<div class="item slide" <? if($soldout == "1") { if($reservation == "1") { echo " class=\"pre-order\" "; } else { echo " class=\"soldout_bg\" "; } } else if($iconNew) { echo " class=\"new_bg\" "; } ?>><? if($dbPicon1 > 6 && $dbPicon1 < 15){ ?><div class="large_icon" style="background: url('/images/circle160_<?=$dbPicon1?>.png?2305') no-repeat 0 0/62px auto;"></div><? } ?>
+    <? if($dbPicon1 == 15){ ?><div class="o_icon" style="background: url('/images/circle160_<?=$dbPicon1?>.png?2305') no-repeat"></div><? } ?>
+    <? if($dbPicon1 == 6 || $dbPicon1 == 16 || $dbPicon1 == 17 || $dbPicon1 == 18){ ?><div class="large_icon" style="background: url('/images/circle160_<?=$dbPicon1?>.png?2305') no-repeat 0 0/62px auto;"></div><? } ?>
+    <?=$pImg?>
+        
+    <?=$link?>
+        <h4><?=$dbPengName?></h4>
+        <div>
+            <div class="saleRate">
+                <? if(fnGETPricePer($rs)){ ?>
+                    <? if($priceInfo["dcPer"] != fnGETPricePer($rs,3)){ ?>
+                        <span class="p_number1"><?=$priceInfo["dcPer"]?><span class="p_percent">%</span></span>
+                        <span class="p_number2"><em>-</em><?=fnGETPricePer($rs,3);?></span>
+                    <? } else { ?>
+                        <span class="p_number1"></span>
+                        <span class="p_number2 empty_p"><?=$priceInfo["dcPer"]?><span class="p_percent">%</span></span>
+                    <? } ?>
+                <?
+                } else {
+                    if($priceInfo["dcPer"] == 0) {
+                ?>
+                    <span class="p_number1"></span>
+                    <span class="p_number2 empty_p"><?=$priceInfo["dcPer"]?><span class="p_percent">%</span></span>
+                <?
+                    } else {
+                ?>
+                    <span class="p_number2 empty_p"><? if(!$MID){ ?><!-- <em>-</em> --><? } ?><?=$priceInfo["dcPer"]?><span class="p_percent">%</span></span>
+                <?
+                    }
+                }
+                ?>
+            </div>
+            <div class="price"><div class="origin">USD&nbsp;<?=$priceInfo["dollar_txt"]?></div><div><span>USD&nbsp;</span><?=$priceInfo["dcDollar_txt"]?></div></div>
+        </div>
+    </a>
+</div>
+<?php } ?>
+<div class="logo slide">
+    <div>
+        <a href="/brand/brandView.html?s3=<?=$tabs?>" target="_top"><img src="<?=$brandImg?>" alt="<?=$rs1['BRkname']?>"></a>
+        <a href="/brand/brandView.html?s3=<?=$tabs?>" class="btn_brand" target="_top">See More</a>
+    </div>
+</div>
+</div>
+<script>
+    $(document).ready(function(){
+        $('.brand_slide').slick({
+            slidesToShow: 5,
+            slidesToScroll: 1,
+            dots: false,
+            infinite: false,
+        });
+    });
+</script>
+</body>
+</html>

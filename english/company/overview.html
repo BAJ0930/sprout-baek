@@ -1,0 +1,85 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+?>
+
+<link rel="stylesheet" type="text/css" href="/customer/customer.css">
+<style>
+.helpImg img { width:100%; }
+#customerMain .helpTitle { float:none; width:100%; margin:25px 0 15px 5px; font-size:24px; font-family:'Verdana'; color:#204e99; }
+#customerMain .helpMemo { float:none; width:100%; overflow:hidden; display:block; margin:0; padding:25px 20px 40px 10px; color:#666; border-top:#aaa solid 2px; }
+#customerMain .helpMemo, #customerMain .helpMemo * { box-sizing:border-box; }
+#customerMain .helpMemo > div { margin:0; padding:0 0 50px 0; overflow:hidden; }
+#customerMain .helpMemo > div p { margin:0; padding:0 0 15px 0; font-size:14px; font-family:'Verdana'; color:#666; line-height:1.6; }
+</style>
+<!-- 회사소개 시작 --->    
+<div id="wrap">
+
+<? include_once $_SERVER['DOCUMENT_ROOT']."/company/menu.html"; ?>      
+
+	<!-- 회사소개 -->
+	<div id="customerMain">
+	
+		<div class="info_top">
+			<div class="helpImg"><img src="/img/company/company_top.jpg"></div>
+
+			<div class="helpTitle">Corporate Overview</div>
+			<div class="helpMemo">			
+				<p>
+				Vision: Establish world-class B2B online-distribution mall<br/><br/>
+				
+				Establishment : 11th. SEP. 2001<br/><br/>
+				
+				Representative Director : CHO YOUNG DONG(Mr)<br/><br/> 
+
+				TEL: +82-70-4060-5292<br/><br/>
+
+				FAX: +82-51-502-2408<br/><br/>
+				 
+
+				Web-page: www.cheonyu.com<br/><br/>
+
+				E-mail: 1000u@cheonyu.com / mkmd4@cheonyu.com<br/><br/>
+
+
+				Address : Geumsahwasin Bldg 2F, 49, Gongdanseo-ro 8beon-gil, Geumjeong-gu, Busan, Korea<br/>
+				</p>
+				<!--
+				<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true&language=en"></script>  
+				<script> 
+				function initialize() { 
+					var myLatlng = new google.maps.LatLng(35.2163733, 129.1134171); 
+					var mapOptions = { 
+						zoom: 16, 
+						center: myLatlng, 
+						mapTypeId: google.maps.MapTypeId.ROADMAP 
+					} 
+					var map = new google.maps.Map(document.getElementById('map_canvas'), mapOptions); 
+					
+					var marker = new google.maps.Marker({ 
+						position: myLatlng, 
+						map: map, 
+						title: "CHEONYU.COM" 
+					});
+					var content = "CHEONYU.COM";
+					var infowindow = new google.maps.InfoWindow({ content: content});
+					infowindow.open(map,marker);
+				} 
+				
+				$( document ).ready(function() {
+					initialize();
+				});
+				</script> 
+				<div id="map_canvas" style="float:left; margin:50px 0px; width:760px; height:600px;"></div> 
+				-->
+			</div>
+		
+	</div>
+	<!-- //회사소개 -->   
+	
+</div>             
+<!-- //회사소개 끝 ---> 
+
+
+<? include_once $_SERVER['DOCUMENT_ROOT']."/footer.html"; ?>

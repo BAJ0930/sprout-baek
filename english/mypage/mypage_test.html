@@ -1,0 +1,277 @@
+<?php
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+	
+	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/common.html";	
+?>
+
+<link rel="stylesheet" type="text/css" href="/mypage/mypage.css?<?php echo filemtime('mypage/mypage.css'); ?>">
+
+<style>
+</style>
+<!-- 마이페이지 시작 --->
+<div id="wrap">
+
+    <!-- mypageMain -->
+    <div id="mypageMain">
+
+		<? include_once $_SERVER['DOCUMENT_ROOT']."/mypage/top_test.html"; ?>
+        
+        
+        <div class="qa_list">
+            <div>
+                <div class="subTitle-B"><span>Order-Tracking</span><span class="btn-seeMore"><a href="/mypage/qna.html">See more</a></span></div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="12%">Order No.</th>
+                            <th width="11%">Shipping Date</th>
+                            <th width="18%">Recipient</th>
+                            <th width="10%">Total</th>
+                            <th width="18%">Payment Status</th>
+                            <th width="18%">Shipping Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <span class="order-number">P250103-576735</span>
+                                <button type="button" class="btn-style btn-color-CTA btn-h32 btn-round">View Details</button>
+                            </td>
+                            <td>
+                                Oct. 10, 2025
+                            </td>
+                            <td>Victoria Genevieve Winchester</td>
+                            <td>
+                                <span class="order-price">
+                                    <span style="font-size: 16px; font-weight: 400;">USD</span> 
+                                    323.00
+                                </span>
+                                <span class="order-items">14 Items</span>
+                            </td>
+                            <td><span class="done">Paid</span></td>
+                            <td><span class="pending">Preparing or Shipment</span></td>
+                            <!--
+                                <td>
+                                    Cancellable
+                                    <button type="button" class="btn-style btn-color-white btn-h32 btn-round">Cancel</button>
+                                </td>
+                            -->
+                        </tr>
+                        <tr>
+                            <td>
+                                <span class="order-number">P250103-576735</span>
+                                <button type="button" class="btn-style btn-color-CTA btn-h32 btn-round">View Details</button>
+                            </td>
+                            <td>
+                                Oct. 10, 2025
+                            </td>
+                            <td>DIANE HAN</td>
+                            <td>
+                                <span class="order-price">
+                                    <span style="font-size: 16px; font-weight: 400;">USD</span> 
+                                    323.00
+                                </span>
+                                <span class="order-items">14 Items</span>
+                            </td>
+                            <td><span class="pending">Pending Payment</span></td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <span class="order-number">P250103-576735</span>
+                                <button type="button" class="btn-style btn-color-CTA btn-h32 btn-round">View Details</button>
+                            </td>
+                            <td>
+                                Oct. 10, 2025
+                            </td>
+                            <td>Sebastian Leopold Whitmore</td>
+                            <td>
+                                <span class="order-price">
+                                    <span style="font-size: 16px; font-weight: 400;">USD</span> 
+                                    323.00
+                                </span>
+                                <span class="order-items">14 Items</span>
+                            </td>
+                            <td><span class="done">Paid</span></td>
+                            <td><span class="shipped">🚚 Shipped</span></td>
+                            <!--
+                                <td>
+                                    Non-Cancellable
+                                </td>
+                            -->
+                        </tr>
+                        <tr>
+                            <td>
+                                <span class="order-number">P250103-576735</span>
+                                <button type="button" class="btn-style btn-color-CTA btn-h32 btn-round">View Details</button>
+                            </td>
+                            <td>
+                                Oct. 10, 2025
+                            </td>
+                            <td>DIANE HAN</td>
+                            <td>
+                                <span class="order-price">
+                                    <span style="font-size: 16px; font-weight: 400;">USD</span> 
+                                    323.00
+                                </span>
+                                <span class="order-items">14 Items</span>
+                            </td>
+                            <td><span class="done">Paid</span></td>
+                            <td><span class="done">✅ Delivered</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="tooltip-container">
+                    <button type="button" class="btn-style btn-color-grey btn-h32" style="margin: 16px 0 0 auto;">
+                        <img src="/img/mypage/ico-my-ship.svg" alt="Details About Shipping">About Shipping
+                    </button>
+                    <div class="tooltip-box">
+                        <strong>This is how our shipping process works.</strong>
+                        <div class="process">
+                            <div class="step"><img src="/img/mypage/img-my-tooltip01.svg" alt="Browse"> Browse Products</div>
+                            <div class="step"><img src="/img/mypage/img-my-tooltip02.svg" alt="Cart"> Add to Cart</div>
+                            <div class="step"><img src="/img/mypage/img-my-tooltip03.svg" alt="Payment"> Payment Complete</div>
+                            <div class="step"><img src="/img/mypage/img-my-tooltip04.svg" alt="Packing"> Packing</div>
+                            <div class="step"><img src="/img/mypage/img-my-tooltip05.svg" alt="Shipping"> International Shipping Preparation</div>
+                            <div class="step"><img src="/img/mypage/img-my-tooltip06.svg" alt="Transit"> In Transit</div>
+                            <div class="step"><img src="/img/mypage/img-my-tooltip07.svg" alt="Delivered"> Delivered!</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <div class="subTitle-B"><span>Sent to Cheonyu</span><span class="btn-seeMore"><a href="/mypage/return_exchange.html">See more</a></span></div>
+                <div class="inquiry-list">
+                    <div class="inquiry-item flex-row-spacer">
+                        <div>
+                            <span class="status in-progress">In Progress</span>
+                            <span class="title">Shipping Delay Issue Inquiry</span>
+                            <div class="message">My order from three days ago is still being prepared for shipment. Can I get a refund?</div>
+                        </div>
+                        <div class="date">2 hours ago</div>
+                    </div>
+                    <div class="inquiry-item flex-row-spacer">
+                        <div>
+                            <span class="status answered">Answered</span>
+                            <span class="title">Inquiry About Product Details</span>
+                            <div class="message">
+                                I am interested in one of your products and would like to ask for more details before making a purchase. Could you provide information on the following?
+                                I am interested in one of your products and would like to ask for more details before making a purchase. Could you provide information on the following?
+                            </div>
+                        </div>
+                        <div class="date">October 10, 2025</div>
+                    </div>
+                    <div class="inquiry-item flex-row-spacer">
+                        <div>
+                            <span class="status answered">Answered</span>
+                            <span class="title">Shipping Delay Issue Inquiry</span>
+                            <div class="message">My order from three days ago is still being prepared for shipment. Can I get a refund?</div>
+                        </div>
+                        <div class="date">September 9, 2025</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="subTitle-B"><span>Wishlist</span><span class="btn-seeMore"><a href="/mypage/return_exchange.html">See more</a></span></div>
+            <div class="wishlist-container">
+                <table>
+                    <colgroup>
+                        <col style="width: 112px;">
+                        <col>
+                        <col style="width: 256px;">
+                        <col style="width: 144px;">
+                        <col style="width: 144px;">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>Group</th>
+                            <th>Item Info.</th>
+                            <th style="text-align: left;">Options & Stock Left</th>
+                            <th>Price</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Stationary</td>
+                            <td>
+                                <div class="item-info">
+                                    <img src="/_DATA/product/79100/79140_1739345233.jpg" alt="Notepad">
+                                    <div>
+                                        <div class="features">
+                                            <span>78469</span>
+                                            <span style="font-weight: 600;">Sanrio</span>
+                                            <span><img src="/image_3/boxinBG.svg" alt="Outer carton"></span>
+                                            <span><img src="/image_3/boxinBG2.svg" alt="Inner carton"></span>
+                                        </div>
+                                        <div class="name">Brawl Stars Meta Brawler Notepad, Sets of 24pcs</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="stock-status">
+                                Kuromi: In stock<br>
+                                My melody: In stock<span class="low-stock">Almost sold out</span>
+                                Cinnamoroll: 0<span class="sold-out">Sold out</span>
+                            </td>
+                            <td class="price-wrap">
+                                <del style="font-size: 14px;">USD 9.43</del>
+                                <div class="price">USD 6.23</div>
+                                <span class="discount">Buy 2 or more<br><span style="color: #ff3838; font-weight: 600;">40% Off</span></span>
+                            </td>
+                            <td><a href="#" class="btn-style btn-color-CTA btn-h32 btn-round">Add to Cart</a></td>
+                        </tr>
+                        <tr>
+                            <td>Home decoration</td>
+                            <td>
+                                <div class="item-info">
+                                    <img src="/_DATA/product/79000/79006_1738653555.jpg" alt="Notepad">
+                                    <div>
+                                        <div class="features">
+                                            <span>78469</span>
+                                            <span style="font-weight: 600;">Sanrio</span>
+                                            <span><img src="/image_3/boxinBG.svg" alt="Outer carton"></span>
+                                            <span><img src="/image_3/boxinBG2.svg" alt="Outer carton"></span>
+                                        </div>
+                                        <div class="name">Brawl Stars Meta Brawler Notepad, Sets of 24pcs</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="stock-status">
+                                Brawls: In stock<br>
+                                Stars: <span class="colorRed">Only 5 left</span>
+                                <span class="low-stock">Almost sold out</span>
+                                Brawl Stars: In stock
+                            </td>
+                            <td class="price-wrap">
+                                <del style="font-size: 14px;">USD 9.43</del>
+                                <div class="price">USD 6.23</div>
+                                <span class="discount">Buy 2 or more<br><span style="color: #ff3838; font-weight: 600;">40% Off</span></span>
+                            </td>
+                            <td><a href="#" class="btn-style btn-color-CTA btn-h32 btn-round">Add to Cart</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+        <!-- //마이페이지 메인 -->
+    </div>
+    <!-- //마이페이지 끝 --->
+
+</div>
+
+<script type="text/javascript">
+    function dispMyLayer(layer1, layer2) {
+        $('#' + layer2).hide();
+        $('#' + layer1).show();
+    }
+</script>
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

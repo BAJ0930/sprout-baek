@@ -1,0 +1,34 @@
+<?php
+include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+$cateIDX = mysqli_real_escape_string($g5['connect_db'], $cateIDX);
+if(!$cateIDX) $cateIDX="1";
+?>
+<link rel="stylesheet" type="text/css" href="/product/storage.css?250107">
+
+<!-- 메인 시작/ -->
+
+<div id="wrap">
+	<!-- 서브리스트 -->
+	<div id="sub_list">
+
+	<?php	
+		$actOn = "sale";
+		$onSales = "1";
+		
+		//수정
+		$cIcon = "10,11";
+
+		include_once $_SERVER['DOCUMENT_ROOT']."/product/top.html"; 
+		include_once $_SERVER['DOCUMENT_ROOT']."/product/list_inc.html"; 
+	?>
+	</div>
+
+			
+	<div style="height:20px;"></div>            
+
+</div>
+<!-- 메인 끝// ---> 
+<?php
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

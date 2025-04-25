@@ -1,0 +1,143 @@
+/* 전체 레이아웃 */
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+  }
+  
+  .header {
+    background-color: #0058a3; /* Blue */
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: white;
+  }
+  
+  .header-layout {
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .logo img {
+    height: 40px;
+  }
+  
+  .search-bar {
+    flex-grow: 1;
+    margin-left: 20px;
+    display: flex;
+  }
+  
+  .search-bar .dropdown {
+    margin-right: 10px;
+    padding: 5px;
+  }
+  
+  .search-bar .search-input {
+    flex-grow: 1;
+    padding: 5px;
+  }
+  
+  .search-bar .search-button {
+    background-color: #333;
+    color: white;
+    padding: 5px 10px;
+  }
+  
+  .header-menu {
+    display: flex;
+    align-items: center;
+  }
+  
+  .menu-toggle, .menu-link, .cart-link {
+    margin: 0 10px;
+  }
+  
+  /* 드롭다운 메뉴 토글 */
+  .account-menu input[type="checkbox"] {
+    display: none;
+  }
+  
+  .account-menu .dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 150px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+    color: black;
+    padding: 10px 0;
+  }
+  
+  .account-menu .dropdown-content a {
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+  }
+  
+  .account-menu input[type="checkbox"]:checked + label + .dropdown-content {
+    display: block;
+  }
+  
+  /* 카테고리 메뉴 */
+  .category-menu {
+    background-color: #87ceeb; /* Skyblue */
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    position: relative;
+  }
+  
+  .category-menu input[type="checkbox"] {
+    display: none; /* 숨겨진 체크박스 */
+  }
+  
+  .hamburger-menu {
+    margin-right: 20px;
+    cursor: pointer;
+  }
+  
+  .menu-link {
+    margin-right: 15px;
+  }
+  
+  /* 하위 메뉴: 숨겨진 메뉴 */
+  .submenu {
+    display: none; /* 기본적으로 숨김 */
+    padding: 10px;
+    background-color: #fff;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+    border: 1px solid #ddd;
+  }
+  
+  /* 체크박스가 체크되었을 때 서브메뉴를 보이도록 설정 */
+  #toggle-category-menu:checked ~ .submenu {
+    display: block;
+  }
+  
+  /* 아코디언 메뉴 */
+  .accordion input[type="checkbox"] {
+    display: none; /* 아코디언의 숨겨진 체크박스 */
+  }
+  
+  .accordion-header {
+    background-color: #f1f1f1;
+    cursor: pointer;
+    padding: 10px;
+    font-weight: bold;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .accordion-content {
+    display: none;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  /* 체크박스가 체크되었을 때 아코디언 내용 표시 */
+  .accordion input[type="checkbox"]:checked + label + .accordion-content {
+    display: block;
+  }
+  

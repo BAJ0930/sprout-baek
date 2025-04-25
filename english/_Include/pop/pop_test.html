@@ -1,0 +1,157 @@
+<style>
+    .pop-layer-content {border-radius: 8px; padding: 20px 20px 36px;}
+    .pop-layer-content:first-of-type {border-radius: inherit;}
+    .pop-layer-content::after {display: none;}
+    .pop-layer-content > div {margin: 0;}
+    .product_info .subject {display: flex; flex-direction: column; gap: 32px;}
+    .btn-wrap {margin-top: 24px;}
+    .btn-wrap a {width: 100%;}
+</style>
+
+<div id="popupContact" style="position: fixed; width: 496px; height: 461px; top: 710px; left: 50%; margin: 0px 0px 0px -490px;"><table cellspacing="0" cellpadding="0"><tbody><tr><td id="popContent"><div style="background-color:#fff;padding:15px;border:1px solid #ccc;">
+    <div class="pop-layer-wrap small">
+        <h1 class="pop-tit ntsans">Create an account</h1>
+        <a href="javascript:closeCartIn();" class="btn-pop-close"><img src="/image_1/ico_close.svg"></a>
+        <div class="pop-layer-content">
+            <div class="content-detail">
+                <div class="product_info">
+                    <div class="subject">
+                        <div class="input-container2">
+                            <div class="input-container">
+                                <input type="text" id="nameField1" placeholder=" " required>
+                                <label for="nameField1">Your First Name</label>
+                            </div>
+                            <div class="input-container">
+                                <input type="text" id="nameField2" placeholder=" " required>
+                                <label for="nameField2">Your Last Name</label>
+                            </div>
+                        </div>
+                        <div class="input-container2">
+                            <div class="input-container">
+                                <input type="text" id="idField" placeholder=" " required>
+                                <label for="idField">Set the ID</label>
+                            </div>
+                            <button type="button" class="btn-style btn-color-white">Check ID</button>
+                        </div>
+                        <div class="input-container">
+                            <input type="password" id="password" name="password" placeholder=" " required>
+                            <label for="password">Password</label>
+                        </div>
+                        <div class="input-container">
+                            <input type="password" id="passwordConf" name="passwordConf" placeholder=" " required>
+                            <label for="passwordConf">Confirm Password</label>
+                        </div>
+                        <div class="input-container">
+                            <input type="text" id="emailField" placeholder=" " required>
+                            <label for="emailField">Your E-mail</label>
+                        </div>
+                        <div class="input-container custom-dropdown2">
+                            <div class="custom-select2" id="selectedNation" onclick="toggleDropdown()"> </div>
+                            <div class="custom-options" id="nationalOptions"></div>
+                            <label for="selectedNation">Choose Your Nationality</label>
+                        </div>
+                        <div class="flex-col-gap8">
+                            <label class="check-box-wrap">
+                                <input type="checkbox" id="privacyAgreement" class="check-box" required>
+                                <span class="agreement-label">
+                                    I agree to the <a href="/customer/privacy.html" target="_blank">Privacy Policy</a>.
+                                </span>
+                            </label>
+                            <label class="check-box-wrap">
+                                <input type="checkbox" id="termsAgreement" class="check-box" required>
+                                <span class="agreement-label">
+                                    I agree to the <a href="/customer/terms.html" target="_blank">Terms of Service</a>.
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="btn-wrap">
+            <a href="" class="btn-style btn-color-CTA">Create a New Account</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 나라 목록 배열
+    const countries = [
+        "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Argentina", "Armenia", 
+        "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", 
+        "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", 
+        "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", 
+        "Burkina Faso", "Burundi", "Cambodia", "Cameroon", "Canada", "Cape Verde", 
+        "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", 
+        "Congo", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic", "Denmark", 
+        "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", 
+        "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", 
+        "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", 
+        "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", 
+        "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", 
+        "Ireland", "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan", "Jordan", 
+        "Kazakhstan", "Kenya", "Kiribati", "Korea", "Kosovo", "Kuwait", "Kyrgyzstan", 
+        "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", 
+        "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", 
+        "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", 
+        "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", 
+        "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", 
+        "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", 
+        "Norway", "Oman", "Pakistan", "Palau", "Panama", "Papua New Guinea", "Paraguay", 
+        "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", 
+        "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Samoa", "San Marino", 
+        "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", 
+        "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", 
+        "South Korea", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", 
+        "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania", "Thailand", 
+        "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", 
+        "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", 
+        "United States", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", 
+        "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
+    ];
+
+    // 옵션 동적 생성
+    const nationalOptions = document.getElementById('nationalOptions');
+    countries.forEach(country => {
+        const option = document.createElement('div');
+        option.textContent = country;
+        option.dataset.value = country;
+        option.onclick = () => selectCountry(country);
+        nationalOptions.appendChild(option);
+    });
+
+    // 드롭다운 열기/닫기
+    function toggleDropdown() {
+        const options = document.getElementById('nationalOptions');
+        options.classList.toggle('active');
+    }
+
+    // 옵션 선택 처리
+    function selectCountry(country) {
+        const selectBox = document.getElementById('selectedNation');
+        selectBox.textContent = country;
+        selectBox.classList.add('active');
+
+        // 선택 상태 처리
+        Array.from(nationalOptions.children).forEach(option => {
+            option.classList.remove('selected');
+        });
+        document.querySelector(`[data-value="${country}"]`).classList.add('selected');
+
+        // 드롭다운 닫기
+        toggleDropdown();
+    }
+
+    // 드롭다운 외부 클릭 시 닫기
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.custom-dropdown2')) {
+            const options = document.getElementById('nationalOptions');
+            options.classList.remove('active');
+        }
+    });
+
+    document.querySelector('.btn-pop-close').addEventListener('click', function () {
+        document.getElementById('popupContact').style.display = 'none';
+        document.getElementById('backgroundPopup').style.display = 'none';
+    });
+</script>

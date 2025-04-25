@@ -1,0 +1,150 @@
+<?
+include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+ob_clean();
+
+$inOpayType = 1;
+
+//-- 신규주문 카트 코드 / 추가주문 카트코드
+if($isAddOrder)$CAcode = "5";
+else if($tempCode)$CAcode=$tempCode;
+else $CAcode = "1";
+
+if($inOpayType == "1"){
+	//가상계좌결제의 경우 입금이 완료되지 않은 입금대기상태(가상계좌 발급성공)이므로 상품을 배송하시면 안됩니다. 
+	$inOdepositCheck=1;
+}else{
+	// 결제성공에 따른 상점처리부분
+	//echo ("결제가 성공처리되었습니다. [" . $agspay->GetResult("rSuccYn")."]". $agspay->GetResult("rResMsg").". " );
+	$inOdepositCheck=2;
+}
+
+$ORDER_NO = addslashes(trim($ORDER_NO));
+$CAcode = addslashes(trim($CAcode));
+
+//-- $Oidx 구하기
+$sql = "select IDX from 2011_orderInfo where Ocode='" . $ORDER_NO . "'";
+$rs = sql_fetch($sql);
+$Oidx = $rs['IDX'];
+$Oidx = addslashes(trim($Oidx));
+
+//-- 주문서 상태 수정 (일단 미완료 처리. 하단 코드에서 다시 체크 후 업데이트됨);
+$sql = "update 2011_orderInfo set OpayState=1 where IDX='" . $Oidx . "'";
+sql_query($sql);
+
+//-- 주문 상품 상태 수정 (일단 미완료 처리. 하단 코드에서 다시 체크 후 업데이트됨);
+$sql = "update 2011_orderProduct set ORPcountCheck=1 where OIDX='" . $Oidx . "'";
+sql_query($sql);
+
+#--- 테스트용으로 쥐고있자 ㅠㅠ
+$sql = "update 2011_cartInfo set CAstate=111, CAorder=111  where MID='" . $uid . "' and CAstate=" . $CAcode;
+if($CAcode==1)$sql.=" and CAorder=1";
+sql_query($sql);
+
+
+/*=====================================================================================
+결제정보 저장
+=====================================================================================*/
+//-- 무통장은 별도 정보 생성
+if($inOpayType==1){
+	$REPLYMSG = "무통장결제";
+	$PAY_TYPE=$inOpayType;
+	#-- 결제금액이 0 일경우 (포인트 혹은 쿠폰으로 모두 결제했을경우) 결제 완료 처리
+	/*
+	if($amt==0){
+		$inOdepositCheck=2;
+		$sql = "update 2011_orderInfo set OpayState='2' where IDX='" . $Oidx . "'";
+		sql_query($sql);
+	}
+	*/
+} else if($inOpayType==2){
+	//-- 카드결제 결제완료 처리
+	//$sql = "update 2011_orderInfo set OpayState='2' where IDX='" . $Oidx . "'";
+	//sql_query($sql);
+}
+$inOdeposit = $inOname;
+$ACCOUNT_NO = 'english';
+/*=====================================================================================
+결재정보 기록
+=====================================================================================*/
+$sql = "insert into 2011_orderPayment (OIDX,OpayType,OusePoint,OuseGift,OuseCoupon,Obill,Odeposit,OdepositCheck,REPLYCD,REPLYMSG,ORDER_NO,AMT,PAY_TYPE,APPROVAL_YMDHMS,SEQ_NO,ESCROW_YN,APPROVAL_NO,CARD_ID,";
+$sql.= "CARD_NM,SELL_MM,ZEROFEE_YN,CERT_YN,CONTRACT_YN,SAVE_AMT,BANK_ID,BANK_NM,CASH_BILL_NO,ACCOUNT_NO,INCOME_ACC_NM,ACCOUNT_NM,INCOME_LIMIT_YMD,";
+$sql.= "INCOME_EXPECT_YMD,CASH_YN,HP_ID,TICKET_ID,TICKET_NAME,TICKET_PAY_TYPE) values(";
+
+$sql.= "'" . $Oidx . "',";
+
+$sql.= "'" . $inOpayType . "',";	//-- 결재방식
+$sql.= "'" . $inOusePoint . "',";	//-- 사용 포인트
+$sql.= "'" . $inOuseTicket . "',";	//-- 사용 상품권
+$sql.= "'" . $inUseCPprice . "',";	//-- 사용 쿠폰
+$sql.= "'" . $inObill . "',";	//-- 계산서 첨부
+$sql.= "'" . $inOdeposit . "',"; //-- 입금자명
+$sql.= "'" . $inOdepositCheck . "',"; //-- 입금상태
+
+$sql.= "'" . $REPLYCD . "',";		//-- 결과코드
+$sql.= "'" . $REPLYMSG . "',";	//-- 결과메세지
+$sql.= "'" . $ORDER_NO . "',";	//-- 주문코드
+$sql.= "'" . $amt . "',";				//-- 결재총액
+$sql.= "'" . $PAY_TYPE . "',";		//-- 리턴메세지
+$sql.= "'" . $APPROVAL_YMDHMS . "',";	//-- 승인일시
+$sql.= "'" . $SEQ_NO . "',";
+$sql.= "'" . $ESCROW_YN . "',";
+$sql.= "'" . $APPROVAL_NO . "',";	//-- 카드거래 번호
+$sql.= "'" . $CARD_ID . "',";		//-- 카드사 코드
+$sql.= "'" . $CARD_NM . "',";		//-- 카드명
+$sql.= "'" . $SELL_MM . "',";		//-- 할부개월수
+$sql.= "'" . $ZEROFEE_YN . "',";
+$sql.= "'" . $CERT_YN . "',";
+$sql.= "'" . $CONTRACT_YN . "',";
+$sql.= "'" . $SAVE_AMT . "',"; 
+$sql.= "'" . $BANK_ID . "',";					//-- 가상계좌 은행 코드
+$sql.= "'" . $BANK_NM . "',";					//-- 가상계좌 은행 명
+$sql.= "'" . $CASH_BILL_NO . "',";
+$sql.= "'" . $ACCOUNT_NO . "',";			//-- 가상계좌번호
+$sql.= "'" . $fnWeight . "',";		//-- 계좌주명 (??)
+$sql.= "'" . $ACCOUNT_NM . "',";			//-- 입금자명 (입력안함)
+$sql.= "'" . $INCOME_LIMIT_YMD . "',";	//-- 입금 기한
+$sql.= "'" . $shopConfig['CFperDollar'] . "',";	//-- 입금 예정 (에스크로는 그냥 기한과 동일값)
+$sql.= "'" . $CASH_YN . "',";
+$sql.= "'" . $TICKET_ID . "',";
+$sql.= "'" . $HP_ID . "',";
+$sql.= "'" . $TICKET_NAME . "',";
+$sql.= "'" . $TICKET_PAY_TYPE . "')";					
+sql_query($sql);
+
+/*================================================================================
+포인트 적립 (※도매회원 / 비회원 적립 안함※)
+================================================================================*/
+
+#-- 결제상태업데이트 (결제건이 여러건일 경우 모든 결제가 이루어 진 상태인지 체크하여 DB에(orderInfo) 상태값을 업데이트 합니다.)
+//if($isAddOrder) $t=fnUpdatePayState($Oidx);
+
+if($rOrdNo){
+	$rOrdNo = $rOrdNo;
+} else {
+	$rOrdNo = $ORDER_NO;
+}
+?>
+<html>
+<head>
+</head>
+<body onload="javascript:frmAGS_pay_ing.submit();">
+<form name=frmAGS_pay_ing method=post action=order_end.html target="_top">
+<input type=hidden name=rOrdNo value="<?=$rOrdNo?>">
+<input type=hidden name=AGS_HASHDATA value="<?=$AGS_HASHDATA?>">
+</form>
+
+
+<script type="text/javascript">
+//Eximbay 팝업
+function payForm(){
+	var frm = document.regForm;
+
+	//필수 값 파라미터 체크
+	
+	window.open("", "payment2", "scrollbars=yes,status=no,toolbar=no,resizable=yes,location=no,menu=no,width=800,height=470");
+	frm.target = "payment2";
+	frm.submit();
+}
+</script>
+</body> 
+</html>

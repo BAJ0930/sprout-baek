@@ -1,0 +1,46 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+?>
+
+<link rel="stylesheet" type="text/css" href="/customer/customer.css">
+<style>
+.helpImg img { width:100%; }
+#customerMain .helpTitle { float:none; width:100%; margin:25px 0 15px 5px; font-size:24px; font-family:'Verdana'; color:#204e99; }
+#customerMain .helpMemo { float:none; width:100%; overflow:hidden; display:block; margin:0; padding:25px 20px 40px 10px; color:#666; border-top:#aaa solid 2px; }
+#customerMain .helpMemo, #customerMain .helpMemo * { box-sizing:border-box; }
+#customerMain .helpMemo > div { margin:0; padding:0 0 50px 0; overflow:hidden; }
+#customerMain .helpMemo > div p { margin:0; padding:0 0 15px 0; font-size:14px; font-family:'Verdana'; color:#666; line-height:1.6; }
+</style>
+<!-- 회사소개 시작 --->    
+<div id="wrap">
+
+<? include_once $_SERVER['DOCUMENT_ROOT']."/company/menu.html"; ?>      
+
+	<!-- 회사소개 -->
+	<div id="customerMain">
+	
+		<div class="info_top">
+			<div class="helpImg"><img src="/img/company/company_top.jpg"></div>
+			<div class="helpTitle">Introducing us</div>
+			<div class="helpMemo">
+				<div>
+					<p>Cheonyu.com is the KOREA’s number 1 shopping spot for exciting and innovative design-premium stationery.<br/>
+				For over 15 years we’ve inspired with stylish stationery, unique greeting cards, distinctive gifts as well as quality art and<br/>craft materials.<br/><br/>
+
+				Always ready with fresh and inventive ideas, Cheonyu.com is constantly bringing you new products<br/>with many new products launching in our stores and website every single week.<br/><br/>
+
+				Many of these are created in-house by our talented team of designers, so you can enjoy ranges exclusive to us.<br/>
+				Alongside innovation, we maintain a great variety of essentials too, tried and tested by our loyal customers.<br/><br/><br/><br/></p>
+				</div>
+			</div>
+		
+	</div>
+	<!-- //회사소개 -->   
+	
+</div>             
+<!-- //회사소개 끝 ---> 
+
+
+<? include_once $_SERVER['DOCUMENT_ROOT']."/footer.html"; ?>

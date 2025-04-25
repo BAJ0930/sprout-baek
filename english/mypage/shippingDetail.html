@@ -1,0 +1,461 @@
+<?php
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+	
+	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/common.html";	
+?>
+<link rel="stylesheet" type="text/css" href="/mypage/mypage.css?2211">
+<link href='/css/button.css' rel='stylesheet' type='text/css'>
+
+<!-- 마이페이지 시작 --->    
+<div id="wrap">
+
+	<?	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/menu.html"; ?>
+	
+	<!-- mypageMain -->
+	<div id="mypageMain">
+	
+	<? include_once $_SERVER['DOCUMENT_ROOT']."/mypage/top.html"; ?>
+	
+	<?
+		/*============================================================
+		주문정보 불러오기
+		============================================================*/
+
+		//and a.Odeleted=0 and b.ORPdeleted=0 
+		$sql = "select a.*,b.ORPname,b.ORPengName,count(b.IDX) as ORPkindCount,sum(b.ORPcount) as ORPcount,sum(b.ORPprice2 * b.ORPcount) as ORPtotal ";
+		$sql.= "from 2011_orderInfo as a left join 2011_orderProduct as b on a.IDX = b.OIDX where a.MID = '" . $MID . "' and a.Ocode='". $Ocode . "' group by a.IDX";
+		if(!$rs = sql_fetch($sql)){
+			echo "<script>alert('Can not find to order.');history.go(-1);</script>";
+			exit();
+		}
+		# DB 레코드 결과값 모두 변수로 전환
+		foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+
+		/*============================================================
+		결제정보 가져오기
+		============================================================*/
+		$sql = "Select a.* from 2011_orderPayment as a left join 2011_orderInfo as b on a.OIDX = b.IDX where b.MID = '" . $MID . "' and b.Ocode='" . $Ocode . "'";
+		$payResult = sql_query($sql);
+		
+		$sql3 = "Select * from 2011_orderProduct where OIDX ='" . $dbIDX . "'";
+		$payResult3 = sql_query($sql3);
+		$dbAMTShopORI = 0;
+		while($row = sql_fetch_array($payResult3)){
+			if($row["ORPOLDUSER"]) $dbORPcount = $row["ORPcountOLD"];
+			else $dbORPcount = $row["ORPcount"];
+			
+			if($row["ORPOLDUSER2"]) $dbORPprice2OLD = $row["ORPprice2OLD"];
+			else $dbORPprice2OLD = $row["ORPprice2"];
+			
+			$dbAMTShopORI += ($dbORPcount * $dbORPprice2OLD);	
+		}
+		
+		if(!$dbOdeliveryCom) $dbOdeliveryCom="-";
+		if($dbORPkindCount>1) $dbORPname = $dbORPname. " 외 " . ($dbORPkindCount-1) . " 종";
+
+		if($dbObreakdown==1)$Obreakdown="미첨부";
+		else if($dbObreakdown==2)$Obreakdown="첨부";
+		
+		/*============================================
+		배송정보 불러오기
+		============================================*/
+		$sql = "select * from 2011_orderDeliveryInfo where OIDX='" . $dbIDX . "' ";
+		$odResult = sql_query($sql);
+		
+		#-- 배송정보 조합
+		$totODpay=0;
+		while($odRs = sql_fetch_array($odResult)) {
+			$totODcode=$odRs["ODcode"];
+			$odCom="";		
+			if($odRs["ODcom"]==1)$odCom = "CJ Logistics";
+			if($odRs["ODcom"]==2)$odCom = "Korea Postoffice";
+			if($odRs["ODcom"]==3)$odCom = "Logen";
+			if($odRs["ODcom"]==4)$odCom = "Hanjin";
+			if($odRs["ODcom"]==5)$odCom = "Hyundae";
+			if($odRs["ODcom"]==6)$odCom = "KGB";
+			if($odRs["ODcom"]==7)$ODcom = "EMS";
+			if($odRs["ODcom"]==8)$ODcom = "EMS PREMIUM(UPS)";
+			if($odRs["ODcom"]==9)$ODcom = "FEDEX";
+			if($odRs["ODcom"]==10)$ODcom = "DHL";
+			if($odRs["ODcom"]==11)$ODcom = "TNT";
+			if($odRs["ODcom"]==12)$ODcom = "MY3PL";
+			//else $odCom = "EMS";
+			
+			$totODcode = explode("##",$totODcode);
+			$ODlen = sizeof($totODcode);
+			$dbODstate = $odRs['ODstate'];
+			
+			$chkODcode = false;
+			for($k=0;$k<$ODlen;$k++){
+				if($totODcodeStr)$totODcodeStr.="<br>&nbsp;&nbsp;&nbsp;";	
+				$totODcodeStr.=$odCom . " / ";
+				$totODcodeStr.="<a href=\"javascript:viewDeliveryCode('" . $odRs["ODcom"] . "','" . $totODcode[$k] . "')\">" . $totODcode[$k] . "</a>";
+				if($totODcode[$k]) $chkODcode = true;
+			}
+			$totODpay+= $odRs["ODpay"];
+			if($odRs['ODdate']){
+				$dbODdate = date("y/m/d",$odRs['ODdate']);
+			} else {
+				$dbODate = "";
+			}
+		}
+		
+		if($dbAMTShopORI > 0) $dbAMTShopORI = $dbAMTShopORI + $totODpay;
+?>
+
+<script>
+	
+	function fnOrderPrint(){
+		window.open("/mypage/orderPrint.html?ckIDX=<?=$dbIDX?>","printWin","width=800,height=800,scrollbars=yes");
+		return;
+	}
+	
+	function fnOrderProductExcel(){
+		window.open("/mypage/orderExcel.php?qIDX=<?=$dbIDX?>","_self","width=100,height=100,scrollbars=yes");
+		return;
+	}
+	
+	function show_receipt_card(approve,send_no,send_dt) {
+		url="https://www.allthegate.com/customer/receiptLast3.jsp"
+		url=url+"?sRetailer_id=cheonyu";
+		url=url+"&approve="+approve;
+		url=url+"&send_no="+send_no;
+		url=url+"&send_dt="+send_dt;
+		window.open(url, "window","toolbar=no,location=no,directories=no,status=,menubar=no,scrollbars=no,resizable=no,width=420,height=700,top=0,left=150");
+	}
+</script>
+
+<style type="text/css">
+	.style8 {color: #FF0000}
+	td { margin:0; padding:0; }
+</style>
+<p>&nbsp;</p>
+<?
+	$totalMoney = 0;
+	$Memo = "";
+	while($payRs = sql_fetch_array($payResult)){      
+		foreach ($payRs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;} 
+		/*============================================================
+		정보 변환
+		============================================================*/		
+		if($dbOpayType==1)$OpayType = "Wire Transfer";
+		else if($dbOpayType==5)$OpayType = "Credit Card";
+		else if($dbOpayType==6)$OpayType = "Paypal";
+		else if($dbOpayType==7)$OpayType = "Alipay";
+		else if($dbOpayType==8)$OpayType = "Tenpay";
+		
+		if($dbOpayType==1){
+			if($dbObill==1)$Obill = "세금계산서";
+			else if($dbObill==2)$Obill = "현금영수증";
+			else if($dbObill==3)$Obill = "필요없음";
+		} else {
+			$Obill="-";
+		}
+		$Obill="-";
+		
+		//if($dbOdepositCheck==1) $OdepositCheck="입금안됨";
+		//else if($dbOdepositCheck==2) $OdepositCheck="결제완료";
+		
+		if($dbOpayState==1)$PayState = "<font color=green>Before Payment</font>";
+		if($dbOpayState==2)$PayState = "Paid";
+		if($dbOpayState==99)$PayState = "<font color=blue>신용처리</font>";
+		
+		if($dbOpayState==1 && $dbODstate==1)$StateStr = "Before Payment";
+		else if($dbOpayState==2 && $dbODstate==1)$StateStr = "<font class=blue>Paid</font>";
+		else if($dbODstate==2)$StateStr = "<font class=blue>Before Delivery</font>";
+		else if($dbODstate>2 && $dbODstate<3)$StateStr = "Before Delivery";
+		else if($dbODstate==3)$StateStr = "<font class=blue>On Delivery</font>";
+		else if($dbODstate>3 && $dbODstate<4)$StateStr = "On Delivery";
+		else if($dbODstate==4)$StateStr = "Delivery Over";
+		
+		$totalMoney = $dbAMT + $dbOusePoint + $dbOuseGift;
+		
+		$Memo = $OpayType;
+		if($dbOusePoint) $Memo .= " + 포인트";
+		if($dbOuseGift) $Memo .= " + 상품권";
+
+		
+		if($dbOdeleted == "1"){ 
+			$StateStr = "<font color=red>Cancel</font>";
+			$CancleTime = date("y/m/d H:i",$dbOcancelTime);
+		}
+?>
+
+<table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin:0; padding:0">
+	<tr><td style="height:30px;text-align:left;" colspan="3"><b>* Order No. <?=$Ocode?></b></td><td colspan="3" style="height:30px;text-align:right;" >Order Date : <?=date("y/m/d H:s",$dbOregdate)?></td></tr>
+	<tr><td colspan="6" style="background-color:#2237AD; height:2px; margin:0; padding:0;"></td></tr>
+	<tr><td colspan="6" style="height:1px; margin:0; padding:0;"></td></tr>
+	<tr>
+		<td style="height:38px;background-color:#E7E7E7;text-align:center;width:120px;">Recipient</td>
+		<td style="text-align:left;">&nbsp;<?=$dbOname?></td>
+		<td style="background-color:#E7E7E7;text-align:center;width:100px;">Tel</td>
+		<td style="width:200px;text-align:left;padding-left:5px;"><span style="font-size:11px;"><?=$dbOtel?><br/><?=$dbOhp?></span></td>
+	</tr>
+	<tr><td colspan="6" style="background-color:#CCCCCC; height:1px; margin:0; padding:0;"></td></tr>
+	<tr>
+		<td style="height:38px;background-color:#E7E7E7;text-align:center;">Send Date</td>
+		<td  style="text-align:left;">&nbsp;<?=$dbODdate?></td>
+		<td style="background-color:#E7E7E7;text-align:center;width:80px;">Box</td>
+		<td style="text-align:left;">&nbsp;<?=$ODlen?> EA</td>
+	</tr>
+	<tr><td colspan="6" style="background-color:#CCCCCC; height:1px; margin:0; padding:0;"></td></tr>
+	<tr>
+		<td style="height:38px;background-color:#E7E7E7;text-align:center;">Shipping</td>
+		<td style="text-align:left;">&nbsp;<?=$totODcodeStr?><?php if($chkODcode == false) { echo "<br><font color=red>&nbsp;It will be updated tracking number when we get it from delivery company.</font>"; } ?></td>
+		<td style="background-color:#E7E7E7;text-align:center;width:80px;">Weight</td>
+		<td style="text-align:left;">&nbsp; <?=$dbINCOME_EXPECT_YMD?> g</td>
+	</tr>
+	<tr><td colspan="6" style="background-color:#CCCCCC; height:1px; margin:0; padding:0;"></td></tr>
+	<tr>
+		<td style="height:38px;background-color:#E7E7E7;text-align:center;">Addr</td>
+		<td colspan="3" style="text-align:left;">&nbsp;<?=$dbOaddr1?> <?=$dbOaddr2?></td>
+	</tr>
+	<tr><td colspan="6" style="background-color:#CCCCCC; height:1px; margin:0; padding:0;"></td></tr>
+	<tr>
+		<td style="height:38px;background-color:#E7E7E7;text-align:center;">Memo</td>
+		<td colspan="3" style="text-align:left;">&nbsp;<?=$dbOcontent?></td>
+	</tr>
+	<tr><td colspan="6" style="background-color:#2237AD; height:1px; margin:0; padding:0;"></td></tr>
+	<tr>
+		<td colspan="2" style="padding:5px;">
+			<b>Check on the status of the shipment.</b><br>
+			- Korea Postoffice(EMS or EMS Premium(UPS)): <a href="https://trace.epost.go.kr/xtts/tt/epost/ems/ems_eng.jsp" target="_blank">https://trace.epost.go.kr/xtts/tt/epost/ems/ems_eng.jsp</a><br/>
+			- Korea CJ Logistics <a href="https://www.cjlogistics.com/ko/tool/parcel/tracking" target="_blank">https://www.cjlogistics.com/ko/tool/parcel/tracking</a>
+		</td>
+	</tr>
+</table>
+
+<br/>
+<table width="100%" border="0" cellspacing="0" cellpadding="0">
+	<tr><td height="30" style="text-align:left;"><b>* Payment Info</b></td></tr>
+	<tr><td height="2" bgcolor="#2237AD" style=" margin:0; padding:0;"></td></tr>
+	<tr><td height="1" style=" margin:0; padding:0;"></td></tr>
+	<tr>
+		<td>
+			
+			<table width="100%" border="0" cellspacing="0" cellpadding="1">
+				<tr> 
+					<td align="center" bgcolor="#E7E7E7">Total Amount</td>
+					<td width="150" height="25" align="center" bgcolor="#E7E7E7">Payment Method</td>
+					<td width="100" height="25" align="center" bgcolor="#E7E7E7">Amount</td>
+					<td width="100" height="25" align="center" bgcolor="#E7E7E7">-</td>
+					<td width="100" height="25" align="center" bgcolor="#E7E7E7">-</td>
+					<td width="100" align="center" bgcolor="#E7E7E7">-</td>           
+				</tr>
+			</table>
+			
+		</td>
+	</tr>
+	<tr><td height="1" bgcolor="#CCCCCC" style=" margin:0; padding:0;"></td></tr>
+	<tr>
+		<td>
+			
+			<table width="100%" border="0" cellspacing="0" cellpadding="0">
+				<tr>
+					<td align="center" height="50"><span style="color:#FF6600; font-size:13pt; font-weight:bold;">USD <?=$totalMoney?><!-- <? if($dbAMTShopORI != $totalMoney) echo " → " . number_format($dbAMTShopORI); ?>--></span></td>
+					<td width="150" align="center"><?=$Memo?></td>
+					<td width="100" align="center">USD <?=$dbAMT?></td>
+					<td width="100" align="center">-</td>
+					<td width="100" align="center">-</td>
+					<td width="100" align="center">-</td>
+				</tr>
+			</table>
+			
+		</td>
+	</tr>
+	<tr><td height="1" bgcolor="#CCCCCC" style=" margin:0; padding:0;"></td></tr>
+	<tr><td height="1" style=" margin:0; padding:0;"></td></tr>
+	<tr>
+		<td>
+			
+			<table width="100%" border="0" cellspacing="0" cellpadding="1">
+				<tr> 
+					<td align="center" bgcolor="#E7E7E7">Status Payment</td>
+					<td width="150" height="25" align="center" bgcolor="#E7E7E7">Status Shipping</td>
+					<td width="200" height="25" align="center" bgcolor="#E7E7E7">Order Cancel Date</td>
+					<td width="200" height="25" align="center" bgcolor="#E7E7E7">Reason for Cancellation</td>
+				</tr>
+			</table>
+			
+		</td>
+	</tr>
+	<tr><td height="1" bgcolor="#CCCCCC" style=" margin:0; padding:0;"></td></tr>
+	<tr>
+		<td>
+			
+			<table width="100%" border="0" cellspacing="0" cellpadding="0">
+				<tr>
+					<td align="center"><?=$PayState?></td>
+					<td width="150" height="50" align="center"><?=$StateStr?></td>
+					<td width="200" align="center"><?=$CancleTime?></td>
+					<td width="200" align="center">
+						<?
+							if($dbOcancelType==1)$dbOcancelReason="I don't like it";
+							else if($dbOcancelType==2)$dbOcancelReason="Out of stock";
+							else if($dbOcancelType==3)$dbOcancelReason="Delayed deposit";
+							else if($dbOcancelType==4)$dbOcancelReason="Delivery delay";
+							echo $dbOcancelReason;
+						?>
+					</td>
+				</tr>
+			</table>
+			
+		</td>
+	</tr>
+	<tr><td height="1" bgcolor="#CCCCCC" style=" margin:0; padding:0;"></td></tr>
+	<? } ?>
+	<? 
+		$queryMemo = " SELECT OMmemo FROM 2011_orderMemo WHERE OIDX = '" . $rs['IDX'] . "' AND OMtype = 1 AND OMdeleted = 0 ORDER BY IDX DESC ";
+		$resultMemo = sql_query($queryMemo);
+		
+		$dataMemoTxt = "";
+		while($dataMemo = sql_fetch_array($resultMemo)){
+			$dataMemoTxt .= $dataMemo['OMmemo']."<br>";
+		}
+		
+		if($dataMemoTxt){
+	?>
+	<tr><td style="padding:10px;">* Memo from cheonyu.com *<br/><font color=red><?=$dataMemoTxt?></font></td></tr>
+	<tr><td height="1" bgcolor="#CCCCCC" style=" margin:0; padding:0;"></td></tr>
+	<? } ?>
+	<tr><td><br/><!--고객 안내 메모 사항--></td></tr>
+	<tr><td style="height:30px;" align=left><b>* Order Item List</b></td></tr>
+	<tr>
+		<td>
+		
+		<?
+			$sql = " select a.*,b.PIDX,b.ORPimg,b.ORPname,b.ORPengName,b.ORPprice1,b.ORPprice2,b.ORPoptionName,b.ORPoptionValue,b.ORPcount,b.ORPoption, ";
+			$sql .= " b.ORPdiscountPer,b.ORPOLDUSER,b.ORPOLDUSER2,b.ORPcountOLD,b.ORPprice2OLD,c.BRename ";
+			$sql .= " from 2011_orderInfo as a ";
+			$sql .= " left join 2011_orderProduct as b on a.IDX = b.OIDX ";
+			$sql .= " left join 2011_brandInfo as c on b.BRIDX = c.IDX ";
+			$sql .= " left join 2011_productInfo as d on b.PIDX = d.IDX ";
+			$sql .= " where a.MID = '" . $MID . "' and a.Ocode='" . $Ocode . "' ";			
+			$sql .= " ORDER BY Prack,BRkname,ORPname,ORPoptionValue ";
+			$result = sql_query($sql);
+		?>
+		<table width='100%;' border="0" cellpadding="0" cellspacing="0">
+			<tr><td style="height:2px;background-color:#2237AD; margin:0; padding:0;" colspan="8"></td></tr>
+			<tr><td height="1" style=" margin:0; padding:0;"></td></tr>
+			<tr>
+				<td width="35" height="37" align="center" style="background-color:#E7E7E7">No</td>
+				<td width="80" height="37" align="center" style="background-color:#E7E7E7">Image</td>
+				<td width="130" height="37" align="center" style="background-color:#E7E7E7">Barcode</td>
+				<td align="center" style="background-color:#E7E7E7">Item Name</td>
+				<td width="80" height="37" align="center" style="background-color:#E7E7E7">Price</td>
+				<td width="120" height="37" align="center" style="background-color:#E7E7E7">Discounted Price</td>
+				<td width="60" height="37" align="center" style="background-color:#E7E7E7">Qty</td>
+				<td width="80" height="37" align="center" style="background-color:#E7E7E7">Amount</td>
+			</tr>
+			<tr><td height="1" style=" margin:0; padding:0;"></td></tr>
+			<tr><td height="1" bgcolor="#CCCCCC" style=" margin:0; padding:0;" colspan=8></td></tr>
+			<?
+				$no = 0;
+				while($rs = sql_fetch_array($result)) {
+					$no ++;
+					
+					# DB 레코드 결과값 모두 변수로 전환
+					foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}							
+
+					$link = "<a href='/product/view.html?&qIDX=" . $dbPIDX . "' target='_blank'>";
+									
+					$fPosition = explode("/",$dbORPimg);
+					$thumb = $fPosition[0] . "/thumb/" . $fPosition[1];
+					$pImg = $link."<img src='/_DATA/product/" . $thumb . "' width='60' height='60' vspace='18' border=0 /></a>";
+					
+					if(!$dbPstockCount)$nCount=0;
+					else $nCount=1;
+					
+					$dbAMTShopEND += ($dbORPcount * $dbORPprice2);
+					if($rs["ORPOLDUSER"]) $dbORPcount = $rs["ORPcountOLD"];
+					else $dbORPcount = $rs["ORPcount"];
+					
+					if($rs["ORPOLDUSER2"]) $dbORPprice2OLD = $rs["ORPprice2OLD"];
+					else $dbORPprice2OLD = $rs["ORPprice2"];
+					
+					$dbAMTShopORI += ($dbORPcount * $dbORPprice2OLD);
+					
+					$barcode = sql_fetch(" SELECT Pbarcode FROM 2011_productInfo WHERE IDX = '$dbPIDX' ");
+					if(!$barcode['Pbarcode']){
+						$barcode1 = sql_fetch(" SELECT OPbarcode FROM 2011_productOption WHERE IDX = '$dbORPoption' ");
+						$barcodeData = $barcode1['OPbarcode'];
+					} else {
+						$barcodeData = $barcode['Pbarcode'];
+					}
+
+					$oDollar = $dbINCOME_EXPECT_YMD;
+					$dbORPprice1 = number_format($dbORPprice1 / $oDollar,2,'.','');
+					$dbORPprice2 = number_format($dbORPprice2 / $oDollar,2,'.','');
+					$dbORPprice2OLD = number_format($dbORPprice2OLD / $oDollar,2,'.','');
+			?>
+			<tr>
+				<td align="center"><?=$no?></td>
+				<td height="70" align="center" valign="middle"><?=$pImg?></td>
+				<td align="center"><span class="style7"><?=$barcodeData?></span></td>
+				<td align="left"><span style="color:#444444">Item No:<?=$dbPIDX?> [<?=$dbBRename?>]<br><?=$link . $dbORPengName?>
+					<?if($dbORPoptionValue){?><br>[<?=$dbORPoptionValue?> / <?=$dbORPcount?> pcs]<?}?></span>
+				</td>
+				<td align="right">USD <strong><?=$dbORPprice1?></strong>&nbsp;</td>
+				<td align="right">[<?=$dbORPdiscountPer?>%]&nbsp;&nbsp;USD
+					<?
+						if($rs['ORPOLDUSER2'] && ($rs['ORPprice2OLD'] != $rs['ORPprice2'])){
+							//echo "".number_format($rs['ORPprice2']) ."→<font color=red><strong>". number_format($rs['ORPprice2OLD'])."</strong></font>";
+						} else {
+							echo "<strong>" . $dbORPprice2 ."</strong> ";
+						}
+					?></td>
+				<td align="center">
+					<?
+						if($rs['ORPOLDUSER'] && ($rs['ORPcountOLD'] != $rs['ORPcount'])){
+							echo $rs['ORPcount'] ."→<font color=red><strong>". $rs['ORPcountOLD']."</strong></font>";
+						} else {
+							echo "<strong>" . $dbORPcount . "</strong>";
+						}
+					?> pcs</td>
+				<td align="right">USD <strong><?=$dbORPprice2OLD*$dbORPcount?></strong>&nbsp;</td>
+			</tr>
+			<tr><td height="1" bgcolor="#CCCCCC" style=" margin:0; padding:0;" colspan=8></td></tr>
+    		<? } ?>
+		</table>
+		
+		</td>
+	</tr>
+	<tr>	
+		<td height="40" align="center" valign="bottom">
+		<br/>
+			
+			<table border="0" cellspacing="0" cellpadding="0">
+				<?
+					if($dbOdeleted == "1" || $kind == "return"){	//주문취소
+						if($kind == "return") $pageLink = "shippingReturn.html?kind=return";
+						else $pageLink = "shippingCancel.html?kind=deleted";
+				?>
+				<tr>
+					<td align="center"><a href="<?=$pageLink?>&page=<?=$page?>&listSize=<?=$listSize?>&s3=<?=$s3?>&s4=<?=$s4?>&s9=<?=$s9?>&s10=<?=$s10?>"><img src="/image_3/p_bt14List.gif" border="0" /></a></td>
+				</tr>
+				<? } else { ?>
+				<tr>
+					<td><a href="shipping.html?page=<?=$page?>&listSize=<?=$listSize?>&s3=<?=$s3?>&s4=<?=$s4?>&s9=<?=$s9?>&s10=<?=$s10?>"><img src="/image_3/p_bt14back.gif" border="0" /></a></td>
+					<td align="center">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="/image_3/p_bt13.gif" border="0" style='cursor:pointer;' onclick='fnOrderPrint()' /></td>
+					<td style="width:10px;"></td>
+					<!--<td style="width:10px;"></td>
+					<td><img src="/image_3/p_bt15.gif" style='cursor:pointer;' onclick='fnOrderProductExcel()' /></td>-->
+				</tr>
+				<? } ?>
+			</table>
+			
+		<br/>
+		</td>
+	</tr>
+</table>
+
+<p>&nbsp;</p>
+
+	</div>
+
+</div>
+<?php
+include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

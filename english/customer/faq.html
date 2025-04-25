@@ -1,0 +1,215 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+?>
+
+<link rel="stylesheet" type="text/css" href="/customer/customer.css?250220">
+
+<!-- 고객센터 시작 --->    
+<div id="wrap">
+
+<?
+include_once $_SERVER['DOCUMENT_ROOT']."/customer/menu.html";
+?>      
+
+<style>
+    #customer.customer-info {margin-top: 40px;}
+</style>
+	<!-- customerMain -->
+	<div id="customerMain">
+        <div class="faq-container">
+            <!--<div class="qna_sch">
+                <form name="faqSearchForm" method="get" action="<?=$PHP_SELF?>">
+                    <div class="qna_sch_box">
+                        <div class="sch_box_keyw">
+                            <input type="text" name="faqSearch" placeholder="Please enter a search term." value="<?=$faqSearch?>" onkeypress="faqPress(this.form);">
+                            <button type="button" onClick="faqSubmit();" style="cursor:pointer;"><span class="mag-glass"></span></button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <script>
+                function faqSubmit(){
+                    document.faqSearchForm.submit();
+                }
+            </script>-->
+        
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-button active" data-tab="all">All</button>
+                <button class="tab-button" data-tab="about">About Cheonyu</button>
+                <button class="tab-button" data-tab="order">Order</button>
+                <button class="tab-button" data-tab="payment">Payment</button>
+                <button class="tab-button" data-tab="shipping">Shipping</button>
+                <button class="tab-button" data-tab="product">Refund</button>
+            </div>
+        
+            <!-- FAQ Items -->
+            <div class="faq-content">
+                <div class="faq-item" data-tab="about">
+                    <div><div class="btn-faq-toggle">view more</div></div>
+                    <div class="faq-question"><strong>Q</strong>What is the Cheonyu?</div>
+                    <div class="faq-answer">
+                        Cheonyu.com is South Korea's No.1 wholesale site specializing in character stationery and lifestyle goods.
+                        Our headquarters are located in Busan, and we have a system in place to ship products worldwide.
+                        With a 7,300 m2 warehouse managing over 40,000 items, we guarantee fast delivery. 
+                        Cheonyu.com only sells licensed and authentic products, so you can shop with confidence. 
+                        Join our family now and enjoy great savings with our wholesale prices!
+                    </div>
+                </div>
+                <div class="faq-item" data-tab="payment">
+                    <div><div class="btn-faq-toggle">view more</div></div>
+                    <div class="faq-question"><strong>Q</strong>What payment methods do you accept?</div>
+                    <div class="faq-answer">
+                        We accept various payment methods including Credit cards, PayPal, and Bank transfers.
+                    </div>
+                </div>
+                <div class="faq-item" data-tab="shipping">
+                    <div><div class="btn-faq-toggle">view more</div></div>
+                    <div class="faq-question"><strong>Q</strong>How long does delivery take?</div>
+                    <div class="faq-answer">
+                        We use EMS or EMS Premium(UPS).
+                        Delivery time varies by country, but it typically takes 3~5 days.
+                    </div>
+                </div>
+                <div class="faq-item" data-tab="shipping">
+                    <div><div class="btn-faq-toggle">view more</div></div>
+                    <div class="faq-question"><strong>Q</strong>How much is the shipping cost?</div>
+                    <div class="faq-answer">
+                        Shipping costs vary depending on the country and order volume. 
+                        You can check the estimated shipping cost on the shopping cart.
+                        CHEONYU.COM calculates the international shipping fee based on the product information provided on the detail page.
+                        Based on this, overseas shipping costs will be charged in advance.
+                        However, some errors may occur in the process of re-measuring the actual weight before shipping.
+                        Please understand that shipping charges may be added or deducted during this process.
+                        If additional shipping costs are incurred, we will notify you through the registered email.
+                    </div>
+                </div>
+                <div class="faq-item" data-tab="shipping">
+                    <div><div class="btn-faq-toggle">view more</div></div>
+                    <div class="faq-question"><strong>Q</strong>How can I track my order?</div>
+                    <div class="faq-answer">
+                        Once your order is shipped, you can look up the tracking number on the My page or Order/Tracking tab.
+                    </div>
+                </div>
+                <div class="faq-item" data-tab="order">
+                    <div><div class="btn-faq-toggle">view more</div></div>
+                    <div class="faq-question"><strong>Q</strong>Can I cancel or change my order?</div>
+                    <div class="faq-answer">
+                        You can cancel or modify your order before it ships. Please contact our customer service for more details.
+                        For additional information, please visit our <a href="/customer/return.html">Cancel/Exchange/Return page</a>.
+                    </div>
+                </div>
+                <div class="faq-item" data-tab="product">
+                    <div><div class="btn-faq-toggle">view more</div></div>
+                    <div class="faq-question"><strong>Q</strong>What should I do if there are defects or damages with the product?</div>
+                    <div class="faq-answer">
+                        For products shipped via EMS or EMS Premium by Cheonyu.com, if defects or damage are found, please take detailed photos of the box and the products at the time of receipt.<br>
+                        If your order is shipped to an overseas destination through a shipping agency, please completely inspect the items after receiving them at the forwarding address.
+                        Within Korea, if any damage or defects are found upon receiving the items shipped by Cheonyu.com, returns and refunds can be processed.<br>
+                        However, once the items are shipped to a secondary address (overseas), they are considered inspected and approved before shipping. 
+                        Therefore, Cheonyu.com can't process returns or refunds for damages or defects discovered after the items have been forwarded internationally.
+                        We appreciate your understanding in this matter.
+                    </div>
+                </div>
+                <div class="faq-item" data-tab="order">
+                    <div><div class="btn-faq-toggle">view more</div></div>
+                    <div class="faq-question"><strong>Q</strong>Are there any discounts for bulk orders?</div>
+                    <div class="faq-answer">
+                        We offer special discounts for bulk orders. Please contact our customer service for more details.
+                    </div>
+                </div>
+                <div class="faq-item" data-tab="shipping">
+                    <div><div class="btn-faq-toggle">view more</div></div>
+                    <div class="faq-question"><strong>Q</strong>Where can I find the list of countries you ship to?</div>
+                    <div class="faq-answer">
+                        We ship to most countries worldwide by EMS/EMS Premium(UPS). 
+                        You can check it through the EMS link below.
+                        Shipping rate inquiry is <a href="https://ems.epost.go.kr/front.EmsDeliveryDelivery09.postal?langtype=en" target="_blank">click here</a>.
+                    </div>
+                </div>
+                <div class="faq-item" data-tab="payment">
+                    <div><div class="btn-faq-toggle">view more</div></div>
+                    <div class="faq-question"><strong>Q</strong>How are customs duties and taxes handled?</div>
+                    <div class="faq-answer">
+                        Customs duties and taxes are the responsibility of the customer and may vary by country. 
+                        These charges are not included in the shipping charges and be Paid by the buyer.
+                        Please check with your local customs office for more information.
+                    </div>
+                </div>
+                <div class="faq-item" data-tab="about">
+                    <div><div class="btn-faq-toggle">view more</div></div>
+                    <div class="faq-question"><strong>Q</strong>What are your customer service hours?</div>
+                    <div class="faq-answer">
+                        Our customer service is available on weekdays from 9 AM to 6 PM. You can also reach us via email / customer service at any time.<br>
+                        mkmd4@cheonyu.com or <a href="mailto:mkmd4@cheonyu.com">click here</a>.
+                    </div>
+                </div>
+                <div class="faq-item" data-tab="shipping">
+                    <div><div class="btn-faq-toggle">view more</div></div>
+                    <div class="faq-question"><strong>Q</strong>Is it okay to use a shipping agency?</div>
+                    <div class="faq-answer">
+                        Yes, it is possible. You can enter the address of the shipping agency in Korea in the shipping address field.<br>
+                        <b>Please check the following note when using a shipping agency:</b><br>
+                        If your order is shipped to an overseas destination through a shipping agency, please inspect the items after receiving them at the forwarding address.
+                        Within Korea, if any damage or defects are found upon receiving the items shipped by Cheonyu.com, returns and refunds can be processed.<br>
+                        However, once the items are shipped to a secondary address (overseas), they are considered inspected and approved before shipping. 
+                        Therefore, Cheonyu.com can't process returns or refunds for damages or defects discovered after the items have been forwarded internationally.
+                        We appreciate your understanding in this matter.
+                    </div>
+                </div>
+                <!-- More FAQ items here -->
+            </div>
+        </div>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {
+                const tabButtons = document.querySelectorAll(".tab-button");
+                const faqItems = document.querySelectorAll(".faq-item");
+                const faqQuestions = document.querySelectorAll(".faq-question");
+
+                // Tab functionality
+                tabButtons.forEach(button => {
+                    button.addEventListener("click", () => {
+                        document.querySelector(".tab-button.active").classList.remove("active");
+                        button.classList.add("active");
+                        
+                        const tab = button.getAttribute("data-tab");
+                        
+                        faqItems.forEach(item => {
+                            item.style.display = item.getAttribute("data-tab") === tab || tab === "all" ? "block" : "none";
+                        });
+                    });
+                });
+
+                // FAQ toggle functionality
+                faqQuestions.forEach(question => {
+                    question.addEventListener("click", function() {
+                        const answer = this.nextElementSibling;
+                        // 현재 답변의 display 상태를 토글
+                        answer.style.display = answer.style.display === "block" ? "none" : "block";
+                        
+                        // 답변에 'active' 클래스 추가/제거
+                        if (answer.style.display === "block") {
+                            answer.classList.add("active");
+                        } else {
+                            answer.classList.remove("active");
+                        }
+                    });
+                });
+
+                // Initialize with all tab active
+                document.querySelector(".tab-button.active").click();
+            });
+        </script>
+
+	</div>
+    
+<!-- //고객센터 끝 ---> 
+</div>
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

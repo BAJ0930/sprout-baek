@@ -1,0 +1,132 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+	
+	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/common.html";	
+?>
+
+<link rel="stylesheet" type="text/css" href="/mypage/mypage.css?2211">
+
+<!-- 마이페이지 시작 --->
+<div id="wrap">
+
+	<?
+		include_once $_SERVER['DOCUMENT_ROOT']."/mypage/menu.html";
+	?>
+
+        <!-- mypageMain -->
+        <div id="mypageMain">
+
+			<?
+				include_once $_SERVER['DOCUMENT_ROOT']."/mypage/info.html";
+			?>      
+
+			<?
+				$nPoint = fnGetMemberTotalPoint($MID);
+
+				if(!$sYear) $sYear = date("Y");
+				if(!$sMonth && $act != "ok") $sMonth = date("m");
+
+				if($sYear == 0){
+				} else {
+					$dWhere .= " AND FROM_UNIXTIME(LLregdate, '%Y') = '$sYear'  ";
+				}
+				if($sMonth == "0" && $act == "ok"){
+				} else {
+					$dWhere .= " AND FROM_UNIXTIME(LLregdate, '%m') = '$sMonth'  ";
+				}
+				$option .= "&act=".$act."&sYear=".$sYear."&sMonth=".$sMonth;
+				$query = " SELECT * FROM 2011_LogLogin WHERE MID = '".$MID."' ".$dWhere." ";
+				
+				$result = sql_query($query);
+				$TotalCount = mysqli_num_rows($result);
+				if (!$page) $page = 1;
+				$CntPerPage = 10;
+				$PagePerList = 5;
+				$StartPos = ($page - 1) * $CntPerPage;
+				$query .= " ORDER BY IDX DESC";
+				$query .= " LIMIT ".($page - 1) * $CntPerPage.",".$CntPerPage;
+				$result = sql_query($query);
+			?>
+          <div class="qa_list">
+			<script>
+				function goSearch(){
+					document.getElementById("xform").submit();
+				}
+			</script>
+			<form name="xform" id="xform" method="get">
+			<input type="hidden" name="act" value="ok">
+            <div class="period_select">
+            <strong>날짜조회</strong>
+            <select name="sYear" id="sYear" class="" onclick="">
+				<?
+					$endYear = date("Y") + 2;
+					for($i = 2013; $i < $endYear; $i ++){
+						if($sYear){
+							if($i == $sYear) $sel = "selected";
+							else $sel = "";
+						} else {
+							if($i == date("Y")) $sel = "selected";
+							else $sel = "";
+						}
+				?>
+				<option value="<?=$i?>" <?=$sel?>><?=$i?></option>
+				<? } ?>
+            </select> 년
+            <select name="sMonth" id="sMonth" class="" onclick="">
+				<option value="0">전체</option>
+				<?
+					for($i = 1; $i < 13; $i ++){
+						if(strlen($i) == 1) $iMonth = "0".$i;
+						else $iMonth = $i;
+						if($sMonth){
+							if($iMonth == $sMonth) $sel = "selected";
+							else $sel = "";
+						}
+				?>
+				<option value="<?=$iMonth?>" <?=$sel?>><?=$iMonth?></option>
+				<? } ?>
+            </select>  월
+            <img type="image" src="/img/mypage/btn_search.gif" width="41" height="18" alt="검색" onClick="goSearch();" style="cursor:pointer">
+            </div>
+			</form>
+            
+            
+            <table border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                    <th scope="col">NO</th>
+                    <th scope="col">접속일시</th>
+                    <th scope="col">IP</th>
+                </tr>
+				<?
+				  $no = $TotalCount - $StartPos;
+				  while($rs = sql_fetch_array($result)){
+					# DB 레코드 결과값 모두 변수로 전환
+					foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+								
+				?>
+                <tr>
+                    <td><?=$no?></td>
+                    <td><?=date("Y-m-d H:i",$dbLLregdate)?></td>
+                    <td><?=$dbLLIP?>	</td>
+                </tr>
+				<? 
+						$no --;
+					}
+				?>                
+            </table>
+
+			<div align="center" id="paging"><br/><? echo page_nav($TotalCount,$CntPerPage,$PagePerList,$page,$option); ?></div>
+
+		</div>
+		<!-- //접속내역 -->
+</div>             
+            
+</div>   
+<!-- //마이페이지 끝 ---> 
+    
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

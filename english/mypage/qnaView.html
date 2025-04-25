@@ -1,0 +1,316 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+	
+	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/common.html";
+?>
+
+<link rel="stylesheet" type="text/css" href="/mypage/mypage.css?v=<?= time(); ?>">
+
+<!-- 마이페이지 시작 --->
+<div id="wrap">
+
+	<?
+		include_once $_SERVER['DOCUMENT_ROOT']."/mypage/menu.html";
+	?>
+	
+	<!-- mypageMain -->
+	<div id="mypageMain">
+	
+	<?
+		include_once $_SERVER['DOCUMENT_ROOT']."/mypage/top.html";
+	?>
+	
+	<div class="qa_view">
+		<h3><img src="/img/mypage/tit_11.gif" alt="나의상담문의내역"></h3>
+		
+		<?		
+			/*======================================================================================
+			사용자 내용 조회 영역
+			======================================================================================*/
+
+			//-- 1- 일반문의 / 2- 고객의소리 / 3-체인문의 / 4-대량구매 문의 /
+			$group = $IRgroup;
+			$qIDX = $idx;
+			if($group==1 ||$group==2) {
+				$sql = "select * from 2011_inquireInfo where IDX='" . $qIDX . "' AND IRMID = '" . $MID . "' AND IRdeleted = 0";
+				$titleStr = "문의하기";
+			} else if($group==3) {
+				$sql = "select * from 2011_franchiseQNA  where IDX='" . $qIDX . "' AND FCMID = '" . $MID . "' AND FCdeleted = 0 ";
+				$titleStr = "체인점 문의";
+			} else if($group==4) {
+				$sql = "select a.*,b.Pname from 2011_heavyBuying as a left join 2011_productInfo as b on a.PIDX = b.IDX where a.IDX='" . $qIDX . "' AND HBMID = '" . $MID . "' AND HBdeleted = 0 ";
+				$titleStr = "대량구매문의 문의";
+			} else if($group==5) {
+				$sql = "select * from 2011_openingQNA  where IDX='" . $qIDX . "' AND MID = '" . $MID . "' AND OQdeleted = 0 ";
+				$titleStr = "입점 문의";
+			} else {
+				echo "<script>alert('잘못된 접근입니다.');history.go(-1);</script>";
+			}
+			$rs = sql_fetch($sql);
+			
+			# DB 레코드 결과값 모두 변수로 전환
+			foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+			
+			#-- 답변 변수 통일
+			if($dbIRreply)$replyTxt = $dbIRreply;
+			else if($dbHBreply)$replyTxt = $dbHBreply;
+			else if($dbFCreply)$replyTxt = $dbFCreply;
+			else if($dbOQreply)$replyTxt = $dbOQreply;
+			
+				$Bfilename = $dbIRBrealfile1;
+			#== 변수 값 변형하기
+			if($group==1) {
+				$dbIRgroup = "도매문의";
+				
+				if($dbIRkind==1)$dbIRkind="가입문의";
+				else if($dbIRkind==2)$dbIRkind="영업팀";
+				else if($dbIRkind==3)$dbIRkind="정산팀";
+				else if($dbIRkind==4)$dbIRkind="상품기획팀";
+				else if($dbIRkind==5)$dbIRkind="개발팀";
+				else if($dbIRkind==6)$dbIRkind="디자인팀";
+				else if($dbIRkind==7)$dbIRkind="물류팀";
+				else if($dbIRkind==8)$dbIRkind="경영지원팀";
+				else if($dbIRkind==9)$dbIRkind="기타";
+				else if($dbIRkind==10)$dbIRkind="입고문의";
+				
+			} else if($group==2) {
+				
+				$dbIRgroup = "고객의소리";
+				if($dbIRkind==1)$dbIRkind="제안합니다";
+				else if($dbIRkind==2)$dbIRkind="칭찬합니다";
+				
+			} else if($group==3) {
+
+				if($dbFCexp==1)$dbFCexp="있음";
+				else if($dbFCexp==2)$dbFCexp="없음";	
+
+				if($dbFCshop==1)$dbFCshop="있음";
+				else if($dbFCshop==2)$dbFCshop="없음";
+				
+				if($dbFCplanOwner==1)$dbFCplanOwner="본인";
+				else if($dbFCplanOwner==2)$dbFCplanOwner="직원";	
+			} else if($group==4) {
+			} else if($group==5) {
+			}
+		?>
+		<table border="0" cellspacing="0" cellpadding="0" class="my-table-qna">
+		<?
+			#=========== 일반문의 & 고객의 소리 양식 ====================================
+			if($group==1 ||$group==2){
+		?>
+			<tr>
+				<th>Name</th>
+				<td><?=$dbIRname?></td>
+			</tr>
+			<tr>
+				<th>Tel</th>
+				<td><?=$dbIRtel?></td>
+			</tr>
+			<tr>
+				<th>E-mail</th>
+				<td><?=$dbIRemail?></td>
+			</tr>
+			<tr>
+				<th>Date</th>
+				<td><?=date("Y-m-d H:i",$dbIRregdate);?></td>
+			</tr>
+			<tr>
+				<th>Subject</th>
+				<td><?=$dbIRtitle?></td>
+			</tr>
+			<tr>
+				<th>Content</th>
+				<td><?=nl2br($dbIRcontent)?></td>
+			</tr>
+			<?
+				for($k=1;$k<=3;$k++){
+					if($rs["IRsaveFile" . $k]){
+			?>
+			<tr>
+				<th>File</th>
+				<td><a href="javascript:fileDownload('inquire','inquire','IR','<?=$qIDX?>','<?=$k?>')"><?=$rs["IRrealFile" . $k]?> <span style="color: #005bf1; text-decoration: underline;">Download</span></a></td>
+			</tr>
+		<?
+				}//-- end if
+			}//-- end for
+		} else if($group==3){
+		#========== 체인점 문의 양식 =====================
+   		?>
+			<tr>
+				<th>회원명</th>
+				<td><?=$dbFCname?></td>
+			</tr>
+			<tr>
+				<th>핸드폰</th>
+				<td><?=$dbFChp?></td>
+			</tr>
+			<tr>
+				<th>연락처</th>
+				<td><?=$dbFCtel?></td>
+			</tr>
+			<tr>
+				<th>이메일</th>
+				<td><?=$dbFCemail?></td>
+			</tr>
+			<tr>
+				<th>경영경력</th>
+				<td><?=$dbFCexp?></td>
+			</tr>
+			<tr>
+				<th>점포유무</th>
+				<td><?=$dbFCshop?></td>
+			</tr>
+			<tr>
+				<th>예정창업시기</th>
+				<td><?=$dbFCplan?></td>
+			</tr>
+			<tr>
+				<th>창업희망지역</th>
+				<td><?=$dbFCplanArea?></td>
+			</tr>
+			<tr>
+				<th>예정창업자금</th>
+				<td><?=$dbFCplanMoney?></td>
+			</tr>
+			<tr>
+				<th>점포운영자</th>
+				<td><?=$dbFCplanOwner?></td>
+			</tr>
+			<tr>
+				<th>내용</th>
+				<td><?=nl2br($dbFCetc)?></td>
+			</tr>
+			<?
+				#========== 체인점 문의 양식 끝 =====================
+				} else if($group==4) {
+				#========== 대량문의 양식 =====================
+			?>
+			<tr>
+				<th>제품번호</th>
+				<td><?=$dbPIDX?></td>
+			</tr>
+			<tr>
+				<th>제품명</th>
+				<td><?=$dbPname?></td>
+			</tr>
+			<tr>
+				<th>희망할인율</th>
+				<td><?=$dbHBper?>%</td>
+			</tr>
+			<tr>
+				<th>이름</th>
+				<td><?=$dbHBname?></td>
+			</tr>
+			<tr>
+				<th>연락처</th>
+				<td><?=$dbHBtel?></td>
+			</tr>
+			<tr>
+				<th>이메일</th>
+				<td><?=$dbHBemail?></td>
+			</tr>
+			<tr>
+				<th>내용</th>
+				<td><?=nl2br($dbHBmemo)?></td>
+			</tr>
+			<?
+				#========== 대량문의 양식 끝 ==================
+				}else if($group==5){
+				#========== 입점문의 양식 ==================
+			?>
+			<tr>
+				<th>이름</th>
+				<td><?=$dbOQname?></td>
+			</tr>
+			<tr>
+				<th>핸드폰</th>
+				<td><?=$dbOQhp?></td>
+			</tr>
+			<tr>
+				<th>전화</th>
+				<td><?=$dbOQtel?></td>
+			</tr>
+			<tr>
+				<th>이메일</th>
+				<td><?=$dbOQemail?></td>
+			</tr>
+			<tr>
+				<th>회사주소</th>
+				<td><?=$dbOQaddr?></td>
+			</tr>
+			<tr>
+				<th>홈페이지</th>
+				<td><?=$dbOQurl?></td>
+			</tr>
+			<tr>
+				<th>입점한 쇼핑몰</th>
+				<td><?=$dbOQotherShop?></td>
+			</tr>
+			<tr>
+				<th>회사소개</th>
+				<td><?=nl2br($dbOQintroduce)?></td>
+			</tr>
+			<tr>
+				<th>판매가능 상품 수 </th>
+				<td><?=$dbOQpCount?></td>
+			</tr>
+			<tr>
+				<th>판매형태 </th>
+				<td>
+					<?
+						if($dbOQsellType==1)echo "온라인";
+						else if($dbOQsellType==2)echo "오프온라인";
+						else if($dbOQsellType==3)echo "온+오프라인";
+					?>
+				</td>
+			</tr>
+			<tr>
+				<th>카테고리</th>
+				<td><?=$dbOQcategory?></td>
+			</tr>
+        	<?	
+        		#========== 입점문의 양식 끝 ==================
+				}else{
+			?>
+				ERROR
+			<? } ?>
+			</table>
+			<?
+				if($replyTxt){
+					$data = sql_fetch(" SELECT UID FROM 2011_inquireInfowho WHERE IRIDX = '$dbIDX' ");
+			?>
+			<table border="0" cellspacing="0" cellpadding="0" class="">
+				<tr>
+					<th>REPLY</th>
+				</tr>
+				<tr>
+					<td><?=nl2br($replyTxt)?>
+				<? if($Bfilename) { ?>
+				<p><a href="javascript:fileDownload('inquire','inquire','IRB','<?=$qIDX?>','1')">
+					<b>File: </b><?=$Bfilename?> <img src="/image/mypage/down_btn.png" alt="download" style="vertical-align: middle; margin:0 -1px 0 10px;">
+				</a></p>
+				<? } ?></td>
+				</tr>
+			</table>
+			<? } ?>
+		
+		<p>&nbsp;</p>
+		<div align="center"><a href="qna.html?page=<?=$page?>&IRgroup=<?=$IRgroup?>"><img src="/image_3/p_bt14List.gif" border="0"></a></div>
+
+		<p>&nbsp;</p>
+		<p>&nbsp;</p>
+
+	</div>
+	
+	<!-- //입고알림신청내역 -->
+	</div>
+
+</div>
+<!-- //마이페이지 끝 --->
+
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

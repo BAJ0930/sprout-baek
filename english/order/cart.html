@@ -1,0 +1,589 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+
+	//비회원 -> 회원 장바구니 전환
+	setCardID();
+
+	$sql = "select a.*,b.Pname,b.PengName,b.Pboxin,b.Pboxin2,b.PboxCount,b.PboxCount2,b.BRIDX,b.PstockCount,b.Pprice1,b.Pprice2,b.EVdiscount,b.Puploader,Pweight,";
+	$sql.= "Pdiscount,Pdiscount10,Pdiscount20,Pdiscount30,Pdiscount40,Pdiscount50,Pdiscount60,Pdiscount70,Pdiscount80,Pdiscount90,Pdiscount100,Pdiscount110,Pdiscount120,EVIDX,EVdiscount,  ";
+	$sql.= "PdeliveryType,PdeliveryPriceType,PdeliveryPrice,Pprice3,PsaveFile1,c.OPname,c.OPvalue,c.OPvalueEng,c.OPstock,b.PorderMinus, ";
+	$sql.= " d.MSdeliveryLimit, d.MSdeliveryPay, d.MScomDeliveryLimit, d.MScomDeliveryPay,ifnull(d.MSID,b.Pshop),e.BRename ";
+	
+	$sql.= "from 2011_cartInfo as a left join 2011_productInfo as b on a.PIDX = b.IDX ";
+	$sql.= "left join 2011_productOption as c on a.OPIDX = c.IDX left join 2011_brandInfo as e on b.BRIDX = e.IDX ";
+	$sql.= " left join 2011_makerSeller as d on e.MKIDX = d.MKIDX ";
+	$sql.= " where MID='" . addslashes($uid) . "' and a.CAstate=1 ";
+	//$sql .= " ORDER BY b.PdeliveryType ASC, d.MKIDX desc, a.IDX ASC";
+	$sql .= " ORDER BY d.MKIDX desc, a.PIDX ASC, c.IDX ASC";
+	$result = sql_query($sql);
+	$listStyle = ($listStyle) ? $listStyle : 1;
+?>
+<script type="text/javascript">
+	/*=================================================
+	견적서 출력
+	=================================================*/
+	function fn_print() {
+		obj=$("INPUT[id='cartCheck']:checked");
+		len = obj.length;
+		
+		chkObj="";
+		for(k=0;k<len;k++)
+		{
+			if(chkObj!="")chkObj+=",";
+			chkObj+=obj.eq(k).val();
+		}
+		if(chkObj!="") {
+			document.cartForm.cartCode.value = chkObj;
+			window.open("","estimate","width=1020,scrollbars=yes,status=no");
+			document.cartForm.target = "estimate";
+			document.cartForm.submit();
+		} else {
+			alert("Please choose qouted products.");
+			return;
+		}
+	}
+
+	/*=================================================
+	처리를 담당하는 Ajax 파일의 경로 정의
+	=================================================*/
+	ajaxUrl = 'ajaxCart.php';
+
+	//== 기타 수량 컨트롤 함수는 common.js 파일 참고
+	//===================================================
+	//=== 전체 가격 정보 가져오기 
+	//===================================================
+	isOver = 0;	//-- 재고 초과 체크
+	function fnGetTotalInfo(cartCode) {
+		
+		if(!cartCode)
+		{
+			fnGetCheckCart();
+			return;
+		}
+		
+		param='mode=totalPrice&uid=<?=$uid?>';
+		param+="&cartCode=" + cartCode;
+
+		$.ajax({
+ 			url:ajaxUrl,
+ 				type:"POST",
+				data : param,
+				dataType:"text",
+				error:fnErrorAjax,
+				success:function(_response){
+					//alert(_response);
+  				    v = _response.split("##");
+					totPrice = parseFloat(v[2]);
+	 				totCount = parseFloat(v[3]);
+	 				totWeight = parseFloat(v[4]);
+	 				delibery = parseFloat(v[5]);
+	 				addDelibery = parseFloat(v[6]);
+	 				isOver = parseFloat(v[7]);
+	 				
+	 				taxTotal = parseFloat(v[10]);	 				
+	 				freeTotal = parseFloat(v[11]);
+
+					var ret = totPrice + addDelibery + delibery;
+					ret = ret.toFixed(2);
+	 				
+					$("#inTot1").html(taxTotal);	//-- 과세품
+					$("#inTot3").html(freeTotal);	//-- 면세품
+					$("#inTot5").html(totWeight);	//-- 무게
+					$("#inTot6").html(totCount);	//-- 총 수량
+					
+					$("#inTot7").html(totPrice);	//-- 과세+면세
+					$("#inTot8").html(delibery);	//-- 배송비
+					$("#inTot9").html(addDelibery);	//-- 추가배송비
+					$("#inTot10").html(ret);	//-- 총결제액
+
+					GetInfoComplete=1;
+					if(isOver) fnChangeStockPop();
+				}
+			});
+		}
+
+
+	//===================================================
+	//-- 재고 맞지않는 제품 모두 팝업 띄우기
+	//===================================================
+	function fnChangeStockPop()
+	{
+		fnViewPopup("pop_11");
+	}
+	
+	$(document).ready(function(){
+		fnCartCheckAll();
+	});	
+	
+	//===================================================
+	//-- 체크한 카트의 주문내역 불러오기
+	//===================================================
+	function fnGetCheckCart()
+	{
+		obj=$("INPUT[id='cartCheck']:checked");
+		len = obj.length;
+		
+		chkObj="";
+		for(k=0;k<len;k++)
+		{
+			if(chkObj!="")chkObj+=",";
+			chkObj+=obj.eq(k).val();
+		}		
+		//alert(chkObj);		
+		if(chkObj=="")chkObj="none";		
+		fnGetTotalInfo(chkObj);
+	}
+
+	//===================================================
+	//-- 주문변경 여부 체크	후 주문페이지로 이동
+	//===================================================
+	GetInfoComplete=0;
+	function fnSubmitChk()
+	{
+		cChange=0;
+		
+		if(!GetInfoComplete)
+		{
+			alert("Cart is loading...");
+			return;
+		}
+
+		//-- 변경된 주문이 있는지 체크
+		len = $("INPUT[id='checkChange']").length;
+		for(k=0;k<len;k++)if($("INPUT[id='checkChange']").eq(k).val()==1)cChange=1;
+		if(cChange)if(!confirm("There is not applied items after the quantity is changed.\n\nAre you sure to proceed?"))return;
+		
+		if(isOver)
+		{
+			alert("There is more than stock.\n\nPlease try again after adjust quantity.");
+			location.reload();
+			return;
+		}		
+		
+		if(totCount<1)
+		{
+			alert("Please check wish item to buy.");
+			return;
+		}
+		
+		document.location='order.html';
+	}
+
+	function fnStateChange(obj,t,v)
+	{
+		//-- 자신이 몇번째 객체 인지 체크
+		myID = obj.id;
+		nNum = $("[id='" + myID + "']").index(obj);
+		$("[id='" + t + "']").val(v);
+	}
+	
+	function fnProductDelete(obj)
+	{
+		try{if(!ajaxUrl){}}
+		catch(E){alert("처리페이지가 정의되지 않았습니다.");return;}
+		//-- 자신이 몇번째 객체 인지 체크
+		myID = obj.id;
+		myTag = obj.tagName;
+		nNum = $(myTag + "[id='" + myID + "']").index(obj);
+		IDX = $("INPUT[id='inPIDX']").eq(nNum).val();
+		param='qIDX=' + IDX + '&mode=delete&nNum='+ nNum;
+		$.ajax({
+		url:ajaxUrl,
+		type:"POST",
+		cache:false,
+		data : param,
+		dataType:"text",
+		error:fnErrorAjax,
+		success:function(_response)
+		{
+			v = _response.split("##");
+			if(v[1]=="OK")
+			{
+				//-- 배송비 계산문제로(rowspan 후 줄 삭제가 되지 않음) 페이지를 리로드 하겠습니다.
+				document.location.reload();
+				try{
+					//fnGetTotalInfo();
+				}catch(E){}
+			}
+			else
+			{
+				//alert(_response);
+				fnErrorAjax();
+			}
+		}
+		});
+	}
+
+	//--- 전체선택 및 체크 삭제
+	function fnCartCheckAll()
+	{
+		obj=$("INPUT[id='cartCheck']");
+		$("INPUT[id='cartCheck']").attr("checked",!$("INPUT[id='cartCheck']").eq(0).attr("checked"));
+		fnGetCheckCart();
+	}
+	
+	function fnCartCheckDel()
+	{
+		try{if(!ajaxUrl){}}
+		catch(E){alert("처리페이지가 정의되지 않았습니다.");return;}
+		//-- 체크된 객체 확인
+		checkObj = $("INPUT[id='cartCheck']:checked");
+		checkLen = checkObj.length;
+		
+		if(!checkLen)
+		{
+			alert("체크된 항목이 없습니다.");
+			return;
+		}
+		
+		qIDXStr="";
+		for(k=0;k<checkLen;k++)
+		{
+			if(qIDXStr)qIDXStr+=",";
+			qIDXStr+=checkObj.eq(k).val();
+		}
+		
+		param='qIDX=' + qIDXStr + '&';
+		param=param+"&mode=delete";
+		
+		$.ajax({
+		url:ajaxUrl,
+		type:"POST",
+		cache:false,
+		data : param,
+		dataType:"text",
+		error:fnErrorAjax,
+		success:function(_response)
+		{
+			v = _response.split("##");
+			if(v[1]=="OK")
+			{
+				//-- 배송비 계산문제로(rowspan 후 줄 삭제가 되지 않음) 페이지를 리로드 하겠습니다.
+				document.location.reload();
+				try{
+					//fnGetTotalInfo();
+				}catch(E){}
+			}
+			else
+			{
+				//alert(_response);
+				fnErrorAjax();
+			}
+		}
+		});
+	
+	}
+</script>
+<form id="cartForm" name="cartForm" action="cart_print.html" method="post">
+<input type="hidden" id="mode" name="mode" value="totalPrice" title="totalPrice" />
+<input type="hidden" id="uid" name="uid" value="<?=$uid?>" title="아이디" />
+<input type="hidden" id="cartCode" name="cartCode" value="" title="상품코드" />
+</form>
+
+<link rel="stylesheet" type="text/css" href="/order/order.css">
+
+<!-- 카트 시작 --->    
+<div id="wrap" >
+    
+    <!-- 카트 리스트 -->
+    <div id="order">
+    
+		<img src="/img/cart/tit_cart.jpg" alt="장바구니 이미지">
+        
+        <h3><span class="left_f"><img src="/img/cart/btn_print.gif" alt="견적서출력" onclick='fn_print()' style="cursor:pointer"></span></h3>
+			
+		<div class="list_option">
+			<span><input type="checkbox" class="check" checked onclick='fnCartCheckAll()'/> Select All&nbsp;</span>
+			<span class="list_btn"><a href="javascript:fnCartCheckDel()"><img src="/image_2/newcart_del.gif" alt="삭제"></a></span>
+			<span class="list_select">
+			<a href="cart.html?listStyle=2" id="smviewtype" <? If($listStyle == 2) echo "class='select'"; ?>><img src="/img/ico/ico_box.gif" alt=""></a><span>|</span>
+			<a href="cart.html" <? If($listStyle != 2) echo "class='select'"; ?>><img src="/img/ico/ico_list.gif" alt=""></a>
+			</span>
+		</div>
+        
+		<!--상품리스트 시작-->
+		<table width="100%" border="0" cellspacing="0" cellpadding="0" id="cartTable">
+		<?
+			$cnt = 1;
+			#-- 업체별 배송비 담을 변수
+			$DVinfo = array();		//-- 업체별 배송비
+			//-- 첫째자리는 천유 관리자 -- 업로더는 다를 수 있으니 master 로 구분한다.
+			$DVinfo[0]["com"] = $masterSeller;	//-- 기본 판매자 아이디
+			$DVinfo[0]["comName"]=$masterSellerName;
+			$DVinfo[0]["total"] = 0;			//-- 구매 총액
+			$DVinfo[0]["noFreeDelivery"] = 0;			//-- 구매 총액(무료배송조건제외)
+			$DVinfo[0]["dlimit1"] = $shopConfig["CFdeliveryLimit"];		//-- 일반 배송비 조건
+			$DVinfo[0]["dprice1"] = $shopConfig["CFdeliveryPay"];		//-- 일반 배송비
+			$DVinfo[0]["dlimit2"] = $shopConfig["CFcomDeliveryLimit"];		//-- 도매 배송비 조건
+			$DVinfo[0]["dprice2"] = $shopConfig["CFcomDeliveryPay"];		//-- 도매 배송비
+			$DVinfo[0]["rows"] = 0;
+			
+			$nMSID="";	
+			$nPdeliveryType="";
+			$cnt = 1;
+			
+			while($rs=sql_fetch_array($result)){
+				
+				# DB 레코드 결과값 모두 변수로 전환
+				foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+				
+				if ($listStyle == '1') {						
+					$fPosition = explode("/",$dbPsaveFile1);
+					$thumb = $fPosition[0] . "/thumb/" . $fPosition[1];
+					$pImg = "<img src='/_DATA/product/" . $thumb . "' width='80' height='80' vspace='18' border=0 />";
+				} else {
+					$pImg = "<img src='/_DATA/product/" . $dbPsaveFile1 . "' width='160' border=0 />";
+				}
+				
+				$priceInfo = fnCalPrice($dbPprice3,$rs,1);
+				$priceInfo2 = fnCalPrice($dbPprice3,$rs,0);
+				$link = "<a href='/product/view.html?qIDX=" . $dbPIDX . "' class='c'>";
+
+				if($dbOPstock)$maxStock = $dbOPstock;
+				else $maxStock=$dbPstockCount;
+
+				$dbPready = getProductReady($dbPIDX);
+				$maxStock = $maxStock-$dbPready;
+				$update=0;
+				if($_Minus == 1) $dbPorderMinus = 1;
+				if(($dbCAcount > $maxStock) && ($dbPorderMinus != '1')) $update=1;
+
+				#==== 배송 방법에 따른 총액 저장
+				if($dbPdeliveryType==1)
+				{
+					#-- 천유 배송 ------------------------------------
+					$DVinfo[0]["total"]+=$priceInfo["dcDollar_txt"] * $dbCAcount;
+					$dbMSID = $masterSeller;
+					if($dbPdeliveryPriceType==4)$DVinfo[0]["noFreeDelivery"] = $priceInfo["dcDollar_txt"] * $dbCAcount;			//-- 구매 총액(무료배송조건제외)
+					$DVinfo[0]["rows"]++;
+				}
+				else
+				{
+					#-- 업체 배송 ------------------------------------
+					#-- 자기 자리 찾기
+					$size = sizeof($DVinfo);
+					$comPoint=-1;
+
+					for($k=0;$k<$size;$k++)
+					{
+						if($DVinfo[$k]["com"]==$dbMSID)
+						{
+							$comPoint = $k;
+							break;
+						}
+					}
+
+					if($comPoint>=0)
+					{
+						#-- 자리 찾았으면 해당 자리에 누적
+						$DVinfo[$comPoint]["total"]+=$priceInfo["dcDollar_txt"] * $dbCAcount;
+						if($dbPdeliveryPriceType==4)$DVinfo[$comPoint]["noFreeDelivery"] = $priceInfo["dcDollar_txt"] * $dbCAcount;			//-- 구매 총액(무료배송조건제외)
+						$DVinfo[$comPoint]["rows"]++;
+					}
+					else
+					{
+						#-- 새로운 배열 자리에 밀어넣기
+						$DVinfo[$size]["com"]=$dbMSID;
+						$DVinfo[$size]["comName"]=$dbMKkname;
+						$DVinfo[$size]["total"]=$priceInfo["dcDollar_txt"] * $dbCAcount;
+						$DVinfo[$size]["dlimit1"] = $dbMSdeliveryLimit;		//-- 일반 배송비 조건
+						$DVinfo[$size]["dprice1"] = $dbMSdeliveryPay;		//-- 일반 배송비
+						$DVinfo[$size]["dlimit2"] = $dbMScomDeliveryLimit;		//-- 도매 배송비 조건
+						$DVinfo[$size]["dprice2"] = $dbMScomDeliveryPay;		//-- 도매 배송비
+						$DVinfo[$size]["rows"] = 1;
+						if($dbPdeliveryPriceType==4)$DVinfo[$size]["noFreeDelivery"] = $priceInfo["dcDollar_txt"] * $dbCAcount;			//-- 구매 총액(무료배송조건제외)
+					}
+				}
+
+				#-- 박스 수량이 있을경우  처리
+				$boxin="";
+				$boxin2="";
+				$boxin3="";
+				if($dbPboxin2) $boxin="<img src='/image_3/boxinBG.svg' align=left>=" . $dbPboxin2 . "pcs";
+				if($dbPboxCount2 > 0) { $boxin3 = ", ".$dbPboxCount2."pcs"; }
+
+				if($dbPboxCount > 0 && $MLV) $boxin2 = " <font color=red>(".$dbPboxCount."pcs".$boxin3." over purchase, additional discount)</font>";
+				
+				$boxPer2 = fnGetPriceMem("2");
+				$boxPer = fnGetPriceMem("1");
+			?>
+			
+			<?if($listStyle == 1) {?>
+			<tr>
+				<td align="center" class='cartCss' style="width:100px;"><input type="checkbox" name="cartCheck" id="cartCheck"  value='<?=$dbIDX?>' onclick='fnGetCheckCart()' />&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#cccccc;font-size:1.4em;font-weight:bold;"><?=$cnt?></span></td>
+				<td align="center" class='cartCss' style="width:140px;"><?=$link . $pImg?></a></td>
+				<td align="left" class='cartCss'>
+					<?=$link . "<span style='color:#666666;font-weight:bold;'>[" . $dbBRename . "]</span>&nbsp;Item No.&nbsp;<span style='color:#666666'>" . $dbPIDX . "</span><br><span style='color:#666666'>" . $dbPengName . "</span><br>" . $boxin . $boxin2 ?>
+					<?if($dbOPvalue){?><br><span class="cart_orange"><b>[<?=$dbOPvalueEng?$dbOPvalueEng:$dbOPvalue?>]</b></span><?}?>
+					<?if($dbPdeliveryPriceType==4){echo "<br><img src='/image_2/price_other.gif'>";}?>
+				</td>
+				<td align="right" class='cartCss' style="width:100px;">
+					<span class="cart_pblack"><s>USD <?=$priceInfo["dollar_txt"]?></s>
+					<br><span id="htmlDCPrice" style="color:#FF5D31"><strong>USD <?=$priceInfo["dcDollar_txt"]?></strong></span>
+					<br><span id="htmlDCPer" class="cart_pblue">(<?=$priceInfo["dcPer"]?>% OFF)</span>
+				</td>
+				<td align="center" class='cartCss' style="width:112px;">
+					
+					<table width="92" border="0" cellspacing="0" cellpadding="0">
+						<tr>
+							<td width="20">&nbsp;</td>
+							<td width="29"><input name="num01" type="text" class="cart_input" id="inPcount" size="3" maxlength="3" value="<?=$dbCAcount?>" style='ime-mode:disabled;' onkeydown='onlyNum()'  onblur='fnPcountCheck(this);fnStateChange(this,"checkChange",1);'/></td>
+							<td width="20" align="right">
+							
+								<table width="100%" height="19" border="0" cellspacing="0" cellpadding="0">
+									<tr><td style="height:9px;"><img src="/image_2/newcart_icon1.gif" id='btn_plus' style='cursor:pointer;' onclick='fnPcountPlus(this,1);fnStateChange(this,"checkChange",1);' /></td></tr>
+									<tr><td height="1"></td></tr>
+									<tr><td style="height:9px;"><img src="/image_2/newcart_icon2.gif" id='btn_minus' style='cursor:pointer;' onclick='fnPcountPlus(this,-1);fnStateChange(this,"checkChange",1);' /></td></tr>
+								</table>
+								
+							</td>
+							<td width="43" align="right"><img src="/image_2/newcart_ea.gif" id='btn_pCountIcon' onclick='fnPcountSet(this);fnStateChange(this,"checkChange",0);' style='cursor:pointer;' /></td>
+						</tr>
+					</table>
+					<!-- 재고 총합 -->
+					<input type='hidden' value='<?=$dbIDX?>' name='inPIDX' id='inPIDX'>
+					<input type='hidden' value='<?=$maxStock?>' name='inMaxStock' id='inMaxStock'>
+					<input type='hidden' value='<?=$dbPorderMinus?>' name='inPorderMinus' id='inPorderMinus' >
+					<!-- 단가 정보 -->
+					<input type='hidden' value='<?=$priceInfo["dcDollar_txt"]?>' id='inOnePrice'>
+					<input type='hidden' value='<?=$priceInfo2["dcDollarBox_txt"]?>' id='inBoxPrice'>
+					<input type='hidden' value='<?=$priceInfo2["dcDollarBox2_txt"]?>' id='inBoxPrice2'>
+					<input type='hidden' value='<?=$priceInfo2["dcDollar_txt"]?>' id='inOPrice'>
+					<input type='hidden' value='<?=$dbPweight?>' id='inOneWeight'> 
+				
+					<input type="hidden" name="dcbox" id="dcbox" value="<?=$dbPboxCount?>">
+					<input type="hidden" name="dcbox2" id="dcbox2" value="<?=$dbPboxCount2?>">
+					<input type="hidden" name="dc0" id="dc0" value="<?=$priceInfo2["dcPer"]?>">
+					<input type="hidden" name="dc8" id="dc8" value="<?if($dbPboxCount2>0) { echo ${'dbPdiscount'.$boxPer2}; } else { echo "0"; } ?>">
+					<input type="hidden" name="dc9" id="dc9" value="<?if($dbPboxCount>0) { echo ${'dbPdiscount'.$boxPer}; } else { echo "0"; } ?>">
+					
+					<!-- 상태체크 -->
+					<input type='hidden' value='0' id='checkChange'>
+				
+				</td>
+				<td align="right" class='cartCss'><span style="font-size:8pt; color:#777;" id="inListWeight"><?=$dbPweight * $dbCAcount?> g</span></td>
+				<td align="right" id='inListPrice'  class='cartCss cart_pbblack' style="width:80px;"><span class="cart_pbblack">USD <?=$dbCAcount*$priceInfo["dcDollar_txt"]?></span></td>
+				<td align="center" class='cartCss' style="width:70px;"><img src="/image_2/newcart_del.gif" id='btn_del' onclick='fnProductDelete(this)' style='cursor:pointer;' /></td>
+			</tr>
+			<?if($dbCAtext){?>
+			<tr><td align=center colspan=6 ><div id='msgDiv' style='position:relative;margin-top:-20px;'><?=$dbCAtext?></div></td></tr>
+			<?}?>
+			<tr><td align=center colspan=6 ><div id='msgDiv' style='color:blue;position:relative;margin-top:-20px;'><?if($update)echo "<font color=red>Sorry. Current available stock are [" . $maxStock ." pcs]. Please verify orders.</font>";?></div></td></tr>
+			<?
+				} else {
+					if($cnt % 5 == 1) echo "<tr>";
+			?>
+				<td width="162" style="padding-top:5px;padding-bottom:5px;" valign="top">
+				
+					<table align="center" border="0" style="width:145px;" cellpadding="0" cellspacing="0">
+						<tr><td colspan="2"><span style="color:#cccccc;font-size:1.4em;font-weight:bold;"><?=$cnt?></span></td></tr>
+						<tr><td align="center" colspan="2" style="padding-bottom:10px;"><?=$link . $pImg?></a></td></tr>
+						<tr>
+							<td align="center" colspan="2">
+								<?=$link . "<span style='color:#666666;font-weight:bold;'>[" . $dbBRename . "]</span><br>"?>
+								<div>Item No. <?=$dbPIDX?><br/></div>
+								<div id="Pname" style="width:130px;color:#666666;white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?=$dbPengName?><?= $boxin . $boxin2?></div>
+								<span id="htmlDCPrice" class="cart_pblack"><s>USD <?=$priceInfo["dollar_txt"]?></s>
+								<span id="htmlDCPer" class="cart_pblue">(<?=$priceInfo["dcPer"]?>% OFF)</span>
+							</td>
+						</tr>
+						<tr>
+							<td id='inListPrice'  class='cart_orange' align="center" style="font-weight:bold;"><span class="cart_orange">USD <?=$dbCAcount*$priceInfo["dcDollar_txt"]?></span></td>
+						</tr>
+						<tr><td style="height:10px;"></td></tr>
+						<tr>
+							<td align="center" colspan="2">
+								
+								<table width="122" border="0" cellspacing="0" cellpadding="0">
+									<tr>
+										<td width="30"><input type="checkbox" name="cartCheck" id="cartCheck"  value='<?=$dbIDX?>' onclick='fnGetCheckCart()' /></td>
+										<td width="29"><input name="num01" type="text" class="cart_input" id="inPcount" size="3" maxlength="3" value="<?=$dbCAcount?>" style='ime-mode:disabled;' onkeydown='onlyNum()'  onblur='fnPcountCheck(this);fnStateChange(this,"checkChange",1);'/></td>
+										<td width="20" align="right">
+										
+											<table width="100%" border="0" cellspacing="0" cellpadding="0">
+												<tr><td><img src="/image_2/newcart_icon1.gif" id='btn_plus' style='cursor:pointer;' onclick='fnPcountPlus(this,1);fnStateChange(this,"checkChange",1);' /></td>	</tr>
+												<tr><td height="1"></td></tr>
+												<tr><td><img src="/image_2/newcart_icon2.gif" id='btn_minus' style='cursor:pointer;' onclick='fnPcountPlus(this,-1);fnStateChange(this,"checkChange",1);' /></td></tr>
+											</table>
+											
+										</td>
+										<td width="43" align="right"><img src="/image_2/newcart_ea.gif" id='btn_pCountIcon' onclick='fnPcountSet(this);fnStateChange(this,"checkChange",0);' style='cursor:pointer;' /></td>
+									</tr>
+								</table>
+								
+								<!-- 재고 총합 -->
+								<input type='hidden' value='<?=$dbIDX?>' name='inPIDX' id='inPIDX'>
+								<input type='hidden' value='<?=$maxStock?>' name='inMaxStock' id='inMaxStock'>
+								<input type='hidden' name='inPorderMinus' id='inPorderMinus' value='<?=$dbPorderMinus?>'>
+								<!-- 단가 정보 -->
+								<input type='hidden' value='<?=$priceInfo["dcDollar_txt"]?>' id='inOnePrice'>
+								<input type='hidden' value='<?=$priceInfo2["dcDollarBox_txt"]?>' id='inBoxPrice'>
+								<input type='hidden' value='<?=$priceInfo2["dcDollarBox2_txt"]?>' id='inBoxPrice2'>
+								<input type='hidden' value='<?=$priceInfo2["dcDollar_txt"]?>' id='inOPrice'>
+								<input type='hidden' value='<?=$dbPweight?>' id='inOneWeight'> 							
+								<input type="hidden" name="dcbox" id="dcbox" value="<?=$dbPboxCount?>">
+								<input type="hidden" name="dcbox2" id="dcbox2" value="<?=$dbPboxCount2?>">
+								<input type="hidden" name="dc0" id="dc0" value="<?=$priceInfo2["dcPer"]?>">
+								<input type="hidden" name="dc8" id="dc8" value="<?if($dbPboxCount2>0) {  echo ${'dbPdiscount'.$boxPer2}; } else { echo "0"; } ?>">
+								<input type="hidden" name="dc9" id="dc9" value="<?if($dbPboxCount>0) {  echo ${'dbPdiscount'.$boxPer}; } else { echo "0"; } ?>">
+								<!-- 상태체크 -->
+								<input type='hidden' value='0' id='checkChange'>
+							</td>
+						</tr>
+						<tr><td style="height:10px;"></td></tr>
+						<tr><td align=center colspan="2"><div id='msgDiv' style='color:blue;position:relative;'><?if($update)echo "<font color=red>Sorry. Current available stock are [" . $maxStock ." pcs]. Please verify orders.</font>";?></div></td></tr>
+					</table>
+					
+				</td>
+				<?
+						if($cnt % 5 == 0) echo "</tr>";
+					}
+				$cnt++;	
+				}
+				
+				if ($totalCnt < 5 && $listStyle == 2) {
+					for($i=$cnt;$i<=5;$i++) echo "<td width='162'>&nbsp;</td>";
+				}
+				?>
+		</table>			
+		<input type='hidden' value='<?=$MLV?>' id='jsMLV'> 
+		<!--상품리스트 끝-->
+		
+		<table width="100%" border="0" cellspacing="0" cellpadding="0">
+			<tr>
+				<td height="54" align="right" bgcolor="#f3f3f3">
+		
+					<table border="0" cellspacing="0" cellpadding="0">
+						<tr>
+							<td class="cart_pblack">Item Total&nbsp;:&nbsp;</td>
+							<td align="center"><span class="cart_pblack">USD&nbsp;</td>
+							<td align="right" class="cart_pbblack" id='inTot7' >0</td>
+							<td align="center" style="padding:0px 5px 0 5px;"><span class="cart_pblack">+</td>
+							<td><span class="cart_pblack">Shipping(Depending on country)&nbsp;:&nbsp;</td>
+							<td align="center"><span class="cart_pblack">USD&nbsp;</td>
+							<td align="right" class="cart_pbblack" id='inTot8'>0</td>
+							<td align="right" class="cart_pblack">&nbsp;(<span id='inTot5'>0</span> g)</td>
+							<td align="center" style="padding:0px 5px 0 5px;"><span class="cart_pblack">=</td>
+							<td><span class="cart_pbblack">Order Total&nbsp;:&nbsp;</span></td>
+							<td align="center" style="padding:5px 0 0 0;"><span class="cart_porangewon">USD&nbsp;</td>
+							<td align="right" class="cart_porange" id='inTot10'>0</td>
+							<td width="20" align="center" style="padding:23px 0 10px 0;">&nbsp;</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr><td height="1" colspan="3" bgcolor="#ffffff"></td></tr>
+			<tr><td height="1" colspan="3" bgcolor="#c7c7c7"></td></tr>
+		</table>
+		<br/><font color="red">* Shipping rates based on EMS. It may be added to shipping costs(Inspection fee, Warehousing fee) depending on shipping company.</font><br/><br/>
+		
+		<div class="div_btn mg_t20 mg_b40"><a href='/'><img src="/img/order/btn_shopping.gif" alt="쇼핑계속하기"></a>&nbsp;&nbsp;<a href='javascript:<?if(!$MID){?>alert("Please use homepage after log-in");<?}else{?>fnSubmitChk()<?}?>'><img src="/img/order/btn_order.gif" alt="주문하기"></a></div>
+		
+	</div>
+	<!-- //카트 리스트 -->
+</div>
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

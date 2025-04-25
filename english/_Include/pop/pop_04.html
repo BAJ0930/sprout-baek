@@ -1,0 +1,32 @@
+<?php
+// 선택한 상품이 장바구니에 담겼습니다. 장바구니로 이동하시겠습니까?
+?>
+
+<div style="position: relative; padding: 24px 0 0 0; background: #ffffff; border-radius: 20px;">
+    <div style="position: absolute; line-height: 0; right: 24px; top: 24px;">
+        <img 
+            src="/image_1/ico_close.svg" 
+            width="24"
+            height="24"
+            style="cursor:pointer;" 
+            onclick="disablePopup()" 
+        />
+    </div>
+    <div style="color: #333; font-size: 18px; text-align: center; line-height: 1.4; padding: 24px 0 16px 0;">
+        The item has been added <br>to your shopping cart.
+    </div>
+    <div style="display: flex; gap: 8px; padding: 24px;">
+        <button 
+            type="button"
+            onclick="disablePopup()"
+            style="cursor:pointer; display: block; padding: 0 16px; width: -webkit-fill-available; height: 48px;background: #96999F;border-radius: 8px;color: #ffffff; font-size:17px; line-height: 48px; text-align: center; font-weight: 600;">
+            Continue to shop
+        </button>
+        <button 
+            type="button"
+            onclick="document.location='/order/cart.html'"
+            style="cursor:pointer; display: block; padding: 0 16px; width: -webkit-fill-available; height: 48px; background: #005bf1; border-radius: 8px; color: #ffffff; font-size:17px; line-height: 48px; text-align: center; font-weight: 600;">
+            Go to shopping cart
+        </button>
+    </div>
+</div>

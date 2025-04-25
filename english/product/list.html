@@ -1,0 +1,119 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+
+	$cateIDX = mysqli_real_escape_string($g5['connect_db'], $cateIDX);
+
+	if(!$cateIDX) $cateIDX="1";
+
+?>
+<link rel="stylesheet" type="text/css" href="/product/storage.css?250331">
+
+<style>
+    #sub_list .list_option .list_btn div {top: 92px !important;}
+    .sum_box {margin: 20px 0 0 0;}
+    .sum_box .box .icon {height: 24px;}
+    .sum_box .box .icon.boxin {position: absolute; top: 160px; right: 1px;}
+</style>
+
+<!-- 서브 시작 --->
+<div id="wrap">
+
+<!-- 서브상단센터-->
+<div class="sub_center">
+
+	<?
+		$cateIDXdb = getCategoryNew($cateIDX);
+		$len = ceil(strlen($cateIDXdb) / 2);
+		$cateIDXName = array();
+
+		for ($i=1; $i<=$len; $i++)
+		{
+			if($i == 1) $code = substr($cateIDXdb,0,1);
+			else if($i == 2) $code = substr($cateIDXdb,0,3);
+			else if($i == 3) $code = substr($cateIDXdb,0,5);
+			else $code = substr($cateIDXdb,0,1);
+
+			$sql = " SELECT IDX, CTename FROM 2011_categoryInfo WHERE CTcode = '$code' ";
+			$row = sql_fetch($sql);
+			$cateIDXCode[$i] = $row['IDX'];
+			$cateIDXName[$i] = $row['CTename'];
+
+			if($i < 3) $retName = $row['CTename'];
+		}
+
+		if(!$s1){
+	?>
+
+    <!-- content_list -->
+    <div id="content_list">
+
+        <div class="locationNew">
+			<div style="display:inline;"><img src="/img/list_tline.gif" border="0" style="vertical-align: text-bottom;"> <span style="font-size: 24px; font-weight: 700; color:#333; padding:0px 0 0px 0px;"><?php echo $retName ?></a></span></div>
+			<div align="right" style="display:inline;">
+			<a href="/">Home</a>
+            <?php if($cateIDXName[1]) { ?><img src="/img/ico/ico_arrow_02.gif" alt="arrow"> <a href="/product/list.html?cateIDX=<?php echo $cateIDXCode[1]; ?>"><?php if($cateIDXCode[1] == $cateIDX) echo "<b>"; ?><?php echo $cateIDXName[1]; ?></b></a><? } ?>
+            <?php if($cateIDXName[2]) { ?><img src="/img/ico/ico_arrow_02.gif" alt="arrow"> <a href="/product/list.html?cateIDX=<?php echo $cateIDXCode[2]; ?>"><?php if($cateIDXCode[2] == $cateIDX) echo "<b>"; ?><?php echo $cateIDXName[2]; ?></b></a><? } ?>
+            <?php if($cateIDXName[3]) { ?><img src="/img/ico/ico_arrow_02.gif" alt="arrow"> <a href="/product/list.html?cateIDX=<?php echo $cateIDXCode[3]; ?>"><?php if($cateIDXCode[3] == $cateIDX) echo "<b>"; ?><?php echo $cateIDXName[3]; ?></b></a><? } ?>
+			</div>
+        </div>
+
+        <div class="sub_menu">
+            <ul>
+                <?php
+					if(strlen($cateIDXdb) == 1){	//중분류
+						
+						$query = "SELECT IDX, CTkname, CTename, CTcode FROM 2011_categoryInfo WHERE CTcode LIKE '".$cateIDXdb."__' AND CTlv3 = 0 AND CTlv4 = 0 ORDER BY CTlv1, CTlv2, CTlv3 ASC";
+						$result = sql_query($query);
+						while($data = sql_fetch_array($result)){
+							if($data['CTcode'] == $cateIDXdb) $classOn = " class=on ";
+							else $classOn = "";
+					?>
+					<li <?=$classOn?>><a href="/product/list.html?cateIDX=<?php echo $data['IDX'] ?>"><span><?php echo $data['CTename'] ?></span></a></li>
+					<?						
+						}
+                
+					} else if(strlen($cateIDXdb) > 2){
+						
+						$query = "SELECT IDX, CTkname, CTename, CTcode FROM 2011_categoryInfo WHERE CTcode LIKE '".substr($cateIDXdb,0,3)."__' AND CTlv4 = 0 ORDER BY CTlv1, CTlv2, CTlv3 ASC";
+						$result = sql_query($query);
+						while($data = sql_fetch_array($result)){
+							if($data['CTcode'] == $cateIDXdb) $classOn = " on ";
+							else $classOn = "";
+					?>
+					<li class="cate3<?=$classOn?>"><a href="/product/list.html?cateIDX=<?php echo $data['IDX'] ?>"><span><?php echo $data['CTename'] ?></span></a></li>
+				<?
+						}
+					}
+				?>
+            </ul>
+        </div>
+
+    </div>
+    <!-- //content_list -->
+	<? } ?>
+	<div>&nbsp;</div>
+
+</div>
+<!-- //서브상단센터-->
+
+<?
+	#-- 기본 리스트형
+	if(!$viewType)$viewType=1;
+?>
+
+<!-- 서브리스트 -->
+<div id="sub_list">
+	<!-- product_top -->
+	<?
+		include_once $_SERVER['DOCUMENT_ROOT']."/product/top.html";
+		include_once $_SERVER['DOCUMENT_ROOT']."/product/list_inc.html"; 
+	?>
+</div>
+</div><!-- wrap -->
+
+<!-- 메인 끝// --->
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

@@ -1,0 +1,279 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+	ob_clean();
+?>
+<html>
+<head>
+<style>
+	body { font-size: 1.2em; margin: 0; padding: 0; }
+	table { width: 100%; border-top: 1px solid #000000; border-left: 1px solid #000000; }
+	th, td { height: 50px; text-align: center; padding-top: 5px; padding-bottom: 5px; border-right: 1px solid #000000; border-bottom: 1px solid #000000; }
+	span { padding-top: 5px; padding-bottom: 5px; display: block; }
+	.divTit { width: 1000px; font-size: 2em; font-weight: bold; text-align: center; padding-top: 15px; padding-bottom: 15px; border: 1px solid #000000; }
+	.txtTit { font-weight: bold; }
+	.txtLeft { text-align: left; padding: 10px; }
+	.txtRight { text-align: right; padding: 10px; }
+	.txtBold { font-size: 1.3em; font-weight: bold; }
+	.divBox { width: 1000px; padding-top: 10px; padding-bottom: 10px; }
+	.divBtn { text-align: center; margin: 0 0 20px 0; padding: 5px 0 10px 0; background-color: #cccccc; position: fixed; bottom: 0; left: 0; right: 0; }
+	.divBtn a { font-size: 0.8em; color: #000000; font-weight: bold; display: inline; padding: 4px 4px 2px 4px; background-color: #ffffff; border: 1px solid #000000; text-decoration: none; }
+</style>
+<title>상품견적서</title>
+<script type="text/javascript">
+	function printWindow() {
+		var initBody = document.body.innerHTML;
+		document.body.innerHTML = divEstimate.innerHTML;
+		window.print();
+	}
+</script>
+</head>
+
+<body>
+	<div id="divBtn" class="divBtn"><a href="javascript:printWindow();">Print</a>&nbsp;&nbsp;<a href="javascript:self.close();">Close</a></div>
+
+	<div id="divEstimate">
+		<div id="title" class="divTit">Quotation</div>
+		<div id="box1" class="divBox">
+			<table cellpadding="0" cellspacing="0" border="0" summary="수신">
+				<tr>
+					<td rowspan="4" class="txtTit" width="50">Supplier</td>
+					<td class="txtTit">Company Name</td>
+					<td>CHEONYU.COM</td>
+					<td rowspan="2" class="txtTit">CEO</td>
+					<td rowspan="2">Cho Youngdong</td>
+					<td rowspan="4" class="txtTit" width="50">Buyer</td>
+					<td class="txtTit">Date</td>
+					<td><?=date('Y-m-d',time())?> </td>
+				</tr>
+				<tr>
+					<td class="txtTit">Business license</td>
+					<td>607-86-02860</td>
+					<?
+						$sql = "select * from 2011_memberInfo where MID = '".$uid."'";
+						$result = sql_query($sql);
+						while($rs = sql_fetch_array($result)) {
+							# DB 레코드 결과값 모두 변수로 전환
+							foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+						}
+					?>
+					<td rowspan="2" colspan="2">&nbsp;<?=$dbMname?> <?=$dbJumin?></td>
+				</tr>
+				<tr>
+					<td class="txtTit">Address</td>
+					<td colspan="3">Geumsahwasin Bldg 2F, 49, Gongdanseo-ro 8beon-gil, Geumjeong-gu, Busan, Korea</td>
+				</tr>
+			</table>
+		</div>
+		
+		<div id="box2" class="divBox">
+			<span>▶ Your quotation as follows.</span>
+			<table cellpadding="0" cellspacing="0" border="0" summary="견적내용">
+			<thead>
+				<th width="5%">No</th>
+				<th width="7%">Item No</th>
+				<th width="53%">Item</th>
+				<th width="10%">Unit Price</th>
+				<th width="10%">Quantity</th>
+				<th width="5%">Weight</th>
+				<th width="10%">Amount</th>
+			</thead>
+		<tbody>
+		<?
+			$sql = "select a.*,b.Pname,b.PengName,b.Pboxin,b.Pboxin2,b.PboxCount,b.PboxCount2,b.BRIDX,b.PstockCount,b.Pprice1,b.Pprice2,b.EVdiscount,b.Puploader,Pweight,";
+			$sql.= "Pdiscount,Pdiscount10,Pdiscount20,Pdiscount30,Pdiscount40,Pdiscount50,Pdiscount60,Pdiscount70,Pdiscount80,Pdiscount90,Pdiscount100,Pdiscount110,Pdiscount120,EVIDX,EVdiscount,  ";
+			$sql.= "PdeliveryType,PdeliveryPriceType,PdeliveryPrice,Pprice3,PsaveFile1,c.OPname,c.OPvalue,c.OPvalueEng,c.OPstock,b.PorderMinus, ";
+			$sql.= " d.MSdeliveryLimit, d.MSdeliveryPay, d.MScomDeliveryLimit, d.MScomDeliveryPay,ifnull(d.MSID,b.Pshop),e.BRkname,e.BRename,g.CTkname ";
+			
+			$sql.= " from 2011_cartInfo as a left join 2011_productInfo as b on a.PIDX = b.IDX ";
+			$sql.= " left join 2011_productOption as c on a.OPIDX = c.IDX left join 2011_brandInfo as e on b.BRIDX = e.IDX ";
+			$sql.= " left join 2011_makerSeller as d on e.MKIDX = d.MKIDX ";
+			$sql.= " left join 2011_categoryInfo as g on b.Pcategory1 = g.IDX ";
+			$sql.= " where MID='" . $uid . "' and a.CAstate=1 and a.IDX in (".$cartCode.") ";
+			$sql .= " ORDER BY d.MKIDX desc, a.PIDX ASC, c.IDX ASC ";
+			$result = sql_query($sql);
+
+			$cnt = 1;
+			$totalWeight = 0;
+			$DVinfo = array();		//-- 업체별 배송비
+			//-- 첫째자리는 천유 관리자 -- 업로더는 다를 수 있으니 master 로 구분한다.
+			$DVinfo[0]["com"] = $masterSeller;	//-- 판매자 아이디
+			$DVinfo[0]["total"] = 0;			//-- 구매 총액
+			
+			$DVinfo[0]["taxTotal"] = 0;			//-- 구매 총액(과세)
+			$DVinfo[0]["freeTotal"] = 0;			//-- 구매 총액(면세)
+			
+			$DVinfo[0]["noFreeDelivery"] = 0;			//-- 구매 총액(무료배송조건제외)
+			
+			$DVinfo[0]["weight"] = 0;			//-- 구매 총 무게
+			$DVinfo[0]["dlimit1"] = $shopConfig["CFdeliveryLimit"];		//-- 일반 배송비 조건
+			$DVinfo[0]["dprice1"] = $shopConfig["CFdeliveryPay"];		//-- 일반 배송비
+			$DVinfo[0]["dlimit2"] = $shopConfig["CFcomDeliveryLimit"];		//-- 도매 배송비 조건 A
+			$DVinfo[0]["dprice2"] = $shopConfig["CFcomDeliveryPay"];		//-- 도매 배송비 A
+			$DVinfo[0]["dlimit3"] = $shopConfig["CFcomDeliveryLimit2"];		//-- 도매 배송비 조건 B
+			$DVinfo[0]["dprice3"] = $shopConfig["CFcomDeliveryPay2"];		//-- 도매 배송비 B
+			$DVinfo[0]["dlimit4"] = $shopConfig["CFcomDeliveryLimit3"];		//-- 도매 배송비 조건 C
+			$DVinfo[0]["dprice4"] = $shopConfig["CFcomDeliveryPay3"];		//-- 도매 배송비 C
+			
+			$nMSID="";	
+			$nPdeliveryType="";
+			$cnt = 1;
+			while($rs=sql_fetch_array($result)) {
+				# DB 레코드 결과값 모두 변수로 전환
+				foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+				
+				$fPosition = explode("/",$dbPsaveFile1);
+				$thumb = $fPosition[0] . "/thumb/" . $fPosition[1];
+				$pImg = "<img src='/_DATA/product/" . $thumb . "' width='60' height='60' vspace='18' border=0 />";
+				
+				$priceInfo = fnCalPrice($dbPprice3,$rs,1);
+
+				#==== 배송 방법에 따른 총액 저장
+				if($dbPdeliveryType==1)
+				{
+					#-- 천유 배송 ------------------------------------
+					$DVinfo[0]["total"]+=$priceInfo["dcDollar_txt"] * $dbCAcount;
+					$dbMSID = $masterSeller;
+					if($dbPdeliveryPriceType==4)$DVinfo[0]["noFreeDelivery"] = $priceInfo["dcDollar_txt"] * $dbCAcount;			//-- 구매 총액(무료배송조건제외)
+					$DVinfo[0]["rows"]++;
+					$we = $dbPweight * $dbCAcount;
+				}
+				else
+				{
+					#-- 업체 배송 ------------------------------------
+					#-- 자기 자리 찾기
+					$size = sizeof($DVinfo);
+					$comPoint=-1;
+
+					for($k=0;$k<$size;$k++)
+					{
+						if($DVinfo[$k]["com"]==$dbMSID)
+						{
+							$comPoint = $k;
+							break;
+						}
+					}
+
+					if($comPoint>=0)
+					{
+						#-- 자리 찾았으면 해당 자리에 누적
+						$DVinfo[$comPoint]["total"]+=$priceInfo["dcDollar_txt"] * $dbCAcount;
+						if($dbPdeliveryPriceType==4)$DVinfo[$comPoint]["noFreeDelivery"] = $priceInfo["dcDollar_txt"] * $dbCAcount;			//-- 구매 총액(무료배송조건제외)
+						$we = $dbPweight * $dbCAcount;
+						$DVinfo[$comPoint]["rows"]++;
+					}
+					else
+					{
+						#-- 새로운 배열 자리에 밀어넣기
+						$DVinfo[$size]["com"]=$dbMSID;
+						$DVinfo[$size]["total"]=$priceInfo["dcDollar_txt"] * $dbCAcount;
+						$DVinfo[$size]["dlimit1"] = $dbMSdeliveryLimit;		//-- 일반 배송비 조건
+						$DVinfo[$size]["dprice1"] = $dbMSdeliveryPay;		//-- 일반 배송비
+						$DVinfo[$size]["dlimit2"] = $dbMScomDeliveryLimit;		//-- A
+						$DVinfo[$size]["dlimit3"] = $dbMScomDeliveryLimit;		//-- B
+						$DVinfo[$size]["dlimit4"] = $dbMScomDeliveryLimit;		//-- C
+						$DVinfo[$size]["dprice2"] = $dbMScomDeliveryPay;		//-- A
+						$DVinfo[$size]["dprice3"] = $dbMScomDeliveryPay;		//-- B
+						$DVinfo[$size]["dprice4"] = $dbMScomDeliveryPay;		//-- C
+						$DVinfo[$size]["weight"] = $dbPweight * $dbCAcount;			//-- 구매 총 무게
+						
+						if($dbPdeliveryPriceType==4)$DVinfo[$size]["noFreeDelivery"] = $priceInfo["dcDollar_txt"] * $dbCAcount;			//-- 구매 총액(무료배송조건제외)
+
+						$we = $DVinfo[$size]["weight"];
+					}
+				}
+
+				#-- 박스 수량이 있을경우  처리
+				$boxin = "";
+				$boxin2 = "";
+				$boxin3 = "";
+				if($dbPboxin2) $boxin="<img src='/image_3/boxinBG.svg' align=left>=" . $dbPboxin2 . "pcs";
+				if($dbPboxCount2 > 0) { $boxin3 = ", ".$dbPboxCount2."pcs"; }
+
+				if($dbPboxCount > 0 && $MLV) $boxin2 = " <font color=red>(".$dbPboxCount."pcs".$boxin3." over purchase, additional discount)</font>";
+				
+				$boxPer2 = fnGetPriceMem("2");
+				$boxPer = fnGetPriceMem("1");
+
+				$total += ($dbCAcount*$priceInfo["dcDollar_txt"]);
+				$totalWeight += $we;
+		?>
+		<tr>
+			<td><?=$cnt++?></td>
+			<td><?=$dbPIDX?></td>
+			<td class="txtLeft">
+				<div id="imgBox" style="float:left;padding-right:10px;"><?=$pImg?></div>
+				<div id="content" style="padding: 6px;">[<?=$dbBRename?>]<br/><?=$dbPengName?><br><? echo $boxin . $boxin2 ?><br/><font color="blue"><?if ($dbOPname && $dbOPvalue){?><?=$dbOPvalueEng?$dbOPvalueEng:$dbOPvalue?><?}?></font></div>
+			</td>
+			<td><span class="cart_pblack"><s>USD <?=$priceInfo["dollar_txt"]?></s><br><strong>USD <?=$priceInfo["dcDollar_txt"]?></strong></span></td>
+			<td><?=$dbCAcount?></td>
+			<td><?=$we?>g</td>
+			<td>USD <?=$dbCAcount*$priceInfo["dcDollar_txt"]?></td>
+		</tr>
+		<?
+			}
+
+			#================= 기본 배송비 설정 ============================================
+
+			//-- 추가주문은 배송비 0 => 기존 배송 정보에서 해당 업체 주문이 있는지 체크
+
+			$_DELIVERY_PRICE=0;
+			$size = sizeof($DVinfo);
+
+			for($k=0;$k<$size;$k++)
+			{
+				$Dprice=0;
+				
+				if($DVinfo[$k]["total"])
+				{
+					if($MLV == "A" && $DVinfo[$k]["total"] - $DVinfo[$k]["noFreeDelivery"]<$DVinfo[$k]["dlimit2"]) {
+						$Dprice = $DVinfo[$k]["dprice2"]; 
+					} else if($MLV == "B" && $DVinfo[$k]["total"] - $DVinfo[$k]["noFreeDelivery"]<$DVinfo[$k]["dlimit3"]) {
+						$Dprice = $DVinfo[$k]["dprice3"];
+					} else if($MLV == "C" && $DVinfo[$k]["total"] - $DVinfo[$k]["noFreeDelivery"]<$DVinfo[$k]["dlimit4"]) {
+						$Dprice = $DVinfo[$k]["dprice4"];
+					} else if($MLV == "D" && $DVinfo[$k]["total"] - $DVinfo[$k]["noFreeDelivery"]<$DVinfo[$k]["dlimit2"]) {
+						$Dprice = $DVinfo[$k]["dprice2"];
+					} else {
+						if($DVinfo[$k]["total"] - $DVinfo[$k]["noFreeDelivery"] < $DVinfo[$k]["dlimit1"]){
+							$Dprice = $DVinfo[$k]["dprice1"];
+						}
+					}
+		
+					if($Ocode)
+					{
+						#-- 추가 주문일 경우 기존 같은 업체의 배송 정보가 있는지 체크(있다면 무료, 없다면 똑같이 정상 적용)
+						$sql = "select * from 2011_orderDeliveryInfo where ODuser='" . $DVinfo[$k]["com"] . "'";
+						if($Drs = sql_fetch($sql)) $Dprice=0;
+					}
+					$_DELIVERY_PRICE+=$Dprice;
+				}
+			}
+
+			#================= 기본 배송비 설정 끝 ============================================
+		?>
+		<tr>
+			<td colspan="1" class="txtBold" style="border-right: 0px;"></td>
+			<td colspan="6" class="txtRight txtBold">Item Total : USD <?=$total?> + Shipping(Depending on country) : USD 0 (<?=$totalWeight?>g)<br/> = Order Total : USD <?=$total?></td>
+		</tr>
+		</tbody>
+	</table>
+</div>
+
+<div id="box3" class="divBox">
+	<table cellpadding="0" cellspacing="0" border="0" summary="결제방법">
+		<tr>
+			<td class="txtLeft">
+				CHEONYU.COM Service Center<br />
+				Tel : +82 70 4060 5292&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;E-mail : mkmd4@cheonyu.com
+				<br/><br/>
+				<br/>
+			</td>
+		</tr>
+	</table>
+</div>
+</div>
+<script>
+	window.focus();
+</script>
+</body>
+</html>

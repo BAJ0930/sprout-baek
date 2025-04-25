@@ -1,0 +1,186 @@
+<?php
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+	ob_clean();
+	//-- 수정
+	
+	//나의 배송지 관리, 주소 추가/수정
+
+	if($qIDX)
+	{
+		$ttlStr = "p_img37";
+		$btnStr = "p_bt18";
+		$modeVal = "EditOK";
+		
+		if($qIDX=="Minfo")
+		{
+			//-- 회원정보 불러오기
+			$sql = "select * from 2011_memberInfo where MID='" . $MID . "'";			
+		}
+		else
+		{
+			//-- 기존 정보 불러오기
+			$sql = "select * from 2011_memberAddr where IDX='" . $qIDX . "'";			
+		}
+		
+		$result = sql_query($sql);
+		$rs = sql_fetch_array($result);
+		# DB 레코드 결과값 모두 변수로 전환
+		foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+		
+		//-- 회원정보 수정시 변수값 변환
+		if($qIDX=="Minfo")
+		{
+			$dbMAtel = $dbMTEL;
+			$dbMAhp  = $dbMHP;
+			$dbMApost  = $dbMpost;
+			$dbMAaddr1  = $dbMaddr1;
+			$dbMAaddr2 = $dbMaddr2;			
+		}
+		
+		$dbMAhp = explode("-",$dbMAhp);
+		$dbMAtel = explode("-",$dbMAtel);
+		$dbMApost = explode("-",$dbMApost);		
+	}
+	else
+	{
+		$ttlStr = "p_img38";
+		$btnStr = "p_bt20";
+		$modeVal = "AddOK";
+	}
+?>
+<style type="text/css">
+.style8 {color: #FF0000}
+.style9 {color: #0000FF}
+</style>
+
+<body style="margin:0; padding:0">
+<table width="550" border="0" cellspacing="0" cellpadding="0">
+	<tr><td align="right"><img src="../image_1/v_12.jpg" width="11" height="10" hspace="5" vspace="5" style='cursor:pointer;' onclick='disablePopup()' /></td></tr>
+	<tr><td height="1" align="right" bgcolor="#E1E1E1"></td></tr>
+	<tr><td height="60" bgcolor="1b5891"><img src="../image_3/p_img36.jpg" width="85" height="18" hspace="15" /></td></tr>
+	<tr>
+		<td align="center">
+			
+			<table width="550" border="0" cellspacing="0" cellpadding="0">
+				<tr><td>&nbsp;</td></tr>
+				<tr>
+					<td align="center">
+					
+						<table width="540" border="0" cellspacing="0" cellpadding="0">
+							<tr><td height="20" colspan="2" align="left" valign="top"><img src="../image_3/<?=$ttlStr?>.jpg" width="89" height="15" hspace="10" /></td></tr>
+							<tr><td height="2" colspan="2" bgcolor="#1B5891"></td></tr>
+							<tr>
+								<td width="100" height="10"></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td width="100" height="25">&nbsp;&nbsp;배송지명</td>
+								<td align="left">
+									<? if($qIDX!="Minfo"){ ?>
+									<input type="text" name="inAname" id="inAname" value='<?=$dbMAname?>' />
+									<? } else { ?>
+									<?=$rs["Mname"]?><input type="hidden" name="inAname" id="inAname" value='<?=$rs["Mname"]?>' />
+									<? } ?>
+								</td>
+							</tr>
+							<tr>
+								<td height="1" bgcolor="#E4E4E4"></td>
+								<td bgcolor="#E4E4E4"></td>
+							</tr>
+							<tr>
+								<td height="25">&nbsp;&nbsp;수령인</td>
+								<td align=left>
+									<? if($qIDX!="Minfo"){ ?>
+									<input type="text" name="inAuser" id="inAuser" value='<?=$dbMAuser?>' />
+									<? } else { ?>
+									<?=$dbMname?>
+									<input type="hidden" name="inAuser" id="inAuser" value='<?=$dbMname?>' />                	
+									<? } ?>
+								</td>
+							</tr>
+							<tr>
+								<td height="1" bgcolor="#E4E4E4"></td>
+								<td bgcolor="#E4E4E4"></td>
+							</tr>
+							<tr>
+								<td height="25">&nbsp;&nbsp;핸드폰번호</td>
+								<td align="left">
+									<input name="inAhp" type="text" id="inAhp" size="4"  maxlength=4 onkeydown='onlyNum()' style='ime-mode:disabled;' value='<?=$dbMAhp[0]?>'  /> -
+									<input name="inAhp" type="text" id="inAhp" size="4"  maxlength=4  onkeydown='onlyNum()' style='ime-mode:disabled;' value='<?=$dbMAhp[1]?>'  /> -
+									<input name="inAhp" type="text" id="inAhp" size="4"  maxlength=4  onkeydown='onlyNum()' style='ime-mode:disabled;' value='<?=$dbMAhp[2]?>'  />
+								</td>
+							</tr>
+							<tr>
+								<td height="1" bgcolor="#E4E4E4"></td>
+								<td bgcolor="#E4E4E4"></td>
+							</tr>
+							<tr>
+								<td height="25">&nbsp;&nbsp;전화번호</td>
+								<td align="left">
+									<input name="inAtel" type="text" id="inAtel" size="4" maxlength=4  onkeydown='onlyNum()' style='ime-mode:disabled;' value='<?=$dbMAtel[0]?>' /> -
+									<input name="inAtel" type="text" id="inAtel" size="4"  maxlength=4  onkeydown='onlyNum()' style='ime-mode:disabled;' value='<?=$dbMAtel[1]?>'  /> -
+									<input name="inAtel" type="text" id="inAtel" size="4"  maxlength=4  onkeydown='onlyNum()' style='ime-mode:disabled;' value='<?=$dbMAtel[2]?>'  />
+								</td>
+							</tr>
+							<tr>
+								<td height="1" bgcolor="#E4E4E4"></td>
+								<td bgcolor="#E4E4E4"></td>
+							</tr>
+							<tr>
+								<td height="25">&nbsp;&nbsp;주소</td>
+								<td align="left">
+									<script src="http://dmaps.daum.net/map_js_init/postcode.v2.js"></script>
+									<input type="text" name="inApost1" id="inApost1" readonly size=4 value='<?=$dbMApost[0]?>' /> - 
+									<input type="text" name="inApost2" id="inApost2" readonly size=4  value='<?=$dbMApost[1]?>' />
+									<img src="../image_2/my_icon_03.gif" width="90" height="17" align="absmiddle" value='우편번호검색' style='cursor:pointer' onclick='openDaumPostcode();' />
+								</td>
+							</tr>
+							<tr>
+								<td height="30">&nbsp;</td>
+								<td align="left"><input name="inAaddr1" type="text" id="inAaddr1" size="65" readonly  value='<?=$dbMAaddr1?>' /></td>
+							</tr>
+							<tr>
+								<td height="25">&nbsp;</td>
+								<td align="left" valign="top"><input name="inAaddr2" type="text" id="inAaddr2" size="65"   value='<?=$dbMAaddr2?>' /></td>
+							</tr>
+							<tr>
+								<td height="1" bgcolor="#E4E4E4"></td>
+								<td bgcolor="#E4E4E4"></td>
+							</tr>
+						</table>
+						
+						<script>
+							function openDaumPostcode() {
+								new daum.Postcode({
+									oncomplete: function(data) {
+										document.getElementById('inApost1').value = data.postcode1;
+										document.getElementById('inApost2').value = data.postcode2;
+										//document.getElementById('inMaddr1').value = data.address;
+
+										var addr = data.address.replace(/(\s|^)\(.+\)$|\S+~\S+/g, '');
+										document.getElementById('inAaddr1').value = addr;
+										document.getElementById('inAaddr2').focus();
+									}
+								}).open();
+							}
+						</script>
+					</td>
+				</tr>
+				<tr>
+					<td height="40" align="center" valign="middle">
+						
+						<table width="120" border="0" cellspacing="0" cellpadding="0">
+							<tr>
+								<td width="55"><img src="../image_3/<?=$btnStr?>.gif" width="55" height="20"  style='cursor:pointer;' onclick='fnAddressSet("<?=$modeVal?>","<?=$qIDX?>")' /></td>
+								<td>&nbsp;</td>
+								<td width="55"><img src="../image_3/p_bt19.gif" width="55" height="20" style='cursor:pointer;' onclick='disablePopup()' /></td>
+							</tr>
+						</table>
+						
+					</td>
+				</tr>
+			</table>
+			
+		</td>
+	</tr>
+</table>

@@ -1,0 +1,83 @@
+<?php
+include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+ob_clean();
+
+$qIDX = htmlspecialchars($_POST["qIDX"]);
+$qMode = htmlspecialchars($_POST["qMode"]);
+//주문취소
+
+$qq = sql_fetch(" SELECT * FROM 2011_orderInfo WHERE OpayState = '2' AND IDX = '{$qIDX}' ");
+?>
+<style type="text/css">
+.style8 {color: #FF0000}
+.style9 {color: #0000FF}
+body,td,th { font-size: 12px; }
+label { cursor:pointer; }
+</style>
+	
+<table width="360" border="0" cellpadding="0" cellspacing="0" style="background-color:#fff;">
+	<tr><td align="right"><img src="/image_1/v_12.jpg" width="11" height="10" hspace="5" vspace="5" style='cursor:pointer;' onclick='disablePopup()' /></td></tr>
+	<tr>
+		<td align="center">
+			
+			<?php if($qq['IDX']) { ?>
+			<table width="450" border="0" cellpadding="0" cellspacing="0" bgcolor="#FFFFFF">
+				<tr><td height="130" align="center" valign="bottom"><img src="/image_3/p_img41.jpg?20160418"  /></td></tr>
+				<tr><td>&nbsp;</td></tr>
+				<tr>
+					<td style="font-size:16px; padding:10px;">We are currently preparing your order.<br>
+					If you need to cancel, please contact us via <a href="/customer/dealer.html"><font color="blue">Inquiry</font></a>.</td>
+				</tr>
+			</table>
+				
+			<?php } else { ?>
+			<table width="345" border="0" cellpadding="0" cellspacing="0" bgcolor="#FFFFFF">
+				<tr><td height="130" align="center" valign="bottom"><img src="/image_3/p_img41.jpg?20160418"  /></td></tr>
+				<tr><td>&nbsp;</td></tr>
+				<tr>
+					<td height="20" align="center">				
+						<table width="300" border="0" cellspacing="0" cellpadding="0">
+							<tr>
+								<td width="30" height="23"><input type="radio" name="OcancelType" id="OcancelType1" value="1" checked /></td>
+								<td align="left"><label for='OcancelType1'>I don't like it</label></td>
+							</tr>
+							<tr>
+								<td height="23"><input type="radio" name="OcancelType" id="OcancelType2" value="2" /></td>
+								<td align="left"><label for='OcancelType2'>Out of stock</label></td>
+							</tr>
+							<tr>
+								<td height="23"><input type="radio" name="OcancelType" id="OcancelType3" value="3" /></td>
+								<td align="left"><label for='OcancelType3'>Delayed deposit</label></td>
+							</tr>
+							<tr>
+								<td height="23"><input type="radio" name="OcancelType" id="OcancelType4" value="4" /></td>
+								<td align="left"><label for='OcancelType4'>Delivery delay</label></td>
+							</tr>
+							<tr>
+								<td height="23"><input type="radio" name="OcancelType" id="OcancelType5" value="5" /></td>
+								<td align="left"><label for='OcancelType5'>ETC</label>&nbsp;&nbsp;<input name="OcancelReason" type="text" id="OcancelReason" size="25"/></td>
+							</tr>
+						</table>
+						<input type='hidden' name='qIDX' id='qIDX' value='<?=$qIDX?>'>
+						<input type='hidden' name='qMode' id='qMode' value='<?=$qMode?>'>
+					</td>
+				</tr>
+				<tr>
+					<td height="65" align="center" valign="middle">
+						
+						<table width="270" border="0" cellspacing="0" cellpadding="0">
+							<tr>
+								<td width="128"><img src="/image_3/p_bt22.jpg?20160418" style='cursor:pointer;' onclick='fnCancelOrderSave()' /></td>
+								<td>&nbsp;</td>
+								<td width="128"><img src="/image_3/p_bt16.jpg?20160418" style='cursor:pointer;' onclick='disablePopup()' /></td>
+							</tr>
+						</table>
+					
+					</td>
+				</tr>
+			</table>
+			<?php } ?>
+			
+		</td>
+	</tr>
+</table>

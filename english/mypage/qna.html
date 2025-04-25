@@ -1,0 +1,91 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+	
+	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/common.html";	
+?>
+
+<link rel="stylesheet" type="text/css" href="/mypage/mypage.css?v=<?= time(); ?>">
+
+<!-- 마이페이지 시작 --->
+<div id="wrap">
+
+	<?
+		include_once $_SERVER['DOCUMENT_ROOT']."/mypage/menu.html";
+	?>
+	
+	<!-- mypageMain -->
+	<div id="mypageMain">
+	
+	<?
+		include_once $_SERVER['DOCUMENT_ROOT']."/mypage/top.html";
+	?>
+	
+	<div class="qa_list">
+		<h3><img src="/img/mypage/tit_11.gif" alt="나의상담문의내역"></h3>
+		
+		<?
+
+			$query = " SELECT IDX,IRgroup,IRkind,IRtitle,IRreply,IRregdate FROM 2011_inquireInfo WHERE IRMID = '" . $MID . "' AND IRdeleted = 0 ";
+			$query .= " UNION ALL SELECT IDX,3 AS IRgroup,1 AS IRkind,'체인문의' AS IRtitle,FCreply AS IRreply,FCregdate AS IRregdate FROM 2011_franchiseQNA WHERE FCMID = '" . $MID . "' AND FCdeleted = 0 ";
+			$query .= " UNION ALL SELECT IDX,4 AS IRgroup,1 AS IRkind,'대량구매 문의' AS IRtitle,HBreply AS IRreply,HBregdate AS IRregdate FROM 2011_heavyBuying WHERE HBMID = '" . $MID . "' AND HBdeleted = 0 ";
+			$query .= " UNION ALL SELECT IDX,5 AS IRgroup,1 AS IRkind,'입점 문의' AS IRtitle,OQreply AS IRreply,OQregdate AS IRregdate FROM 2011_openingQNA WHERE MID = '" . $MID . "' AND OQdeleted = 0 ";
+			$result = sql_query($query);
+			$TotalCount = mysqli_num_rows($result);
+			if (!$page) $page = 1;
+			$CntPerPage = 10;
+			$PagePerList = 5;
+			$StartPos = ($page - 1) * $CntPerPage;
+			$query .= " ORDER BY IRregdate DESC";
+			$query .= " LIMIT ".($page - 1) * $CntPerPage.",".$CntPerPage;
+			$result = sql_query($query);
+		?>
+		<table class="my-table-qna" width="100%" border="0" cellspacing="0" cellpadding="0">
+			<colgroup>
+                <col width="" />
+                <col width="120px" />
+                <col width="140px" />
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>Subject</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+			<?
+				while($rs = sql_fetch_array($result)) {
+					foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+					
+					if($dbIRreply)$reState = "<font color=green>Completed</font>";
+					else $reState = "Waiting";
+					
+					
+					$dbIRtitle = strcut_utf8($dbIRtitle,55);
+			?>
+			<tr>
+				<td style="text-align: left;"><a href="qnaView.html?idx=<?=$dbIDX?>&page=<?=$page?>&IRgroup=<?=$dbIRgroup?>"><?=$dbIRtitle?></a></td>
+				<td><?=date("Y-m-d",$dbIRregdate)?></td>
+				<td><?=$reState?></td>
+			</tr>
+            <?}?>
+			<tr>
+				<td height="20" valign="bottom" colspan="3" style="border:0px;">
+					<div align="center" id="paging"><? echo page_nav($TotalCount,$CntPerPage,$PagePerList,$page,$option); ?></div>
+				</td>
+			</tr>
+		</table>
+
+	</div>
+	
+	<!-- //입고알림신청내역 -->
+	</div>
+
+</div>
+<!-- //마이페이지 끝 --->
+
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

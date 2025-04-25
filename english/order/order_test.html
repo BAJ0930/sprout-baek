@@ -1,0 +1,1019 @@
+<?php
+include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+
+$stateCode = $tempCode;
+if(!$stateCode) $stateCode=1;
+
+$stateCode = addslashes(trim($stateCode));
+
+$sql = "update 2011_cartInfo set CAorder=0 where MID = '" . $uid . "' and (CAstate<>'" . $stateCode . "' and CAstate <> '111') ";
+sql_query($sql);
+
+//-- 결제할 상품만 가져오기 -----------------------
+/*======================================================
+카트정보 불러오기
+======================================================*/
+$sql = "select a.*,b.Pname,b.PengName,b.Pboxin,b.Pboxin2,b.PboxCount,b.PboxCount2,b.BRIDX,b.PstockCount,b.Pprice1,b.Pprice2,b.EVdiscount,b.Puploader,TRUNCATE(((b.PsizeWidth/10 * b.PsizeLength/10 * b.PsizeHeight/10) / 6000), 2) AS EMSPweight,";
+$sql.= "Pdiscount,Pdiscount10,Pdiscount20,Pdiscount30,Pdiscount40,Pdiscount50,Pdiscount60,Pdiscount70,Pdiscount80,Pdiscount90,Pdiscount100,Pdiscount110,Pdiscount120,EVIDX,EVdiscount,  ";
+$sql.= "PdeliveryType,PdeliveryPriceType,PdeliveryPrice,Pprice3,PsaveFile1,c.OPname,c.OPvalue,c.OPvalueEng,c.OPstock,b.PorderMinus,TRUNCATE((b.Pweight/1000),2) as Pweight, ";
+$sql.= " d.MSdeliveryLimit, d.MSdeliveryPay, d.MScomDeliveryLimit, d.MScomDeliveryPay,ifnull(d.MSID,b.Pshop),e.BRkname,e.BRename ";
+
+$sql.= "from 2011_cartInfo as a left join 2011_productInfo as b on a.PIDX = b.IDX ";
+$sql.= "left join 2011_productOption as c on a.OPIDX = c.IDX left join 2011_brandInfo as e on b.BRIDX = e.IDX ";
+$sql.= " left join 2011_makerSeller as d on e.MKIDX = d.MKIDX ";
+$sql.= " where MID='" . $uid . "' and a.CAorder = '1' and a.CAstate='" . $stateCode . "' ";
+$sql .= " ORDER BY d.MKIDX desc, a.PIDX ASC, c.IDX ASC";
+$orderResult = sql_query($sql);
+
+//-- 회원 정보 불러오기
+$sql = "select * from 2011_memberInfo where MID='" . $MID . "'";
+$m_rs = sql_fetch($sql);
+# DB 레코드 결과값 모두 변수로 전환
+foreach ($m_rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+
+#-- 배송지 정보 가져오기
+$sql = "select * from 2011_memberAddr where MID='" . $MID . "' order by IDX ";
+$addrResult = sql_query($sql);
+$addrResult2 = sql_query($sql);
+
+#-- 포인트 / 상품권 체크
+//$nPoint = fnGetMemberTotalPoint($MID);
+//$nGift = fnGetMemberTotalGift($MID);
+$nPoint = 0;
+$nGift = 0;
+
+//-- 기본 주소지 셋팅
+$addrName = $dbMname;
+$addrAddr1= $dbMaddr1;
+$addrAddr2= $dbMaddr2;
+
+if($dbMemail)$dbEmail = explode("@",$dbMemail);
+$CPcont = 0;	
+?>
+<script>
+
+	var nPoint='<?=$nPoint?>'; //== 현재 포인트
+	var nTicket='<?=$nGift?>';	//== 현재 상품권
+	var chkFormAct = false;
+
+	$(document).ready(function()
+	{
+		fnSelectCountry("<?=$dbMcomAddr1?>", "<?=$dbMcomAddr2?>");
+		fnSetTotalPrice(1);
+	});
+
+	function fnOrderAction(v)
+	{
+
+		if(v==0)
+		{
+			if(confirm("Are you sure to cancel?"))document.location="/";
+			return;
+		}
+
+		if(!VCheckjQuery($("#inOname"),"Name"))return;
+		if(!VCheckjQuery($("#inOtel"),"Phone number"))return;
+		if(!VCheckjQuery($("#inOhp"),"Mobile number"))return;
+		if(!VCheckjQuery($("#inOpost"),"Zipcode"))return;
+		if(!VCheckjQuery($("#inMcomAddr1"),"Country"))return;
+		if(!VCheckjQuery($("#inOaddr1"),"Street Address"))return;
+		if(!VCheckjQuery($("#inOaddr2"),"City"))return;
+		
+		if($("#inMcomAddr2_Sel").val()) $("#inOaddr3").val($("#inMcomAddr2_Sel").val());
+		if(!VCheckjQuery($("#inOaddr3"),"State/Province"))return;
+
+		if($('#inCheckTerms').is(':checked') === false){
+			alert('Please read and check the CHEONYU.COM Delivery Terms.');
+			return;
+		}
+
+		//-- 재고 검사
+		param='mode=totalPrice&uid=<?=$uid?>&Ocode=<?=$Ocode?>&tempCode=<?=$tempCode?>&cartCode=order';
+		$.ajax({
+		url:'ajaxCart.php',
+			type:"POST",
+			data :param,
+			dataType:"text",
+			error:fnErrorAjax,
+			success:function(_response){
+				//alert(_response);
+				v = _response.split("##");
+
+				totPrice = parseFloat(v[2]);
+				totCount = parseFloat(v[3]);
+				//--totWeight = parseFloat(v[4]); 필요없음
+				delivery = parseFloat(v[5]);
+
+				isOver = parseFloat(v[7]);
+
+				if(isOver)
+				{
+					fnChangeStockPop();
+					return false;
+				}
+				else
+				{
+					fnAllTheGateStart(1);
+					return;
+				}
+			}
+		});
+	}	
+</script>
+<link rel="stylesheet" type="text/css" href="/order/order.css?v=<?= time(); ?>">
+<script type="text/javascript" src="https://api.eximbay.com/v1/javascriptSDK.js"></script>
+<style>
+    #order {width: 1200px;}
+	
+	table {border-collapse: collapse; padding: 0;}
+	table tr th, table tr td {font-size: 14px; color: #333333;}
+    /* Chrome, Safari, Edge */
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    /* Firefox */
+    input[type=number] {
+        -moz-appearance: textfield;
+    }
+	
+	/* Table - Review Order */
+	table.review-order {}
+	table.review-order tr {border-bottom: 1px solid #dedede;}
+	table.review-order thead tr:first-child {border-bottom: 0;}
+	table.review-order th {line-height: 40px; background: #f8f8f8;}
+	table.review-ordesssssr th:first-child {border-radius: 8px 0 0 8px;}
+	table.review-order th:last-child {border-radius: 0 8px 8px 0;}
+	table.review-order td {padding: 16px 12px; text-align: center;}
+	table.review-order .tr-first-total td:first-child {font-size: 18px; color: #333333; font-weight: 600;}
+	table.review-order tr.tr-first-total:last-child td {border-top: 1px solid #555555;}
+	table.review-order tr.tr-first-total:last-child td:first-child {text-align: center;}
+	table.review-order tr.tr-first-total td.txt-total {font-size: 17px;}
+	table.review-order tr.tr-first-total td.txt-total span {font-size: 20px; font-weight: 600; color: #111111}
+	table.review-order .td-item-info {display: flex; gap: 16px;}
+	table.review-order .td-item-info .info-wrap {width: 100%;}
+	table.review-order .thumbs {overflow: hidden; border-radius: 0 0 8px 8px; width: 72px; height: 72px; border: 1px solid #ededed; border-width: 0 1px 1px 1px;}
+	table.review-order .thumbs > a {display: block; width: 72px; height: 72px;}
+	table.review-order .brand-name {color: #555555; font-size: 14px; font-weight: 700; display: flex; gap: 4px; flex-direction: row; align-items: center; margin-right: 14px;}
+	table.review-order .item-name {font-size: 15px; font-weight: 600; text-align: left;}
+	table.review-order .item-num {width: 72px; text-align: center; background: #162A4A; color: #ffffff; font-size: 14px; font-weight: 500; line-height: 20px; border-radius: 8px 8px 0 0;}
+	table.review-order td.item-option span {font-weight: 500; font-size: 14.5px; color: #333333;}
+	.box-wrap {display: flex; align-items: center; gap: 6px; position: relative;}
+	.box-wrap::before {content: ""; display: block; width: 1px; height: 12px; position: absolute; top: 2px; left:-12px; background: #d4d4d4;}
+	.box-wrap > span {display: flex; gap: 4px; align-items: center; font-weight: 400; font-size: 13px;}
+
+	table.shipping-address {width: 880px; margin-bottom: 56px;}
+
+	table.choose-paymentMethod label.payment-method {padding: 0 0 0 44px; gap: 16px;}
+	table.choose-paymentMethod label.payment-method .text {display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: #888888;}
+	table.choose-paymentMethod label.payment-method .text .big-txt {font-weight: 600; font-size: 16px; color: #333333;}
+	table.choose-paymentMethod .payment-method-wrap .radio-group {flex-direction: column; align-items: flex-start; gap: 16px;}
+	table.choose-paymentMethod .payment-method-wrap .radio-group > div {padding: 24px; width: 100%; border-radius: 8px; border: 1px solid #dedede;}
+
+	.address-form {display: flex; justify-content: center; align-items: center; height: 60px; border: 1px solid #dedede; border-radius: 8px; margin-bottom: 32px;}
+	.address-form a.btn-style {width: 82px;}
+
+	#order .subTitle-B {margin: 0 auto 16px;}
+
+	.agree-label {font-size: 16px; line-height: 1.4; padding-left: 32px; display: inline-block; margin-top: -24px;}
+	.agree-label span {color: #FF3838;}
+	.agreement {padding: 24px 24px 8px; border: 1px solid #dedede; border-radius: 8px; margin: 40px auto 24px;}
+    .agreement input[type="checkbox"].check {width: 24px; height: 24px;}
+	.agreement > div {margin-bottom: 16px;}
+
+	.popup-overlay {position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: none;}
+	.calculator-container {position: fixed; width: 720px; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2); background: #f8f8f8; padding: 64px 20px 0; border-radius: 20px;}
+	.calculator-container .row-wrap {background: #ffffff; padding: 0 20px; width: 100%; border-radius: 8px; display: flex; flex-direction: column;}
+	.calculator-container .row {display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #dedede; padding: 10px 0; min-height: 61px;}
+	.calculator-container .row label {font-weight: 600; width: 128px; flex-shrink: 0;}
+	.numberPick-wrap input {width: 64px; height: 24px; border-radius: 0; border-width: 1px 0 1px 0; text-align: center;}
+	.calculator-container .row button {padding: 0; height: 24px;}
+	.calculator-container .result-wrap {display: flex; justify-content: space-between; width: 100%; align-items: center; padding: 20px 0; gap: 24px;}
+	.calculator-container .result {font-size: 18px; font-weight: 600; text-align: center; border-radius: 8px; width: 464px; display: flex; justify-content: space-between;}
+	.calculator-container .result .shipping-fee {font-size: 22px; font-weight: 700;}
+	.calculator-container .numberPick-wrap {display: flex;}
+	.calculator-container .close-btn {position: absolute; top: 20px; right: 0; background: none; border: none; font-size: 18px; cursor: pointer; z-index: 100;}
+	.calculator-container .calculate-btn {background: #005bf1; color: #ffffff; font-size: 16px; border: none; cursor: pointer; width: 184px;}
+	.calculator-container .notice {width: 100%; line-height: 1.5; color: #555555; height: auto; margin: 20px 0 0 0;}
+</style>
+
+<style>
+    .radio-group {display: flex; gap: 24px; align-items: center;}
+	.radio-group input {display: none;}
+	.radio-group label {display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 16px; position: relative; padding: 0 0 0 28px;}
+	.radio-group label::before {content: ""; display: block; position: absolute; top: 50%; left: 0; width: 20px; height: 20px; background: url('/img/ico/ico-radio.svg'); transform: translateY(-50%);}
+	.radio-group input:checked + label::before {background: url('/img/ico/ico-radio-selected.svg');}
+	table.choose-paymentMethod .payment-method-wrap .radio-group > div:has(input:checked) {box-shadow: 0 4px 16px rgba(0,91,241,0.15); border: 1px solid rgba(0,91,241,0.5)}
+
+	.input-container {margin-bottom: 32p; margin-bottom: 32px;}
+	.input-container input {width: 100%; padding: 0 12px; font-size: 16px; border: 1px solid #dedede; border-radius: 8px; outline: none; transition: border-color 0.3s; height: 48px; color: #333333;}
+	.input-container label {position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 16px; color: #aaaaaa; transition: 0.3s ease-in-out; pointer-events: none;}
+	.input-container input:focus + label, 
+	.input-container input:not(:placeholder-shown) + label {top: 2px; font-size: 12px; color: #005bf1;}
+
+	.select-container {position: relative; margin-bottom: 32px;}
+	.select-container select {
+		width: 100%; font-size: 16px; border: 1px solid #dedede; border-radius: 8px; outline: none; appearance: none; cursor: pointer; height: 48px; color: #333333;
+		background: url('/image_1/ico_arrow_dropdown_bk.svg') no-repeat right 12px center; background-size: 8px auto; appearance: none; padding: 0 40px 0 12px;
+	}
+	.select-container select.active {border-color: #005bf1 !important;}
+	.select-container select:not(.active) {border-color: #dedede;}
+	.select-container label {position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 16px; color: #aaaaaa; transition: 0.3s ease-in-out; pointer-events: none; background: white;}
+	.select-container select:valid:not(.active) + label {color: #333333;}
+	.select-container select:valid + label, 
+	.select-container select.active + label {top: 2px; font-size: 12px; padding: 0 2px;}
+	.select-container select.active + label {color: #005bf1 !important;}
+
+	.textarea-container {position: relative; line-height: 0;}
+	.textarea-container textarea {width: 100%; height: 100px; font-size: 16px; border: 1px solid #dedede; border-radius: 8px; padding: 16px 12px; outline: none; transition: border-color 0.3s; font-family: "Satoshi", sans-serif; color: #333333;}
+	.textarea-container label {position: absolute; left: 12px; top: 16px; font-size: 16px; color: #aaaaaa; transition: 0.3s ease-in-out; pointer-events: none; background: white; line-height: 1.3;}
+	.textarea-container textarea:focus {border-color: #005bf1;}
+	.textarea-container textarea:focus + label,
+	.textarea-container textarea:not(:placeholder-shown):focus + label {top: -6px; font-size: 12px; color: #005bf1; padding: 0 2px;}
+	.textarea-container textarea:not(:placeholder-shown) + label {top: -6px; font-size: 12px; color: #555555; padding: 0 2px;}
+</style>
+
+<!-- 카트 시작 --->    
+<div id="wrap" >
+    
+
+<!-- 카트 리스트 -->
+<div id="order">
+    <div class="subTop-A">
+        <div class="subTitle-A">Checkout</div>
+        <div class="indicator">
+            <div>Shopping Cart</div>
+            <div class="active-page">Checkout</div>
+            <div>Order Complete</div>
+        </div>
+    </div>
+	<form name='frmAGS_pay' id='frmAGS_pay' method='POST' style="margin:0; padding:0;">
+	<input type='hidden' name='ORDER_NO' id='ORDER_NO' value='SCRIPT처리' alt='주문번호'>
+	<input type='hidden' name='inOdeliveryPay' id='inOdeliveryPay' value='0' alt='배송비'>
+	<input type='hidden' name='tempCode' id='tempCode' value='<?=$tempCode?>' alt='바로구매플래그'>
+	<input type='hidden' name='inZipMoney' id='inZipMoney' value='0' alt='추가배송비'>
+	<input type='hidden' name='inOdeposit' id='inOdeposit' value='<?=$Mname?>' />
+	<input type='hidden' name='mid' value='24C2E64DE0' />
+	<table width="100%" border="0" cellspacing="0" cellpadding="0">
+		<tr>
+			<td valign="top" >
+				<div class="subTitle-B"><span>Review Order</span></div>
+				<!-- 주문하는 상품 영역 ----------------------->
+				<table cellspacing="0" cellpadding="0">
+					<tr>
+						<td height="7">
+							<!-- 주문 상품 목록 시작 -->
+							<table class="review-order">
+								<colgroup>
+									<col width="480">
+                                    <col width="256">
+                                    <col width="128">
+                                    <col width="128">
+                                    <col width="208"/>
+								</colgroup>
+								<thead>
+									<tr>
+										<th>Item Info</th>
+										<th>Option</th>
+										<th>Weight</th>
+										<th>Quantity</th>
+										<th>Final Price</th>
+									</tr>
+								</thead>
+								<?
+									#-- 업체별 배송비 담을 변수
+									$DVinfo = array();		//-- 업체별 배송비
+									//-- 첫째자리는 천유 관리자 -- 업로더는 다를 수 있으니 master 로 구분한다.
+									$DVinfo[0]["com"] = $masterSeller;	//-- 기본 판매자 아이디
+									$DVinfo[0]["comName"]=$masterSellerName;
+									$DVinfo[0]["total"] = 0;			//-- 구매 총액
+
+									$DVinfo[0]["noFreeDelivery"] = 0;			//-- 구매 총액(무료배송조건제외)
+
+									$DVinfo[0]["dlimit1"] = 200;		//-- 일반 배송비 조건
+									$DVinfo[0]["dprice1"] = 3;		//-- 일반 배송비
+									$DVinfo[0]["dlimit2"] = 200;		//-- 도매 배송비 조건 A
+									$DVinfo[0]["dprice2"] = 3;		//-- 도매 배송비 A
+									$DVinfo[0]["dlimit3"] = 200;		//-- 도매 배송비 조건 B
+									$DVinfo[0]["dprice3"] = 3;		//-- 도매 배송비 B
+									$DVinfo[0]["dlimit4"] = 200;		//-- 도매 배송비 조건 C
+									$DVinfo[0]["dprice4"] = 3;		//-- 도매 배송비 C
+
+									$DVinfo[0]["rows"] = 0;
+
+									$nMSID="";
+									$nPdeliveryType="";
+
+									$_TOT_PRICE=0;
+									$_TOT_TAX_PRICE=0;
+									$_TOT_FREE_PRICE=0;
+									$_TOT_COUNT=0;
+									$_ADD_DELIVERY_PAY=0;
+									$_TOT_WEIGHT=0;
+
+									#-- 2011.05.17 상품권 사용불가 / 쿠폰 사용불가 체크
+									$_DISABLE_GIFT = 0;
+									$_DISABLE_COUPON = 0;
+								
+									#-- 2011.06.02 무료배송 조건 미포함 제품 체크
+									$_NOFREE_DIRYVERY = 0;
+								
+									$dbPcouponUse1=0;
+									$dbPcouponUse2=0;
+									
+									$items = array();
+
+									while($rs=sql_fetch_array($orderResult)){
+										# DB 레코드 결과값 모두 변수로 전환
+										foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}									
+														
+										$fPosition = explode("/",$dbPsaveFile1);
+										$thumb = $fPosition[0] . "/thumb/" . $fPosition[1];
+										$pImg = "<img src='/_DATA/product/" . $thumb . "' width='72' height='72' />";
+										$link = "<a href='/product/view.html?qIDX=" . $dbPIDX . "' class='c'>";
+
+										$dbEMSPweight = ($dbEMSPweight > $dbPweight) ? $dbEMSPweight : $dbPweight;
+										
+										if($dbOPstock)$maxStock = $dbOPstock;
+										else $maxStock=$dbPstockCount;
+
+										$dbPready = getProductReady($dbPIDX);
+										$maxStock = $maxStock-$dbPready;
+
+										$update=0;
+										if($dbCAcount > $maxStock) $update=1;
+
+										#-- 할인가 정보가 있을경우 강제 할인가 적용
+										$priceInfo = fnCalPrice($dbPprice3,$rs,1);
+										$_TOT_PRICE+= $priceInfo['dcDollar_txt'] * $dbCAcount;
+
+										if($dbPtaxType==1)$_TOT_TAX_PRICE+=$priceInfo['dcDollar_txt'] * $dbCAcount;
+										else $_TOT_FREE_PRICE+=$priceInfo['dcDollar_txt'] * $dbCAcount;
+
+										$_TOT_COUNT+=$dbCAcount;
+
+										if($dbPcouponUse1)$_DISABLE_GIFT+= $priceInfo['dcDollar_txt'] * $dbCAcount;
+										if($dbPcouponUse2)$_DISABLE_COUPON+= $priceInfo['dcDollar_txt'] * $dbCAcount;
+
+										#==== 배송 방법에 따른 총액 저장
+										if($dbPdeliveryType==1)
+										{
+											#-- 천유 배송 ------------------------------------
+											$DVinfo[0]["total"]+=$priceInfo["dcDollar_txt"] * $dbCAcount;
+											$dbMSID = $masterSeller;
+											if($dbPdeliveryPriceType==4)$DVinfo[0]["noFreeDelivery"] = $priceInfo["dcDollar_txt"] * $dbCAcount;			//-- 구매 총액(무료배송조건제외)
+											$DVinfo[0]["rows"]++;
+										}
+										else
+										{
+											#-- 업체 배송 ------------------------------------
+											#-- 자기 자리 찾기
+											$size = sizeof($DVinfo);
+											$comPoint=-1;
+
+											for($k=0;$k<$size;$k++)
+											{
+												if($DVinfo[$k]["com"]==$dbMSID)
+												{
+													$comPoint = $k;
+													break;
+												}
+											}
+
+											if($comPoint>=0)
+											{
+												#-- 자리 찾았으면 해당 자리에 누적
+												$DVinfo[$comPoint]["total"]+=$priceInfo["dcDollar_txt"] * $dbCAcount;
+												if($dbPdeliveryPriceType==4)$DVinfo[$comPoint]["noFreeDelivery"] = $priceInfo["dcDollar_txt"] * $dbCAcount;			//-- 구매 총액(무료배송조건제외)
+												$DVinfo[$comPoint]["rows"]++;
+											}
+											else
+											{
+												#-- 새로운 배열 자리에 밀어넣기
+												$DVinfo[$size]["com"]=$dbMSID;
+												$DVinfo[$size]["comName"]=$dbMKkname;
+												$DVinfo[$size]["total"]=$priceInfo["dcDollar_txt"] * $dbCAcount;
+												$DVinfo[$size]["dlimit1"] = $dbMSdeliveryLimit;		//-- 일반 배송비 조건
+												$DVinfo[$size]["dprice1"] = $dbMSdeliveryPay;		//-- 일반 배송비
+												$DVinfo[$size]["dlimit2"] = $dbMScomDeliveryLimit;		//-- 도매 배송비 조건 A
+												$DVinfo[$size]["dprice2"] = $dbMScomDeliveryPay;		//-- 도매 배송비 A
+												$DVinfo[$size]["dlimit3"] = $shopConfig["CFcomDeliveryLimit2"];		//-- 도매 배송비 조건 B
+												$DVinfo[$size]["dprice3"] = $shopConfig["CFcomDeliveryPay2"];		//-- 도매 배송비 B
+												$DVinfo[$size]["dlimit4"] = $shopConfig["CFcomDeliveryLimit3"];		//-- 도매 배송비 조건 C
+												$DVinfo[$size]["dprice4"] = $shopConfig["CFcomDeliveryPay3"];		//-- 도매 배송비 C
+												$DVinfo[$size]["rows"] = 1;
+												if($dbPdeliveryPriceType==4)$DVinfo[$size]["noFreeDelivery"] = $priceInfo["dcDollar_txt"] * $dbCAcount;			//-- 구매 총액(무료배송조건제외)
+											}
+										}
+										?>
+								<tr class="tr-first-total">
+									<td class="td-item-info">
+										<div>
+											<div class="item-num"><?=$dbPIDX?></div>
+											<div class="thumbs"><?=$link . $pImg?></a></div>
+										</div>
+										<div class="info-wrap flex-col-gap8">
+											<div class="flex-row-gap8">
+												<span class="brand-name">
+													<img src="/img/mypage/img-my-brands.svg" alt="" width="17">
+													<span><?=$dbBRename?></span>
+												</span>
+												<?php if (!empty($dbPboxin) || !empty($dbPboxin2)) { ?>
+												<div class="box-wrap">
+													<span>
+														<?php if (!empty($dbPboxin)) { ?>
+															<img src="/image_3/boxinBG.svg" alt="Outer carton"><?= $dbPboxin ?> ea
+														<?php } ?>
+													</span>
+													<span>
+														<?php if (!empty($dbPboxin2)) { ?>
+															<img src="/image_3/boxinBG2.svg" alt="Inner carton"><?= $dbPboxin2 ?> ea
+														<?php } ?>
+													</span>
+												</div>
+												<?php } ?>
+											</div>
+											<span class="item-name"><?=$dbPengName?></span>
+											<!--
+												<span>USD <?=$priceInfo["dollar_txt"]?></span>
+												<span><strong>USD <?=$priceInfo["dcDollar_txt"]?></strong></span>
+												<span>(<?=$priceInfo["dcPer"]?>% OFF)</span>
+											-->
+											<div class="price-box">
+												<div>
+													<!-- 1개 구매 시 할인 -->
+													<div class="sale_tit">
+														<span>Price for <span style="color: #005bf1; font-weight: 600;">1</span> item</span>
+														<span>
+															<span class="dc-badge"><?= $priceInfo["dcPer"] ?>%</span>
+															<strong><span class="txt-USD">USD</span> <?= $priceInfo["dcDollar_txt"] ?></strong>
+														</span>
+													</div>
+												</div>
+												<div>
+													<!-- 2개 이상 구매 시 할인 -->
+													<div class="sale_tit">
+														<span>Price for <span style="color: #005bf1; font-weight: 600;"><?=$dbPboxCount?> or more</span> items</span>
+														<span>
+															<span class="dc-badge2">99%</span>
+															<strong><span class="txt-USD">USD</span>  <?= number_format($priceInfo["dcDollarBox2_txt"]) ?></strong>
+														</span>
+													</div>
+												</div>
+											</div>
+										</div>
+									</td>
+									<td class="item-option">
+										<span>
+											<?php if ($dbOPvalue) { ?>
+												<span><?= $dbOPvalueEng ? $dbOPvalueEng : $dbOPvalue ?></span>
+											<?php } ?>
+											<?php if ($dbCAtext) { ?>
+												<span><?= $dbCAtext ?></span>
+											<?php } ?>
+										</span>
+									</td>
+									<td><span><?=$dbEMSPweight * $dbCAcount?> kg in Total</span></td>
+									<td><span><?=$dbCAcount?> ea</span></td>
+									<td>
+										<span>USD <span style="font-size: 18px; font-weight: 600; color: #111111;"><?=$dbCAcount*$priceInfo["dcDollar_txt"]?></span> in Total</span>
+									</td>
+								</tr>
+								<?
+										$items[] = $dbPengName . "@@" . $dbCAcount . "@@" . $priceInfo["dcDollar_txt"] . "@@" . $dbPIDX; 
+										#-- 제품별 추가 배송비 계산
+										if($dbPdeliveryPriceType==3)$_ADD_DELIVERY_PAY+=$dbPdeliveryPrice;
+									
+										#-- 총 무게 계산
+										$_TOT_WEIGHT+=$dbEMSPweight * $dbCAcount;
+									} //-- while End
+									$_TOT_WEIGHT = $_TOT_WEIGHT;
+									//$_TOT_WEIGHT2 = round_up($_TOT_WEIGHT / 1000,1);								
+									$_TOT_WEIGHT2 = $_TOT_WEIGHT;
+
+									#==========================================================================================================
+									$size = sizeof($DVinfo);
+									for($k=0;$k<$size;$k++){
+										$Dprice=0;
+										//echo $DVinfo[$k]["dlimit1"] . "//" . $DVinfo[$k]["total"] . "// " . $DVinfo[$k]["dprice3"] .  "@@";
+									
+										if($MLV == "A" && $DVinfo[$k]["total"] - $DVinfo[$k]["noFreeDelivery"]<$DVinfo[$k]["dlimit2"]) {
+											$Dprice = $DVinfo[$k]["dprice2"]; 
+										} else if($MLV == "B" && $DVinfo[$k]["total"] - $DVinfo[$k]["noFreeDelivery"]<$DVinfo[$k]["dlimit3"]) {
+											$Dprice = $DVinfo[$k]["dprice3"];
+										} else if($MLV == "C" && $DVinfo[$k]["total"] - $DVinfo[$k]["noFreeDelivery"]<$DVinfo[$k]["dlimit4"]) {
+											$Dprice = $DVinfo[$k]["dprice4"];
+										} else if($MLV == "D" && $DVinfo[$k]["total"] - $DVinfo[$k]["noFreeDelivery"]<$DVinfo[$k]["dlimit2"]) {
+											$Dprice = $DVinfo[$k]["dprice2"];
+										} else {
+											if($DVinfo[$k]["total"] - $DVinfo[$k]["noFreeDelivery"] < $DVinfo[$k]["dlimit1"]){
+												$Dprice = $DVinfo[$k]["dprice1"];
+											}
+										}
+										if($Ocode) {
+											#-- 추가 주문일 경우 기존 같은 업체의 배송 정보가 있는지 체크(있다면 무료, 없다면 똑같이 정상 적용)
+											$sql = "select * from 2011_orderDeliveryInfo where ODuser='" . $DVinfo[$k]["com"] . "'";
+											if($Drs = sql_fetch($sql))$Dprice=0;
+										}
+										$_DELIVERY_PRICE+=$Dprice;
+									}
+									#==========================================================================================================
+									//echo $Dprice;
+								?>
+								<tr class="tr-first-total">
+									<td style="text-align: left;">Order Total</td>
+									<td></td>
+									<td class="txt-total">50 kg</td>
+									<td class="txt-total">50 ea</td>
+									<td class="txt-total">USD <span><? //$_TOT_PRICE + $_DELIVERY_PRICE + $_ADD_DELIVERY_PAY?><?=$_TOT_PRICE?></span></td>
+								</tr>
+							</table>
+							<!-- // 주문 상품 목록 끝 -->
+							<div class="btn-list align-right" style="margin-top: 24px;">
+								<button type="button" class="btn-style btn-color-grey btn-h40 btn-round2" onclick="()"><img src="/img/order/ico_export.svg">Export Orders</button>
+								<button type="button" class="btn-style btn-color-grey btn-h40 btn-round2" onclick="fn_print()"><img src="/img/order/ico_printer.svg">Print Quotation</button>
+							</div>
+						</td>
+					</tr>
+				</table>
+
+			<script>
+        		//totalPrice = <?=$_TOT_PRICE + $_DELIVERY_PRICE + $_ADD_DELIVERY_PAY?>;
+				totalPrice = <?=$_TOT_PRICE?>;
+				totalPriceBackup = <?=$_TOT_PRICE?>;
+				deliveryPrice = <?=$_DELIVERY_PRICE + $_ADD_DELIVERY_PAY?>;
+				deliveryPriceBackup = <?=$_DELIVERY_PRICE + $_ADD_DELIVERY_PAY?>;
+			
+				//-- 2011.05.17 상품권 / 쿠폰 사용불가금액 처리
+				couponNoUse1 = <?=$dbPcouponUse1?>;
+				couponNoUse2 = <?=$dbPcouponUse2?>;
+
+				//-- 총 할인금액
+				totalDiscount = 0;
+			</script>
+			<div class="flex-row-gap40" style="align-items: flex-start; margin: 56px auto 72px;">
+				
+				<!-- 주문하기 영역 ---------------------------->
+				<div class="shipping-info">
+					<div class="subTitle-B"><span>Enter Shipping Address</span></div>
+					<table cellspacing="0" cellpadding="0" class="shipping-address">
+						<tr>
+							<td id='AllTheGateObjectTD'>
+								<!--- 함께 가져갈 기본 정보 ---->
+								<input name="inOorderName" type="hidden" id="inOorderName" value='<?=$dbMname?> <?=$dbMjumin?>' />
+								<input name="inOorderTel" type="hidden" id="inOorderTel" value='<?=$dbMTEL?>'/>
+								<input name="inOorderHP" type="hidden" id="inOorderHP" value='<?=$dbMHP?>'/>
+								<input name='inEmail1' id='inEmail1' type='hidden' value="<?=$dbEmail[0]?>">
+								<input name='inEmail2' id='inEmail2' type='hidden' value="<?=$dbEmail[1]?>">
+								<input type="hidden" name="inObill" value="0">
+								<input type="hidden" name="fnWeight" id="fnWeight" value="<?=$_TOT_WEIGHT2?>">
+							</td>
+						</tr>
+						<tr>
+							<td>
+								<div class="address-form">
+									<div class="radio-group">
+										<input type="radio" id="radio1" name="radio" value="option1">
+										<label for="radio1">Default Address<a class="btn-style btn-color-white btn-h32 btn-round2" href="/mypage/myinfo.html">Edit Info</a></label>
+										
+										<input type="radio" id="radio2" name="radio" value="option2">
+										<label for="radio2">Previous Address</label>
+										
+										<input type="radio" id="radio3" name="radio" value="option3">
+										<label for="radio3">Add New Address</label>
+									</div>
+								</div>
+							</td>
+						</tr>
+						<tr>
+							<!-- 배송지 정보 시작 -->
+							<td valign="middle">
+								<table border="0" cellspacing="0" cellpadding="0">
+									<div class="input-container">
+										<input type="text" id="floating-input" placeholder=" " required <?= isset($dbMname) && $dbMname ? "value='$dbMname'" : "" ?>>
+										<label for="floating-input">Full Name (First and Last Name)</label>
+									</div>
+									<div class="input-container2">
+										<div class="input-container">
+											<input type="email" id="floating-input" placeholder=" " required <?= isset($dbMemail) && $dbMemail ? "value='$dbMemail'" : "" ?>>
+											<label for="floating-input">Email</label>
+										</div>
+										<div class="input-container">
+											<input type="tel" id="floating-input" placeholder=" " required <?= isset($dbMHP) && $dbMHP ? "value='$dbMHP'" : "" ?>>
+											<label for="floating-input">Mobile Phone</label>
+										</div>
+									</div>
+									<div class="input-container2">
+										<div class="input-container">
+											<input type="tel" id="floating-input" placeholder=" " required <?= isset($dbMTEL) && $dbMTEL ? "value='$dbMTEL'" : "" ?>>
+											<label for="floating-input">Telephone</label>
+										</div>
+										<div class="input-container">
+											<input type="text" id="floating-input" placeholder=" " required>
+											<label for="floating-input">Recipient Name</label>
+										</div>
+									</div>
+									
+									<div class="select-container">
+										<select id="floating-select" required>
+											<option value="" hidden></option>
+											<option value="option1">Country 1</option>
+											<option value="option2">Country 2</option>
+											<option value="option3">Country 3</option>
+										</select>
+										<label for="floating-select">Country</label>
+									</div>
+									
+									<div class="input-container">
+										<input type="text" id="floating-input" placeholder=" " required <?= isset($addrAddr2) && $addrAddr2 ? "value='$addrAddr2'" : "" ?>>
+										<label for="floating-input">Street Address</label>
+									</div>
+									<div class="input-container">
+										<input type="text" id="floating-input" placeholder=" " required <?= isset($addrAddr1) && $addrAddr1 ? "value='$addrAddr1'" : "" ?>>
+										<label for="floating-input">City</label>
+									</div>
+									<div class="input-container2">
+										<div class="input-container">
+											<input type="text" id="floating-input" placeholder=" " required <?= isset($dbMcomAddr2) && $dbMcomAddr2 ? "value='$dbMcomAddr2'" : "" ?>>
+											<label for="floating-input">State/Province/Region</label>
+										</div>
+										<div class="input-container">
+											<input type="text" id="floating-input" placeholder=" " required <?= isset($dbMpost) && $dbMpost ? "value='$dbMpost'" : "" ?>>
+											<label for="floating-input">Postal Code (ZIP Code)</label>
+										</div>
+									</div>
+									<div class="textarea-container">
+										<textarea name="message" placeholder=" "></textarea>
+										<label for="message">Delivery Instructions: Add preferences, notes, access codes and more</label>
+									</div>
+								</table>
+							</td>
+							<!-- // 배송지 정보 끝 -->
+						</tr>
+					</table>
+					<div class="subTitle-B"><span>Choose Payment Method</span></div>
+					<!-- 결제방식 선택 시작 -->
+					<table width="100%" border="0" cellspacing="0" cellpadding="0" class="choose-paymentMethod">
+						<tr>
+							<td>
+								<div class="payment-method-wrap">
+									<div class="radio-group">
+										<div>
+											<input type="radio" id="inOpayType5" name="inOpayType" value="5" checked>
+											<label for="inOpayType5" class="payment-method">
+												<img src="/img/order/img-fin-card.svg" alt="">
+												<div class="text">
+													<span class="big-txt">Credit Card</span>
+													<span>Payment using VISA, MasterCard, Amex, JCB, and UnionPay</span>
+												</div>
+											</label>
+										</div>
+										
+										<div>
+											<input type="radio" id="inOpayType1" name="inOpayType" value="1">
+											<label for="inOpayType1" class="payment-method">
+												<img src="/img/order/img-fin-bank.svg" alt="">
+												<div class="text">
+													<span class="big-txt">Wire Transfer</span>
+													<span>Secure international bank payment</span>
+												</div>
+											</label>
+										</div>
+										
+										<div>
+											<input type="radio" id="inOpayType6" name="inOpayType" value="6">
+											<label for="inOpayType6" class="payment-method">
+												<img src="/img/order/img-fin-paypal.png" alt="">
+												<div class="text">
+													<span class="big-txt">PayPal</span>
+													<span>Payment using a PayPal account</span>
+												</div>
+											</label>
+										</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+					</table>
+        			<!-- // 결제방식 선택 끝 -->
+				</div>
+				
+				<div class="order-summary-wrap">
+					<!-- 총 결제 요약 시작 -->
+					<div class="order-summary">
+						<h2 class="order-summary-title">Order Summary</h2>
+						<dl class="order-summary-list">
+							<div class="order-summary-item">
+								<dt class="label">Qty Total</dt>
+								<dd class="value">5 ea</dd>
+							</div>
+							<div class="order-summary-item">
+								<dt class="label">Weight Total</dt>
+								<dd class="value"><span id='inTot5'>0</span> g</dd>
+							</div>
+							<div class="order-summary-item">
+								<dt class="label">Original Total</dt>
+								<dd class="value">USD <span id='inTot7'>0</span></dd>
+							</div>
+							<div class="order-summary-item">
+								<dt class="label">Discounted Total</dt>
+								<dd class="value">USD <span id=''>0</span></dd>
+							</div>
+							<div class="order-summary-item">
+								<dt class="label">You Saved</dt>
+								<dd class="value colorRed"><img src="/img/ico/ico-saleMark.svg?250313" alt="">USD <span id='inTot8'>5.06</span></dd>
+							</div>
+							<div class="order-summary-item">
+								<dt class="label" style="display: flex; gap: 6px; align-items: center;">Shipping Fee 
+									<div class="tooltip-container">
+										<img src="/img/ico/ico-question-mark.svg?250317" alt="" style="vertical-align: middle;">
+										<div class="tooltip-box bgblue sizeS">
+											<img src="img/ico/ico-quesntion-mark.svg?250317" alt="">
+											Shipping Method: EMS / EMS Premium (UPS)
+										</div>
+									</div>
+								</dt>
+								<dd class="value"><span id='priceTD2'>5.06</span></dd>
+							</div>
+						</dl>
+						<hr class="divider" />
+						<div class="order-summary-total">
+							<span class="label">Grand Total</span>
+							<span class="value"><span class="txt-USD">USD </span><span id='priceTD4'>0</span></span>
+						</div>
+					</div>
+					<!-- // 총 결제 요약 끝 -->
+
+					<!-- 예상 운임비 계산기 -->
+					<button type="button" class="btn-style btn-color-grey btn-h40" style="width: 100%; margin-top: 16px;" onclick="openPopup()">
+						<img src="/img/ico/ico-calculator.svg" alt="">Shipping Calculator
+					</button>
+					<!-- 레이어팝업 -->
+					<div class="popup-overlay" id="popupOverlay" onclick="closePopup()"></div>
+					<div class="calculator-container pop-layer-content" id="calculatorPopup">
+						<button class="close-btn" onclick="closePopup()"><img src="/image_1/ico_close.svg"></button>
+						<h1 class="pop-tit">Express Shipping (3~5 days)</h1>
+						<div class="row-wrap">
+							<div class="row">
+								<label for="country">Select Region</label>
+								<select id="country">
+									<option value="">Select</option>
+									<option value="region1">Region 1</option>
+									<option value="region2">Region 2</option>
+									<option value="region3">Region 3</option>
+									<option value="region4">Region 4</option>
+									<option value="region5">Region 5</option>
+								</select>
+							</div>
+
+							<div class="row">
+								<label for="weight">Weight (kg)</label>
+								<div class="numberPick-wrap">
+									<button onclick="adjustWeight(-1)"><img src="/img/ico/ico-item-minus.svg" alt="down"></button>
+									<input type="number" id="weight" value="0">
+									<button onclick="adjustWeight(1)"><img src="/img/ico/ico-item-plus.svg" alt="up"></button>
+								</div>
+							</div>
+
+							<div class="row" style="border-bottom: 1px solid #555555;">
+								<label>Volume (cm)</label>
+								<div class="numberPick-wrap">
+									<button onclick="adjustDimension('width', -1)"><img src="/img/ico/ico-item-minus.svg" alt="down"></button>
+									<input type="number" id="width" value="0">
+									<button onclick="adjustDimension('width', 1)"><img src="/img/ico/ico-item-plus.svg" alt="up"></button> 
+								</div>
+								<span style="font-size: 24px; color: #555555;">×</span>
+								<div class="numberPick-wrap">
+									<button onclick="adjustDimension('height', -1)"><img src="/img/ico/ico-item-minus.svg" alt="down"></button>
+									<input type="number" id="height" value="0">
+									<button onclick="adjustDimension('height', 1)"><img src="/img/ico/ico-item-plus.svg" alt="up"></button></button> 
+								</div>
+								<span style="font-size: 24px; color: #555555;">×</span>
+								<div class="numberPick-wrap">
+									<button onclick="adjustDimension('depth', -1)"><img src="/img/ico/ico-item-minus.svg" alt="down"></button>
+									<input type="number" id="depth" value="0">
+									<button onclick="adjustDimension('depth', 1)"><img src="/img/ico/ico-item-plus.svg" alt="up"></button></button>
+								</div>
+								<span>/ 6000</span>
+							</div>
+
+							<div class="result-wrap">
+								<button class="calculate-btn btn-style btn-color-CTA" onclick="calculateShipping()">Calculate</button>
+								<div style="font-size: 24px;">➡️</div>
+								<div class="result" id="shippingResult">
+									<span>Estimated Shipping Fee</span>
+									<span class="shipping-fee"><span class="txt-USD">USD</span> 0</span>
+								</div>
+							</div>
+						</div>
+						
+						<div class="notice">
+							- Shipping Method: EMS / EMS Premium (UPS)<br>
+							- Shipping Period: 3-5 business days.<br>
+							- Shipping fees are based on the greater of actual or volumetric weight.<br>
+							- The quoted cost is an estimate and may change based on final weight/volume.
+						</div>
+					</div>
+					<!-- // 레이어팝업 -->
+					<!-- // 예상 운임비 계산기 끝 -->
+
+					<!-- 약관동의 시작 -->
+					<div class="agreement">
+						<div>
+							<input type="checkbox" id="agree1" class="check" name="agree" value="1" required>
+							<label for="agree1" class="agree-label">
+								I understand that <span>shipping fees may change based on actual weight</span>, and I will be notified if <span>extra charges apply</span>.
+							</label>
+						</div>
+						<div>
+							<input type="checkbox" id="agree2" class="check" name="agree" value="2" required>
+							<label for="agree2" class="agree-label">
+								I acknowledge that <span>customs duties, VAT, taxes and other additional charges are my responsibility</span> and <span>not included in shipping fees</span>.
+							</label>
+						</div>
+						<div>
+							<input type="checkbox" id="agree3" class="check" name="agree" value="3" required>
+							<label for="agree3" class="agree-label">
+								I agree to the CHEONYU.COM international shipping terms.
+							</label>
+						</div>
+					</div>
+					<!-- // 약관동의 끝 -->
+					<button type="button" class="btn-style btn-color-CTA btn-h56" style="width: 100%; margin-top: 16px;">Proceed to Payment</button>	
+				</div>
+			</div>
+			<input type="hidden" name="inOusePoint" id="inOusePoint" value='0'/>
+			<input type="hidden" name="inOuseTicket" id="inOuseTicket" value='0'/>
+		</td> 
+	</tr>
+</table>
+
+<!-- 결제에 필요 한 필수 파라미터 -->
+<input type="hidden" name="ver" value="230" />
+<input type="hidden" name="txntype" value="PAYMENT" />
+<input type="hidden" name="charset" value="UTF-8" />
+<input type="hidden" name="statusurl" value="https://english.cheonyu.com/order/eximStatus.php" />
+<input type="hidden" name="ref" value="cheonyucom<?=date("YmdHis")?>" />
+<!-- 배송지 관련 파라미터(선택) -->
+<input type="hidden" name="shipTo_country" id="shipTo_country" value="" />
+<input type="hidden" name="shipTo_city" id="shipTo_city" value="" />
+<input type="hidden" name="shipTo_state" id="shipTo_state" value="" />
+<input type="hidden" name="shipTo_street1" id="shipTo_street1" value="" />
+<input type="hidden" name="shipTo_postalCode" id="shipTo_postalCode" value="" />
+<input type="hidden" name="shipTo_phoneNumber" id="shipTo_phoneNumber" value="" />
+<input type="hidden" name="shipTo_firstName" id="shipTo_firstName" value="" />
+<input type="hidden" name="shipTo_lastName" id="shipTo_lastName" value="" />
+<!-- 청구지 관련 파라미터 (선택) -->
+<input type="hidden" name="billTo_city" value="" />
+<input type="hidden" name="billTo_country" value="" />
+<input type="hidden" name="billTo_firstName" value="" />
+<input type="hidden" name="billTo_lastName" value="" />
+<input type="hidden" name="billTo_phoneNumber" value="" />
+<input type="hidden" name="billTo_postalCode" value="" />
+<input type="hidden" name="billTo_state" value="" />
+<input type="hidden" name="billTo_street1" value="" />
+<!-- 추가 항목 관련 파라미터 (선택) -->
+<input type="hidden" name="surcharge_0_name" value="Shipping Fee" />
+<input type="hidden" name="surcharge_0_quantity" value="1" />
+<input type="hidden" name="surcharge_0_unitPrice" id="surcharge_0_unitPrice" value="0" />
+<!-- 가맹점 정의 파마리터 (선택) -->
+<input type="hidden" name="param1" value="<?=$MID?>" />
+<input type="hidden" name="param2" value="" />
+<input type="hidden" name="param3" value="<?=$_TOT_WEIGHT2?>" />
+<!-- 그 외 생략 가능 파라미터 (연동 문서 참고)-->
+<input type="hidden" name="returnurl" value="" />
+<input type="hidden" name="displaytype" value="R" />
+<input type="hidden" name="shop" value="CHEONYU.COM" />
+<input type="hidden" name="ostype" value="P" />
+<input type="hidden" name="tel" value="<?=$dbMHP?>" />
+<input type="hidden" name="mobiletype" value="" />
+<input type="hidden" name="appscheme" value="" />
+<input type="hidden" name="autoclose" value="" />
+<input type="hidden" name="siteforeigncur" value="USD" />
+<input type="hidden" name="paymethod" value="" /><!-- 결제 수단코드 -->
+<input type="hidden" name="cur" value="USD"/>
+
+<!-- PAYPAL (선택) -->
+<input type="hidden" name="sender_account_id" value="<?=$MID?>" />
+<input type="hidden" name="sender_first_name" value="" />
+<input type="hidden" name="sender_last_name" value="" />
+<input type="hidden" name="sender_email" value="<?=$dbMemail?>" />
+<input type="hidden" name="sender_phone" value="" />
+<input type="hidden" name="sender_country_code" value="" />
+<input type="hidden" name="sender_create_date" value="<?=date("Y-m-d H:i:s",$dbMregdate)?>" />
+
+<?php
+$kk = 0;
+foreach($items as $key => $value){
+	$vv = explode("@@", $value);
+?>
+<input type="hidden" name="item_<?=$kk?>_product" value="<?=$vv[0]?>" />
+<input type="hidden" name="item_<?=$kk?>_quantity" value="<?=$vv[1]?>" />
+<input type="hidden" name="item_<?=$kk?>_unitPrice" value="<?=$vv[2]?>" />
+<input type="hidden" name="item_<?=$kk?>_link" value="https://english.cheonyu.com/product/view.html?qIDX=<?=$vv[3]?>" />
+<?php $kk ++; }  ?>
+<!-- 결제 응답 값 처리 파라미터 -->
+<input type="hidden" name="rescode" />
+<input type="hidden" name="resmsg" />
+<input type="hidden" name="authcode" />
+<input type="hidden" name="cardco" />
+
+<!-- 결제에 필요한 필수 파라미터 -->
+<input type="hidden" name="buyer" value="<?=$dbMname?> <?=$dbMjumin?>" /><!-- 이름 -->
+<input type="hidden" name="email" value="<?=$dbMemail?>" />
+<input type="hidden" name="amt" id="amt" value="" />
+<input type="hidden" name="_fgkey" id="_fgkey" value="" />
+<input type="hidden" name="lang" value="EN" />
+</form>
+
+</div>
+</div>
+
+<script>
+	document.addEventListener("DOMContentLoaded", function () {
+		const selectBox = document.querySelector(".select-container select");
+
+		selectBox.addEventListener("focus", function () {
+			this.classList.add("active"); // 포커스 시 파란색 border
+		});
+
+		selectBox.addEventListener("change", function () {
+			this.classList.remove("active"); // 옵션 선택 후 원래 border 색상
+		});
+	});
+
+	document.querySelectorAll(".select-container select").forEach(select => {
+		select.addEventListener("focus", () => select.parentElement.classList.add("active"));
+		select.addEventListener("blur", () => select.parentElement.classList.remove("active"));
+	});
+
+</script>
+
+<script>
+	function openPopup() {
+		document.getElementById('popupOverlay').style.display = 'block';
+		document.getElementById('calculatorPopup').style.display = 'block';
+	}
+	function closePopup() {
+		document.getElementById('popupOverlay').style.display = 'none';
+		document.getElementById('calculatorPopup').style.display = 'none';
+	}
+	function adjustWeight(amount) {
+		let weightInput = document.getElementById("weight");
+		let newValue = Math.max(0, parseInt(weightInput.value) + amount);
+		weightInput.value = newValue;
+	}
+
+	function adjustDimension(id, amount) {
+		let input = document.getElementById(id);
+		let newValue = Math.max(0, parseInt(input.value) + amount);
+		input.value = newValue;
+	}
+	function calculateShipping() {
+		let weight = parseFloat(document.getElementById('weight').value) || 0;
+		let width = parseFloat(document.getElementById('width').value) || 0;
+		let height = parseFloat(document.getElementById('height').value) || 0;
+		let depth = parseFloat(document.getElementById('depth').value) || 0;
+		let volumeWeight = (width * height * depth) / 6000;
+		let finalWeight = Math.max(weight, volumeWeight);
+		let shippingCost = finalWeight * 6000; // Placeholder rate
+		document.getElementById("shippingResult").innerHTML = `<span>Estimated Shipping Fee</span><span class="shipping-fee"><span class="txt-USD">USD</span> ${shippingCost.toLocaleString()}</span>`;
+	}
+
+    /*=================================================
+    견적서 출력 (결제대기 페이지)
+    =================================================*/
+    function fn_print() {
+        const rows = document.querySelectorAll("tr.tr-first-total");
+        let chkObj = "";
+        
+        rows.forEach((row, index) => {
+            const pidx = row.dataset.pidx;
+            const count = row.dataset.count;
+            if (pidx && count) {
+                if (chkObj !== "") chkObj += ",";
+                chkObj += `${pidx}:${count}`;
+            }
+        });
+        
+        if (chkObj) {
+            document.cartForm.cartCode.value = chkObj;
+            window.open("", "estimate", "width=1020,height=600,scrollbars=yes,status=no,resizable=no");
+            document.cartForm.action = "/order/order.html";
+            document.cartForm.target = "estimate";
+            document.cartForm.submit();
+        } else {
+            alert("Please add products to your cart to generate a quotation.");
+            return;
+        }
+    }
+</script>
+
+<script language=javascript src="/order/order.js?<?=time();?>"></script>
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

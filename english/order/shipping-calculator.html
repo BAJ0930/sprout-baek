@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shipping Fee Calculator</title>
+    <style>
+        body {font-family: Arial, sans-serif;}
+        .calculator-container {position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);}
+        .row {display: flex; align-items: center; margin-bottom: 10px;}
+        .row label {width: 100px; font-weight: bold;}
+        .row input, .row select {flex: 1; padding: 5px;}
+        .calculate-btn {width: 100%; padding: 10px; background: red; color: white; font-size: 16px; border: none; cursor: pointer;}
+        .result {margin-top: 10px; font-size: 18px; text-align: center;}
+        .popup-overlay {position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: none;}
+        .close-btn {position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 18px; cursor: pointer;}
+    </style>
+</head>
+<body>
+    <button type="button" class="btn-style btn-color-grey btn-h40" style="width: 100%; margin-top: 16px;" onclick="openPopup()">
+        <img src="/img/ico/ico-calculator.svg" alt="">Shipping Calculator
+    </button>
+    
+    <div class="popup-overlay" id="popupOverlay" onclick="closePopup()"></div>
+    <div class="calculator-container" id="calculatorPopup">
+        <button class="close-btn" onclick="closePopup()">&times;</button>
+        <h2>Express Shipping (2~4 days)</h2>
+        <div class="row">
+            <label for="country">Select Region</label>
+            <select id="country">
+                <option value="">Select</option>
+                <option value="region1">Region 1</option>
+                <option value="region2">Region 2</option>
+                <option value="region3">Region 3</option>
+                <option value="region4">Region 4</option>
+                <option value="region5">Region 5</option>
+            </select>
+        </div>
+        <div class="row">
+            <label for="weight">Weight (kg)</label>
+            <button onclick="adjustWeight(-1)">-</button>
+            <input type="text" id="weight" value="0" readonly>
+            <button onclick="adjustWeight(1)">+</button>
+        </div>
+        <div class="row">
+            <label>Volume (cm)</label>
+            <input type="number" id="width" placeholder="Width"> ×
+            <input type="number" id="height" placeholder="Height"> ×
+            <input type="number" id="depth" placeholder="Depth"> / 5000
+        </div>
+        <button class="calculate-btn" onclick="calculateShipping()">Calculate</button>
+        <div class="result" id="shippingResult">Estimated Shipping Fee: 0</div>
+    </div>
+    
+    <script>
+        function openPopup() {
+            document.getElementById('popupOverlay').style.display = 'block';
+            document.getElementById('calculatorPopup').style.display = 'block';
+        }
+        function closePopup() {
+            document.getElementById('popupOverlay').style.display = 'none';
+            document.getElementById('calculatorPopup').style.display = 'none';
+        }
+        function adjustWeight(value) {
+            let weightInput = document.getElementById('weight');
+            let currentWeight = parseInt(weightInput.value, 10) || 0;
+            let newWeight = Math.max(0, currentWeight + value);
+            weightInput.value = newWeight;
+        }
+        function calculateShipping() {
+            let weight = parseFloat(document.getElementById('weight').value) || 0;
+            let width = parseFloat(document.getElementById('width').value) || 0;
+            let height = parseFloat(document.getElementById('height').value) || 0;
+            let depth = parseFloat(document.getElementById('depth').value) || 0;
+            let volumeWeight = (width * height * depth) / 5000;
+            let finalWeight = Math.max(weight, volumeWeight);
+            let shippingCost = finalWeight * 5000; // Placeholder rate
+            document.getElementById('shippingResult').innerText = `Estimated Shipping Fee: $${shippingCost.toLocaleString()}`;
+        }
+    </script>
+</body>
+</html>

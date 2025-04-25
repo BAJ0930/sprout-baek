@@ -1,0 +1,48 @@
+<?php
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+
+	if($MID || $Mlevel>1)
+	{
+		echo "<script>document.location='/mypage/mypage.html'</script>";
+		exit();
+	}
+?>
+<style>
+
+/*---------- 회원가입  ------------------*/
+#join { float:left; width:920px; padding:0; margin:0; list-style:none; display:inline;  }
+#join h3 { font:normal 24px/24px Verdana, Dotum; color:#555555; }
+#join span { font:normal 12px/12px Verdana, Dotum; color:#555555; line-height:220%; }
+</style>
+
+<!-- 회원가입 시작 --->    
+<div id="wrap" >
+
+	
+	<!-- 완료-->
+	<div id="join">
+	
+		<img src="/image/login/tit_welcome.png" alt="title">
+		
+		<div style="float:left; margin-left:100px;margin-top:30px;">
+			<h3>Your Account Has Been Created!</h3>
+			<span>
+				Congratulations! Your new account has been successfully created!<br/>
+				You can start browsing, bidding and buying today.<br/>
+				If you have ANY questions about the operation of this online shop, Please <a href="/customer/dealer.html"><font color="blue"><u>Contact us</u></font></a> the store owner.<br/>
+				Thank you for your registration!
+			</span>
+		</div>
+		
+		<div style="float:left; padding:50px;width:820px; text-align:center;"><a href="login.html?url=/"><img src="/image/login/btn_login.gif" alt="SignIn"></a></div>
+		
+	</div>
+	<!-- //완료 -->
+
+</div>   
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

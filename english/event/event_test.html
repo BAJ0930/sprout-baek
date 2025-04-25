@@ -1,0 +1,735 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+	
+	
+
+	$eventTopFile = "eventTop".$_GET[EVIDX];
+	//이벤트 번호 추가
+	$eventSelectList = array("128","93","117","131","132","97","112","91","119","120","113","99","108","115","110","125","111");
+
+?>
+<script>
+	function viewChange(str){
+		location.href = "/event/event.html?EVIDX=" + str;
+	}
+</script>
+<style>
+.eventArrow { display:inline-block; width:18px; vertical-align:middle;  margin-right:10px  }
+.eventArrow img { display:block; padding-bottom:1px;}
+</style>
+<!-- 이벤트 시작 --->    
+<div id="wrap">
+    <div class="main_center">
+        <div class="banner_top"><img src="/img/banner/top_banner_131118_01.jpg" alt="이벤트배너" ></div>
+		<div>
+			<table width="980" cellpadding="0" cellspacing="0" border="0" style="background-color:#F8F8F8;">
+				<tr>
+					<td><? include $eventTopFile.".html"; ?></td>
+				</tr>
+			</table>
+		</div>
+		<div><img src="/img/eventLine.jpg" border="0"></div>
+     </div>
+<?
+	$where = " AND a.EVIDX = '$_GET[EVIDX]' ";
+	if(!$view) $view = 60;
+
+
+	$query = " SELECT a.* FROM 2011_productInfo AS a ";
+	$query .= " WHERE Pshop='" . $shopID . "' AND Pdeleted=0 AND Pprice3>0 AND Pstate<10 AND Pagree=1 " . $where;
+	$result = sql_query($query);
+
+	$page = 1;
+	$CntPerPage = 1000;
+	$PagePerList = 5;
+	$TotalCount = mysqli_num_rows($result);
+	$StartPos = ($page - 1) * $CntPerPage;
+	//$query .= " ORDER BY Pregdate DESC ";
+
+	if($_GET[kind] == "2") $query .= " ORDER BY PsellCount DESC ";
+	else if($_GET[kind] == "3") $query .= " ORDER BY Pprice3 ASC ";
+	else if($_GET[kind] == "4") $query .= " ORDER BY Pprice3 DESC ";
+	else  $query .= " ORDER BY Pregdate DESC "; //등록순
+
+	$query .= " LIMIT ".($page - 1) * $CntPerPage.",".$CntPerPage;
+	$result = sql_query($query);
+	$result2 = sql_query($query);
+	
+	$pNameArr[][] = array();
+	$k = 0;
+	while($rsP = sql_fetch_array($result2)){
+		$pNameArr[$k]["pIDX"] = $rsP[IDX];
+		$pNameArr[$k]["pName"] = $rsP[Pname];
+		$pNameArr[$k]["pOPT"] = $rsP[PoptionUse];
+		$k ++;
+	}
+?>
+<script>
+	function fnEventP(str){
+		var str_array = str.split("^");
+		var idx = str_array[0];
+		var opt = str_array[1];
+		var mno = str_array[2];
+
+		jQuery('.pcontent').css("display", "none");
+
+		if(opt == 1){	//옵션 없음
+			var getVal = jQuery('#div' + idx).val();
+			if(getVal == 0){
+				alert('품절입니다.');
+				return;
+			} else {
+				fnSelectOption(getVal,1,mno);
+			}			
+			jQuery("#textInfo").html("상품 수량을 선택하여 주세요.");
+		} else {
+			jQuery('#div' + idx).css("display", "block");
+			jQuery("#textInfo").html("상품 옵션, 수량을 선택하여 주세요.");
+		}
+	}
+</script>
+
+
+<script>
+
+	//배송정책
+	function fn_onMsg(val) {
+		jQuery("#deliveryMsg"+val).show();
+	}
+
+	function fn_offMsg(val) {
+		jQuery("#deliveryMsg"+val).hide();
+	}
+
+	//=== 이미지효과 =====================================
+
+	function fnViewImage(num)
+	{		
+		imgObj = $("IMG[id='productImg']").css("display","none");
+		imgObj = $("IMG[id='productImg']").eq(num-1).css("display","block");
+		
+ 		return false;
+	}
+
+
+/*
+	//=== 옵션 미사용시 수량 + - =====================================
+
+	function fnPcountPlus(v)
+	{
+		jQuery("#inOPcount").val(parseInt(jQuery("#inOPcount").val())+v);
+		if(parseInt(jQuery("#inOPcount").val())<1)jQuery("#inOPcount").val(1);
+		fnPcountCheck();
+	}
+
+	//=== 옵션 미사용시 수량 체크 =====================================
+	function fnPcountCheck()
+	{
+		maxCount='<?=$dbPstockCount?>';
+		if(jQuery("#inOPcount").val()>parseInt(maxCount))
+		{
+			alert("현재 구매가능한 수량은 " + maxCount + " 개 입니다.");
+			jQuery("#inOPcount").val(maxCount);
+		}
+		fnSumTotalPrice();
+	}
+*/
+	//-- 옵션 선택 효과
+	function fnSelectOption(obj, str1, str2)
+	{
+		if(str1 == 1){
+			v = obj;
+		} else {
+			v = obj.options[obj.selectedIndex].value;
+		}
+		v = v.split("##");
+		
+		OPidx = v[0];				// 옵션 번호
+		OPname = v[1];			// 옵션명
+		OPmaxCount = v[2];		// 재고
+		OPaddPrice = v[3];		// 추가금액
+		OPSU = v[4];				// 기본수량	
+		Pprice2 = v[5];			// 할인된 가격
+		dIDX = v[6];				// 상품번호
+		dbPNAME = v[7];			// 상품명
+		str2A = v[8];				// 몇번째옵션
+		AboxCount = v[9];		// 박스수량 1
+		oPer = v[10];				// 할인율
+		dcPer = v[11];				// 박스수량 1 에 대한 할인율
+		oPrice = v[12];			// 할인율 적용된 가격
+		dcPrice = v[13];			// 박스수량 1 에 대한 할인율 적용된 가격
+		OMinus = v[14];			// 지속 공급 상품
+	
+		AboxCount2 = v[15];	// 박스수량 2
+		dcPer2 = v[16];			// 박스수량 2 에 대한 할인율
+		dcPrice2 = v[17];			// 박스수량 2 에 대한 할인율 적용된 가격
+		
+		if(OPmaxCount<1 && OMinus != 1)
+		{
+			alert("해당 옵션은 품절 입니다.");
+			return;
+		}
+
+		if(str1 == 1){	//옵션 없음
+			if(dIDX==0)return;
+			//-- 중복 옵션 검사
+			opLen = $("input[id='inPidx']").length;
+
+			for(k=0;k<opLen;k++)
+			{
+				v = $("input[id='inPidx']").eq(k).val();
+				if(v==dIDX)
+				{
+					alert("이미 추가된 옵션입니다.\n\n아래 항목에서 수량을 수정해 주세요.");
+					return;
+				}
+			}
+		} else {
+			if(OPidx==0)return;
+			//-- 중복 옵션 검사
+			opLen = $("input[id='inOPidx']").length;
+
+			for(k=0;k<opLen;k++)
+			{
+				v = $("input[id='inOPidx']").eq(k).val();
+				if(v==OPidx)
+				{
+					alert("이미 추가된 옵션입니다.\n\n아래 항목에서 수량을 수정해 주세요.");
+					return;
+				}
+			}
+		}
+
+		//-- 객체생성 ----------------------------------
+		td1 = document.createElement("TD");
+		td2 = document.createElement("TD");
+		td3 = document.createElement("TD");
+		tr1 = document.createElement("TR");
+
+		input1 = document.createElement("input");
+		input2 = document.createElement("input");
+		input3 = document.createElement("input");
+		
+		
+		/*input1.setAttribute("value",OPidx);
+		input2.setAttribute("value",OPmaxCount);
+		input3.setAttribute("value",OPaddPrice);
+		
+
+		//-- 객체 스타일 지정 --------------------------
+		td1.className="optionList";
+		td2.className="optionList";
+		td3.className="optionList";*/
+
+		td1.style.width="0%";
+		td2.style.width="100%";
+		td3.style.width="0%";
+
+		td1.style.textAlign="left";
+
+
+		//input1.type="text";
+		/*input1.id = "inOPidx";
+		input1.name = "inOPidx";
+		input1.style.width="30px";
+		input1.style.display="none";
+		
+
+		input2.id = "inOPMaxStock";
+		input2.name = "inOPMaxStock";
+		input2.style.width="30px";
+		input2.style.display="none";
+
+		input3.id = "inOPaddPrice";
+		input3.name = "inOPaddPrice";
+		input3.style.width="30px";
+		input3.style.display="none";*/
+
+		tr1.id = "inOptionTR";
+
+		//-- 객체 붙이기
+		td3.appendChild(input1);
+		td3.appendChild(input2);
+		td3.appendChild(input3);
+		tr1.appendChild(td1);
+		tr1.appendChild(td2);
+		tr1.appendChild(td3);
+
+		
+		if(str1 == 1){	//옵션 없음
+
+			var strA = OPSU;
+			var inputName = dIDX + " / " + dbPNAME;
+
+		} else {
+			
+			var strA = 1;
+			var inputName = dIDX + " / " + dbPNAME + " / " + OPname;
+
+		}
+
+		if(str2 == "0"){
+			var str2 = str2A;
+		}
+
+		//-- 객체 값 할당
+		td1.innerHTML = "";
+		htmlTxt	= "<span style='display:block;height:15px;'></span><span><span style='font-size: 12px; color: red; font-weight: bold;'>" + str2 + ".</span> " + inputName + "</span><br/><table width='100%' border='0' align='left' cellpadding='0' cellspacing='0'><Tr><td style='width:40px;' align=right style='padding-top:2px;'>";
+		htmlTxt+=  "<input type='hidden' name='boxCountOpt' id='boxCountOpt' value='" + AboxCount  + "'><input type='hidden' name='boxCountOpt2' id='boxCountOpt2' value='" + AboxCount2  + "'><input type='hidden' name='inOMinus' id='inOMinus' value='" + OMinus  + "'><input type='hidden' name='inoPer' id='inoPer' value='" + oPer  + "'><input type='hidden' name='indcPer' id='indcPer' value='" + dcPer  + "'><input type='hidden' name='indcPer2' id='indcPer2' value='" + dcPer2  + "'><input type='hidden' name='inoPrice' id='inoPrice' value='" + oPrice  + "'><input type='hidden' name='indcPrice' id='indcPrice' value='" + dcPrice  + "'><input type='hidden' name='indcPrice2' id='indcPrice2' value='" + dcPrice2  + "'>";
+		htmlTxt+=	"<input type='hidden' name='inOPMaxStock' id='inOPMaxStock' value='" + OPmaxCount  + "'><input type='hidden' name='inOPaddPrice' id='inOPaddPrice' value='" + OPaddPrice  + "'><input type='hidden' name='inOPidx' id='inOPidx' value='" + OPidx  + "'><input type='hidden' name='Pprice2A' id='Pprice2A' value='" + Pprice2 + "'><input type='hidden' name='inPidx' id='inPidx' value='" + dIDX + "'><input name='inOPcount' type='text' class='amount' id='inOPcount' align='absmiddle' size='2' maxlength='3' value=" + strA + " style='ime-mode:disabled;' onkeydown='onlyNum()' onblur='if(!this.value || this.value==0){this.value=1;}fnPcountCheck(this);'/></td>";
+		htmlTxt+=	"<td style='width:60px;'><span class='eventArrow'><img src='/img/ico/ico_arrow_up.gif' alt='up' id='btn_plus' style='cursor:pointer' onclick='fnPcountPlus(this,1)'>";
+		htmlTxt+=	"<img src='/img/ico/ico_arrow_down.gif' alt='down' id='btn_minus' style='cursor:pointer' onclick='fnPcountPlus(this,-1)'></span>";
+		htmlTxt+=  "<div id='htmlDC' style='display:inline; color:#0282F0;'>" + oPer + "%</div></td>";
+		htmlTxt+=	"<Td id='inOPprice' style='font-size:1.1em;text-align:right;'><span id='htmlPrice' style='color:444444; font-weight:bold'>" + Pprice2 + " 원</span></td><td style='width:30px;'>&nbsp;&nbsp;<img src='/img/view/ico_del.gif' alt='취소' align='absmiddle' style='cursor:pointer;' onclick='fnOptionDel(this)'></td></tr></table>";
+
+		td2.innerHTML = htmlTxt;
+		td3.innerHTML = "";
+
+
+
+		jQuery("#opSelectedList").append(tr1);
+		fnSumTotalPrice();
+
+		var zzz = jQuery("#eventDIV").height();
+		var eDivHeight = document.body.clientHeight - 450;
+
+		if(zzz > eDivHeight){
+			document.getElementById("eventDIV").style.height= eDivHeight + "px";
+		}
+		
+		jQuery('#eventDIV').scrollTop( $('#eventDIV').height() )
+
+	}
+
+	//=== 옵션 사용시 수량 + - =====================================
+	function fnPcountPlus(obj,v)
+	{
+		//-- 자신이 몇번째 객체 인지 체크
+		myID = obj.id;
+		nNum = $("img[id='" + myID + "']").index(obj);
+		
+		inputObj = $("input[id='inOPcount']").eq(nNum);
+		//jQuery("#inOPcount").val(parseInt(jQuery("#inOPcount").val())+v);
+		inputObj.val(parseInt(inputObj.val())+v);
+		if(parseInt(inputObj.val())<1)inputObj.val(1);
+		fnPcountCheck(obj);
+	}
+
+	//=== 옵션 사용시 수량 체크 =====================================
+	function fnPcountCheck(obj)
+	{
+		//-- 자신이 몇번째 객체 인지 체크
+		myID = obj.id;
+		nNum = $("img[id='" + myID + "']").index(obj);
+		if(nNum<0)nNum = $("input[id='" + myID + "']").index(obj);
+		
+		obj = $("input[id='inOPcount']").eq(nNum);
+		objIDX = $("input[id='inOPidx']").eq(nNum).val();
+
+		var maxCount = $("input[id='inOPMaxStock']").eq(nNum).val();
+		var OMinus = $("input[id='inOMinus']").eq(nNum).val();
+		
+
+		if( OMinus != 1 && obj.val()>parseInt(maxCount) )
+		{
+			alert("현재 구매가능한 수량은 " + maxCount + " 개 입니다.");
+			obj.val(maxCount);
+		}
+		
+		var boxCountOpt = $("input[id='boxCountOpt']").eq(nNum).val();
+		var boxCountOpt2 = $("input[id='boxCountOpt2']").eq(nNum).val();
+
+		if(!boxCountOpt) boxCountOpt = 0;
+		if(!boxCountOpt2) boxCountOpt2 = 0;
+		
+		if($("input[id='inOPcount']").eq(nNum).val() >= parseInt(boxCountOpt2) && boxCountOpt2 > 0){		//박스 주문
+			var perend = $("input[id='indcPer2']").eq(nNum).val();			
+			$("[id='htmlPrice']").eq(nNum).html(dcPrice2 + " 원");
+		} else if($("input[id='inOPcount']").eq(nNum).val() >= parseInt(boxCountOpt) && boxCountOpt > 0){		//박스 주문
+			var perend = $("input[id='indcPer']").eq(nNum).val();			
+			$("[id='htmlPrice']").eq(nNum).html(dcPrice + " 원");
+		} else {
+			var perend = $("input[id='inoPer']").eq(nNum).val();
+			$("[id='htmlPrice']").eq(nNum).html(oPrice + " 원");
+		}
+		$("[id='htmlDC']").eq(nNum).html(perend + "%");
+
+		fnSumTotalPrice();
+	}
+
+	//=== 옵션 사용시 옵션 삭제 기능 =====================================
+	function fnOptionDel(delBtn)
+	{
+		loop=10;
+		trObj = delBtn.parentNode;
+		while(loop){trObj = trObj.parentNode;if(trObj.id=="inOptionTR"){break;}loop--;}
+		tblObj = trObj.parentNode;
+		tblObj.removeChild(trObj);
+		fnSumTotalPrice();
+	}
+
+
+
+
+	//-- 종합가격 계산
+	function fnSumTotalPrice()
+	{
+		len = $("input[id='inOPcount']").length;
+
+		//if(!len)return;
+
+		totPrice = 0;
+		for(k=0;k<len;k++)
+		{
+			v1= parseInt($("input[id='inOPcount']").eq(k).val());
+			v2 = parseInt($("input[id='inOPaddPrice']").eq(k).val());
+			Pprice2B = parseInt($("input[id='Pprice2A']").eq(k).val());
+
+			if(!v1)v1=0;
+			if(!v2)v2=0;
+
+			/*v2=parseInt(Pprice2B) + v2;
+			totPrice=totPrice+(v1*v2);*/
+			
+			var boxCountOpt = $("input[id='boxCountOpt']").eq(k).val();
+			if(!boxCountOpt) boxCountOpt = 0;
+			var Pprice2Box = $("input[id='indcPrice']").eq(k).val();			
+			
+			var boxCountOpt2 = $("input[id='boxCountOpt2']").eq(k).val();
+			if(!boxCountOpt2) boxCountOpt2 = 0;
+			var Pprice2Box2 = $("input[id='indcPrice2']").eq(k).val();			
+			
+			if(v1 >= parseInt(boxCountOpt2) && boxCountOpt2 > 0){		//박스 주문
+				v2=parseInt(Pprice2Box2) + v2;
+			} else if(v1 >= parseInt(boxCountOpt) && boxCountOpt > 0){		//박스 주문
+				v2=parseInt(Pprice2Box) + v2;
+			} else {
+				v2=parseInt(Pprice2B) + v2;
+			}
+			totPrice=totPrice+(v1*v2);
+		}
+		
+		jQuery("#totalPriceSpan").html(commify(totPrice));
+	}
+
+
+
+	/*=============================================================================
+		카트 저장
+	=============================================================================*/
+	function fnInCart(inCAstate)
+	{
+		//== 옵션 검사 =================
+			OPcount = $("select[id='inOPselect']").length;			
+			if(OPcount)
+			{
+				len = $("input[id='inOPcount']").length;
+				if(!len)
+				{
+					alert("옵션을 1개이상 선택하셔야 합니다.");
+					return;
+				}
+			}
+		//== 옵션 검사 =================
+		
+		//== 저장할 데이터 문자열 생성 =================
+		//param="qIDX=<?=$qIDX?>";
+		param = "";
+		for(k=0;k<len;k++)
+		{
+			opqIDX = $("input[id='inPidx']").eq(k).val();
+			opIDX = $("input[id='inOPidx']").eq(k).val();
+			opCount = $("input[id='inOPcount']").eq(k).val();
+			opAddprice = $("input[id='inOPaddPrice']").eq(k).val();
+			
+			if(opqIDX)opqIDX = parseInt(opqIDX);
+			else opqIDX=0;
+			
+			if(opIDX)opIDX = parseInt(opIDX);
+			else opIDX=0;
+				
+			if(opCount)opCount = parseInt(opCount);
+			else opCount=0;
+				
+			if(opAddprice)opAddprice = parseInt(opAddprice);
+			else opAddprice=0;
+			
+			param+= "&qIDX[]=" + opqIDX + "&opIDX[]=" + opIDX + "&opCount[]=" + opCount + "&opAddprice[]=" + opAddprice;
+			//param+= "&opIDX" + k + "=" + opIDX + "&opCount" + k + "=" + opCount + "&opAddprice" + k + "=" + opAddprice;			
+		}
+		
+		param+="&inCAstate=" + inCAstate;
+		
+		//== 텍스트 옵션 검사 ==========================
+		obj = $("#inPoptionText");
+		if(obj.attr("tagName"))
+		{
+			if(!obj.val())
+			{
+				alert("상단에서 옵션, 수량을 선택하여 주세요.");
+				return;
+			}
+			
+			//-- 특수문자 제거
+			v = obj.val();
+			v = v.replaceAll("'","",v);
+			v = v.replaceAll('"',"",v);
+			v = v.replaceAll('&',"/",v);
+			//obj.val(v);
+			param+="&opTEXT=" + v;
+		}
+		
+		$.ajax({
+			url:'ajaxCartAddEvent.php',
+			type:"POST",
+			data : param,
+			dataType:"text",
+			error:fnErrorAjax,
+			success:function(_response)
+			{
+				if(_response=="##error##")
+				{
+					fnErrorAjax();
+				}
+				else if(_response=="##OK##")
+				{
+					fnViewPopup("pop_04");					
+				}
+				else if(_response=="##noWith##")
+				{
+					alert("현재 장바구니에 '함께 주문하실 수 없는 제품'이 있습니다.\n\n장바구니를 확인해 주세요.");
+					return;
+				}
+				else if(_response=="##noWithThis##")
+				{
+					alert("본 제품은 '다른제품과 함께 주문하실 수 없는 제품'입니다.\n\n장바구니를 확인해 주세요.");
+					return;
+				}
+				else if(_response=="##ORDERGO##")
+				{
+					document.location="/order/order.html?tempCode=6";
+				}
+				else
+				{
+					//alert(_response);
+					fnErrorAjax();
+				}
+			}
+		});
+	}	
+
+function fnViewChange(str){
+	//document.getElementById("ifrEvent").src = "/event/ifrList.html?EVIDX=<?=$_GET[EVIDX]?>&view=" + str + "&kind=<?=$kind?>";
+	location.href = "/event/event.html?EVIDX=<?=$_GET[EVIDX]?>&view=" + str + "&kind=<?=$kind?>";
+}
+
+function fnListChange(str){
+	//document.getElementById("ifrEvent").src = "/event/ifrList.html?EVIDX=<?=$_GET[EVIDX]?>&view=<?=$view?>&kind=" + str;
+	location.href = "/event/event.html?EVIDX=<?=$_GET[EVIDX]?>&view=<?=$view?>&kind=" + str;
+}
+
+$(function () {
+	var msie6 = $.browser == 'msie' && $.browser.version < 7;
+	if (!msie6) {
+		var top = $('#orForm').offset().top - parseFloat($('#orForm').css('margin-top').replace(/auto/, 0));
+		$(window).scroll(function (event) {
+			// what the y position of the scroll is
+			var y = $(this).scrollTop();
+			// whether that's below the form
+			if (y >= top) {
+				// if so, ad the fixed class
+				$('#orForm').addClass('fixed');
+			} else {
+				// otherwise remove it
+				$('#orForm').removeClass('fixed');
+			}
+		});
+	}  
+});
+</script>
+<style>
+#orForm.fixed { position: absolute; width:300px; }
+#orForm.fixed { position: fixed; top: 0; }
+</style>
+
+<table width="980" cellpadding="0" cellspacing="0" border="0">
+	<tr>
+		<td style="width:665px;">
+			진열수 
+			<select name="view" id="view" onChange="fnViewChange(this.value);">
+				<option value="60" <? if($_GET[view] == 60) echo "selected"; ?>>60</option>
+				<option value="120" <? if($_GET[view] == 120) echo "selected"; ?>>120</option>
+			</select>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+			정렬방식
+			<select name="kind" id="kind" onChange="fnListChange(this.value);">
+				<option value="1" <? if($_GET[kind] == 1) echo "selected"; ?>>신상품순</option>
+				<option value="2" <? if($_GET[kind] == 2) echo "selected"; ?>>인기상품순</option>
+				<option value="3" <? if($_GET[kind] == 3) echo "selected"; ?>>낮은가격순</option>
+				<option value="4" <? if($_GET[kind] == 4) echo "selected"; ?>>높은가격순</option>
+			</select>			
+			<span style="display:block;height:21px;"></span>
+			<iframe src="/event/ifrList.html?EVIDX=<?=$_GET[EVIDX]?>&view=<?=$view?>&kind=<?=$_GET[kind]?>" name="ifrEvent" id="ifrEvent" width="665" height="900" frameborder="no" style="margin:0;padding:0;" scrolling="no"></iframe> 
+		</td>
+		<td style="width:15px;">&nbsp;</td>
+		<td style="width:300px;" valign="top">
+
+		<div id="orForm">
+		<div style="border:#D6D6D6 solid 1px;padding:15px;">
+			<span style="display:block;font-weight:bold;"><?=$eventData[EVname]?></span>
+			<span style="display:block;height:5px;"></span>
+			<span style="display:block;height:5px;"></span>
+			<span style="display:block;height:2px;background-color:#3A435C"></span>
+			<span style="display:block;height:15px;"></span>
+		
+			
+			<select name="eventP" id="eventP" onchange='fnEventP(this.value);' style="width:263px;">
+				<option value="">상품을 선택하세요.</option>
+			<?
+				for($m= 0; $m < $k; $m ++){
+					//$pNameArr[$m]["pIDX"]
+					$mno = $m + 1;
+			?>
+				<option value="<?=$pNameArr[$m]["pIDX"]?>^<?=$pNameArr[$m]["pOPT"]?>^<?=$mno?>"><? echo $mno; ?>&nbsp;&nbsp;&nbsp;<?=$pNameArr[$m]["pName"]?></option>
+			<?
+				}
+			?>
+			</select>
+			<span style="display:block;height:12px;"></span>
+
+
+
+		<?	
+			$kkk = 0;
+			while($rs = sql_fetch_array($result)){
+				$kkk ++;
+				foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+				
+				/*--- 가격계산 함수화 --*/
+				$priceInfo = fnCalPrice($dbPprice3,$rs);
+
+				//-- 자바스크립트에서 계산에 사용될 변수
+				$jsPrice=$priceInfo["dcPrice"];
+				
+				$oPer = $priceInfo["dcPer"];
+				$dcPer = $priceInfo["dcPerBox"];
+				$dcPer2 = $priceInfo["dcPerBox2"];
+
+				$oPrice = $priceInfo["dcPrice"];
+				$dcPrice = $priceInfo["dcPriceBox"];
+				$dcPrice2 = $priceInfo["dcPriceBox2"];
+
+				$dbPready = getProductReady($dbIDX);
+				$dbPstockCount = $dbPstockCount - $dbPready;
+				$getInfo = getListInfo($rs, $dbPstockCount);
+				$dbPstockCount = $getInfo['dbPstockCount'];
+
+				if($dbPoptionUse==2)
+				{
+					$sql = "Select a.*,sum(b.ORPcount) as Pready from 2011_productOption as a left join 2011_orderProduct as b on a.IDX = b.ORPoption and b.ORPcountCheck=1 and b.ORPdeleted=0 where a.PIDX=" . $dbIDX . " and OPhidden=0 group by a.IDX order by OPname,OPvalue";
+					$opResult = sql_query($sql);
+					//-- 옵션 배열화
+					$opValueCount=0;
+					$opNowName="";
+					$opNameCnt=0;
+					while($opRs = sql_fetch_array($opResult))
+					{
+						$opArray[$opValueCount]["IDX"]		=	$opRs["IDX"];
+						$opArray[$opValueCount]["name"]	=	$opRs["OPname"];
+						$opArray[$opValueCount]["value"]	=	$opRs["OPvalue"];
+						$opArray[$opValueCount]["barcode"]	=	$opRs["OPbarcode"];
+						$opArray[$opValueCount]["stock"]	=	$opRs["OPstock"] - $opRs["Pready"];
+
+						//-- 차후 옵션 추가급액도 고려... 잠시 딜레이
+						//$opArray[$opValueCount]["addPrice"]	=	$opRs["addPrice"];
+						$opArray[$opValueCount]["addPrice"]	=	0;
+
+						$opValueCount++;
+						if($opNowName!=$opRs["OPname"])
+						{
+							$opNameCnt++;
+							$opNowName = $opRs["OPname"];
+						}
+					}
+				}
+
+			/*===========================================================================================
+			설정한 옵션이 있을때 인터페이스
+			===========================================================================================*/
+			if($opNameCnt && $dbPoptionUse==2){
+				$nOpname="";
+				$opCheck=0;
+				for($k=0;$k<$opNameCnt;$k++){
+			?>
+			<div id="div<?=$dbIDX?>" class="pcontent" style="display:none;">
+				<select name="inOPselect" id="inOPselect" onchange='fnSelectOption(this,0,0);' style="width:263px;">
+					<option value='0'>상품옵션/<?=$opArray[$opCheck]["name"]?>을 선택하세요</option>
+					<?
+						for($i=$opCheck;$i<$opValueCount;$i++){
+							if($nOpname!=$opArray[$i]["name"] && $i>$opCheck)break;
+							if(!$dbPstockCount)$opArray[$i]["stock"]=0;
+					?>
+					<option id='option<?=$opArray[$i]["IDX"]?>' value='<?=$opArray[$i]["IDX"]?>##<?=$opArray[$i]["value"]?>##<?=$opArray[$i]["stock"]?>##<?=$opArray[$i]["addPrice"]?>##0##<?=$jsPrice?>##<?=$dbIDX?>##<?=$dbPname?>##<?=$kkk?>##<?=$dbPboxCount?>##<?=$oPer?>##<?=$dcPer?>##<?=$oPrice?>##<?=$dcPrice?>##<?=$dbPorderMinus?>##<?=$dbPboxCount2?>##<?=$dcPer2?>##<?=$dcPrice2?>'><?=$opArray[$i]["value"]?>			<?if($dbPorderMinus != 1 && ($dbPstockView==2 || ($opArray[$i]["stock"] < 6 && $opArray[$i]["stock"] > 0)))echo "(" . $opArray[$i]["stock"] . " 개)";?><?if($opArray[$i]["stock"]<1 && $dbPorderMinus != 1)echo " -품절- ";?>
+					</option>
+					<?
+							$nOpname = $opArray[$i]["name"];
+						}
+						$opCheck=$i;
+					?>
+				</select> 
+			</div>
+			<?
+				}
+			} else {
+			/*===========================================================================================
+			설정한 옵션이 없을때 인터페이스
+			===========================================================================================*/
+			?>
+			
+			<?	if($dbPstockCount < 1 && $dbPorderMinus != 1 ) { ?>
+			<input type="text" id="div<?=$dbIDX?>" name="div<?=$dbIDX?>" value="0" style="display:none;">
+			<? } else { ?>
+			<input type="text" id="div<?=$dbIDX?>" name="div<?=$dbIDX?>" value="0##<?=$dbPname?>##<?=$dbPstockCount?>##0##1##<?=$jsPrice?>##<?=$dbIDX?>##<?=$dbPname?>##<?=$kkk?>##<?=$dbPboxCount?>##<?=$oPer?>##<?=$dcPer?>##<?=$oPrice?>##<?=$dcPrice?>##<?=$dbPorderMinus?>##<?=$dbPboxCount2?>##<?=$dcPer2?>##<?=$dcPrice2?>" style="display:none;">			
+			<? } ?>
+
+			<? } ?>
+			<? }//while ?>		
+			<span style="display:block;height:21px;"></span>
+			<div id="eventDIV" style="width:100%;border:1px solid #E6E6E6;overflow-y: scroll;">
+				<div style="padding:10px;">
+				<span style="color:#999A9A;" id="textInfo">상품을 선택하여 주세요.</span>
+				<span style="display:block;height:1px;"></span>
+				<table width='100%' cellspacing=0 cellpadding=0 border=0 id='opSelectedList'>
+				</table>
+				</div>
+			</div>	
+			<p>&nbsp;</p>
+			<span style="float:right;text-align:right;color:#444444;font-weight:bold;">총 금액&nbsp;&nbsp;<span id='totalPriceSpan' style="color:#2432BB; font-size:15px;">0</span> 원</span>
+			<p>&nbsp;</p>
+			<div align="center">
+				<img src="/img/view/btn_buy.gif" style='cursor:pointer;' alt="바로구매" onclick='<?if(!$MID){?>alert("로그인 또는 회원가입 후 이용해주세요");<?}else{?>fnInCart(6)<?}?>'   />
+				<img src="/img/view/btn_cart.gif" alt="장바구니" style="cursor:pointer" onclick='fnInCart(1)'>
+			</div>
+		</div>
+		</div>
+		</td>
+	</tr>
+</table>
+
+
+</div>             
+<!-- //이벤트 끝 ---> 
+
+<script type="text/JavaScript">
+	$(document).ready(function(e) {
+		$('#ifrEvent').load(function() {
+			$(this).height($(this).contents().find('body')[0].scrollHeight+30+"px");
+		});
+	});
+</script>
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

@@ -1,0 +1,238 @@
+<?
+	$fnBrandName = fnLoadBrandName();
+	$defaultWhere = "";
+	if(!$viewType) $viewType = 1;
+	if(!$page) $page = 1;
+	if(!$listSize) $listSize = 25;
+	if($listSize > 100) $listSize = 100;
+	if(!$s2) $s2 = 1;
+
+	#-- 카테고리 검색은 전체검색시 none 으로 전달한다
+	if($cateIDX=="none") $cateIDX="";
+	else $cateIDXdb = getCategoryNew($cateIDX);
+	
+	$option = "&cateIDX=" . $cateIDX . "&viewType=" . $viewType. "&listSize=" . $listSize . "&s1=" . urlencode($s1) . "&s2=" . $s2 . "&s3=" . $s3 . "&searchKind=" . $searchKind;
+	$optionLink = "";
+	if($s1){ $optionLink .= "&s1=" . urlencode($s1); }
+	if($searchKind){ $optionLink .= "&searchKind=" . $searchKind; }
+?>
+<? if($_SERVER['SCRIPT_NAME'] != "/brand/brandView.html") { ?>
+<ul class="tab_02">
+	<li rel="tabView1" class="select">ALL</a></li>
+	<li rel="tabView2">Brand Search&nbsp;&nbsp;<img src="/img/ico/ico_down3.gif" alt="열기"></a></li>
+</ul>
+<script>
+	$(function () {
+		$("ul.tab_02 li").click(function () {
+			$("ul.tab_02 li").removeClass("select");
+			$(this).addClass("select").addClass("none");
+			var activeTab = $(this).attr("rel");
+			if(activeTab == "tabView2") $(".list_brand_box").fadeIn(500);
+			else $(".list_brand_box").hide();
+		});
+	});
+</script>
+
+
+<? if(!$actOn){ ?><span class="sub_list_text"><font class="black"><font class="orange"><strong><span id="ProductCount"></span></strong></font> Results</font></span><? } ?>
+<? } ?>
+
+<div class="list_option">
+	<? if(!$actOn){ ?><li><a href="<?=$_SERVER['PHP_SELF']?>?page=<?=$page?><?=getOptionArr($option, "s2=1");?>" <?if($s2=="1") echo " class='select' ";?> id="smnew">Newely Listed</a><span>|</span>
+	<a href="<?=$_SERVER['PHP_SELF']?>?page=<?=$page?><?=getOptionArr($option, "s2=2");?>" <?if($s2=="2") echo " class='select' ";?>>Most Purchased First</a><span>|</span>
+	<a href="<?=$_SERVER['PHP_SELF']?>?page=<?=$page?><?=getOptionArr($option, "s2=3");?>" <?if($s2=="3") echo " class='select'";?>>Price : Lowest First</a><span>|</span>
+	<a href="<?=$_SERVER['PHP_SELF']?>?page=<?=$page?><?=getOptionArr($option, "s2=4");?>" <?if($s2=="4") echo " class='select'";?>>Price : Highest First</a><span>|</span>
+	<a href="<?=$_SERVER['PHP_SELF']?>?page=<?=$page?><?=getOptionArr($option, "s2=5");?>" <?if($s2=="5") echo " class='select'";?>>Discount : Highest First</a></li><? } ?>
+	<!--
+        <li class="list_select">
+            <a href="<?=$_SERVER['PHP_SELF']?>?page=<?=$page?><?=getOptionArr($option, "viewType=1");?>" <? If($viewType != 2) echo "class='select'"; ?>><img src="/img/ico/ico_box.gif" alt=""></a><span>|</span>
+            <a href="<?=$_SERVER['PHP_SELF']?>?page=<?=$page?><?=getOptionArr($option, "viewType=2");?>" <? If($viewType == 2) echo "class='select'"; ?>><img src="/img/ico/ico_list.gif" alt=""></a>
+        </li>
+    -->
+    <div style="display: flex; gap: 16px;">
+        <? if(!$actOn){ ?>
+        <li class="list_select2">
+            <select name="jumpMenu" id="jumpMenu" class="" onchange="fnProductListChange(this.options[this.selectedIndex].value);">
+                <option value="25" <? if($listSize == "25") echo "selected"; ?>>25</option>
+                <option value="50" <? if($listSize == "50") echo "selected"; ?>>50</option>
+                <option value="100" <? if($listSize == "100") echo "selected"; ?>>100</option>
+            </select>
+        </li>
+        <script>
+            function fnProductListChange(strValue){
+                location.href = '<?=$_SERVER[PHP_SELF]?>?page=1<?=getOptionArr($option, "listSize=' + strValue + '");?>';
+            }
+        </script>
+        <? } ?>
+        <li class="list_btn">
+            <button alt="Add to Cart" align="absmiddle" style="cursor:pointer;color: #ffffff;background: #005bf1;border-radius: 40px;border: 0;padding: 0 16px; line-height: 1;" onmouseover="ShowLayer('div_il',true, 0, 0)" onmouseout="ShowHideLayer('div_il',false)" onclick="fnCheckCartIn(&quot;&quot;)">+ Check item add to cart</button>
+            <div id="div_il" class="tooltip_btn" style="width:180px;display:none;position:absolute;top:44px;z-index:999999;border:2px solid #CCCCCC;padding:5px;background-color:#FFF;line-height:150%;text-align:left; word-break:normal;">Please be sure to check and press this "button" in case you purchase serveral product at once.</div>
+        </li>
+    </div>
+</div>
+<?
+	
+	#-- 검색어 입력시 카테고리는 처리하지 않습니다.
+	#-- 메인화면에서 콜을 했을때에는 처리를 하지만 일반 목록에서는 카테고리는 처리하지 않습니다. (신상/인기)
+
+	$defaultWhere = "";
+	$wordWhere = "";
+	if(!$defaultWhere){
+		if($s1)
+		{
+			//echo $s1  . " / ";
+			//$s1 = iconv("euc-kr","utf-8",$s1);
+			//echo $s1;
+			$sStr = explode(" ",$s1);
+			$sLen = sizeof($sStr);
+			
+					
+			if($searchKind == "ProductNo"){
+				for($k=0;$k<$sLen;$k++)
+				{
+					if($wordWhere)$wordWhere.=" and ";
+					$wordWhere.= " (";
+					$wordWhere.= " a.IDX = '" . $sStr[$k] . "' ) ";			//-- 제품번호
+				}
+			} else if($searchKind == "ProductName"){
+				for($k=0;$k<$sLen;$k++)
+				{
+					if($wordWhere)$wordWhere.=" and ";
+					$wordWhere.= " (";
+					$wordWhere.= " replace(Pname,' ','') like '%" . trim($sStr[$k]) . "%' or ";			//-- 상품명
+					$wordWhere.= " replace(PengName,' ','') like '%" . trim($sStr[$k]) . "%' or ";			//-- 상품명
+					$wordWhere.= " replace(PengKeyword,' ','') like '%" . trim($sStr[$k]) . "%' or ";	//-- 키워드(관련검색어)
+					$wordWhere.= " replace(Pkeyword,' ','') like '%" . trim($sStr[$k]) . "%' ) ";	//-- 키워드(관련검색어)
+				}
+			} else {
+				for($k=0;$k<$sLen;$k++)
+				{
+					if($wordWhere)$wordWhere.=" and ";
+					$wordWhere.= " (";
+					$wordWhere.= " replace(Pname,' ','') like '%" . trim($sStr[$k]) . "%' or ";			//-- 상품명
+					$wordWhere.= " replace(PengName,' ','') like '%" . trim($sStr[$k]) . "%' or ";			//-- 상품명
+					$wordWhere.= " replace(Pkeyword,' ','') like '%" . trim($sStr[$k]) . "%' or ";	//-- 키워드(관련검색어)
+					$wordWhere.= " replace(PengKeyword,' ','') like '%" . trim($sStr[$k]) . "%' or ";	//-- 키워드(관련검색어)
+					$wordWhere.= " replace(BRTXT,' ','') like '%" . trim($sStr[$k]) . "%' or ";		//-- 브랜드명
+					$wordWhere.= " a.IDX = '" . $sStr[$k] . "' or ";			//-- 제품번호
+					if($searchKind == "barcode") $wordWhere.= " replace(OPbarcode,' ','') like '%" . trim($sStr[$k]) . "%' or ";			//-- 옵션 바코드
+					$wordWhere.= " replace(Pbarcode,' ','') like '%" . trim($sStr[$k]) . "%' ) ";//-- 바코드
+				}
+			}
+			
+			if($wordWhere)$wordWhere = " (" . $wordWhere . ") ";
+			
+			$defaultWhere = $wordWhere;
+		}
+	
+	}
+	
+	if($cateIDXdb && !$s1) {
+		if($defaultWhere) $defaultWhere.=" AND ";
+		$defaultWhere.= " (Pcategory2 LIKE '".$cateIDXdb."%' or Pcategory3 LIKE '".$cateIDXdb."%') ";
+	}
+	if($defaultWhere) $defaultWhere = " AND " .$defaultWhere;
+	
+
+	if($actOn){	
+		if($actOn == "best"){ 
+
+			$fnCateIDX = " AND (b.Pcategory2 like '".$cateIDXdb."%' OR b.Pcategory3 like '".$cateIDXdb."%') ";
+			$sql = " SELECT c.IDX,c.BRkname,c.BRename FROM nBest AS a LEFT JOIN 2011_productInfo AS b ON a.pCode = b.IDX ";
+			$sql .= " LEFT JOIN 2011_brandInfo AS c ON b.BRIDX = c.IDX OR b.BRIDX2 = c.IDX ";
+			$sql .= " WHERE b.Pshop = '" . $shopID . "' AND b.Pdeleted = 0 AND b.PenglishView = 0 " . $fnCateIDX;
+			$sql .= " AND b.Pprice3 > 0 AND b.Pagree = 1 AND b.Pstate = 1 AND b.PstockCount > 0 ";
+			$sql .= " GROUP BY c.IDX ";
+			$sql .= " ORDER BY BRkname ";
+
+		} else if ($actOn == "new"){
+
+			$fnCateIDX = " AND (a.Pcategory2 like '".$cateIDXdb."%' OR a.Pcategory3 like '".$cateIDXdb."%') ";
+			$sql = "select b.IDX,b.BRkname,b.BRename  ";
+			$sql.= "from 2011_productInfo as a ";
+			$sql.= "INNER JOIN 2011_brandInfo AS b ON a.BRIDX = b.IDX OR a.BRIDX2 = b.IDX ";
+			$sql.=" where Pshop='" . $shopID . "' and Pdeleted=0 AND PenglishView = 0 and Pprice3>0 and Pstate<10  and Pagree=1  " .$fnCateIDX;
+			$sql.=" GROUP BY b.IDX ";
+			$sql.=" ORDER BY BRkname ";
+			
+		} else if ($actOn == "sale"){
+			if(!$cIcon) $cIcon = "6,7";
+			
+			$sql = "select b.IDX,b.BRkname,b.BRename  ";
+			$sql.= "from 2011_productInfo as a ";
+			$sql.= "LEFT JOIN 2011_brandInfo AS b ON a.BRIDX = b.IDX LEFT JOIN 2011_brandInfo AS c ON a.BRIDX2 = c.IDX ";
+			$sql.=" where (a.BRIDX != '' OR a.BRIDX != '') AND Pshop='" . $shopID . "' and Pdeleted=0 and Pprice3>0 and Pstate<10  and Pagree=1 and Picon1 IN (" . $cIcon .  ") " .$fnCateIDX;
+			$sql.=" GROUP BY b.IDX ";
+			$sql.=" ORDER BY BRkname ";
+
+		}
+	} else {
+		$sql = "select b.IDX,b.BRkname,b.BRename  ";
+		$sql.= "from 2011_productInfo as a ";
+		$sql.= "LEFT JOIN 2011_brandInfo AS b ON a.BRIDX = b.IDX LEFT JOIN 2011_brandInfo AS c ON a.BRIDX2 = c.IDX ";
+		if($searchKind == "barcode") $sql .= " INNER JOIN 2011_productOption AS h ON a.IDX = h.PIDX ";
+		$sql.=" where (a.BRIDX != '' OR a.BRIDX != '') AND Pshop='" . $shopID . "' and Pdeleted=0 AND PenglishView = 0 and Pprice3>0 and Pstate<10 and Pagree=1  " .$defaultWhere;
+		$sql.=" group by b.IDX ";
+		$sql.=" order by BRkname ";
+	}
+	$BRresult = sql_query($sql);
+	$s3Array = explode(",",$s3);
+
+?>
+<div class="list_brand_box" style="display:none;">
+	<a href="javascript:" class="popClose2" onclick="$('.list_brand_box').hide();"><img src="/img/nav/btn_close.gif" title="닫기"></a>
+
+	<!-- 단어별 브랜드 -->
+	<div class="brand_word_view">
+		<p alt="Brand">Brand</p>
+
+		<p class="brandbtn"><img src="/img/sub/btn_re.gif" width="83" height="56" onClick="fnProductBrand();" style="cursor:pointer;"></p>
+		<?
+		  $BRcols=5;
+		  $BRrows = ceil(mysqli_num_rows($BRresult)/$BRcols);
+		  $mm = 0;
+			for($k=1;$k<=$BRrows;$k++){
+				
+				if($BRrowOut==1)break;
+				
+				for($i=1;$i<=$BRcols;$i++)	{
+					
+					if($rs = sql_fetch_array($BRresult))	{
+						foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}    						
+					}	else	{
+						$BRrowOut=1;
+					}
+					
+					$selected="";
+					if(array_search($rs["IDX"], $s3Array)!==false)$selected="checked";
+		?>
+		<?if($rs["BRename"]){?><span><label style="cursor:pointer;"><input type="checkbox" name="brandCheck" id="brandCheck" value='<?=trim($rs["IDX"])?>' <?=$selected?> /> <?=trim($rs["BRename"])?></label></span><? $mm ++; } ?>
+		<?	} ?>
+		<? } ?>
+		<?
+			if($mm < 7){
+				$mm2 = 7 - $mm;
+				for($nn = 0; $nn <= $mm2; $nn ++){
+					echo "<span>&nbsp;</span>";
+				}
+			}
+		?>
+	</div>
+	<!-- //단어별 브랜드 -->
+	<script>
+		function fnProductBrand(){
+
+			chkObj = $("input[id='brandCheck']:checked");
+			
+			len = chkObj.length;
+			brStr="";
+			for(k=0;k<len;k++)
+			{
+				if(brStr)brStr+=",";
+				brStr+= chkObj.eq(k).val();
+			}
+			if(!len)brStr="none";
+			location.href = '<?=$_SERVER[PHP_SELF]?>?page=1<?=getOptionArr($option, "s3=' + brStr + '");?>';
+		}
+	</script>
+</div>

@@ -1,0 +1,208 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+	
+	$mktime = time();
+	$eventData = sql_fetch(" SELECT * FROM `2011_eventInfo` WHERE IDX = '$_GET[EVIDX]' AND EVdate2 > '$mktime' " );
+
+	if(!$eventData['IDX']){
+		echo "
+			<script>
+				alert('기획전이 존재하지 않거나 종료된 기획전입니다.');
+				parent.location.href='/';
+			</script>
+		";
+		exit;
+	}
+?>
+<script>
+	function changeImg(no,ImgLink,simg){
+		document.getElementById("PhotoMain"+no).src = ImgLink;
+		//document.getElementById(simg).style.border = "#000 solid 2px";
+	}
+	function changeImg2(simg){
+		//document.getElementById(simg).style.border = "0px";
+	}
+	
+	function popupOpen(no){
+		var popUrl = "eventView.html?IDX=" + no;
+		var popOption = "width=770, height=800, resizable=no, scrollbars=yes, status=no;";
+		window.open(popUrl,"eventView",popOption);
+	}
+</script>
+<style>
+#tit { display:block; margin:8px 0 0 5px;  padding:0; color:#676566;font:bold 12px/16px 돋움;  }
+#text { display:block; margin:2px 0 0 5px;  padding:0; color:#888888;font:normal 12px/16px 돋움;   }
+#icon { margin:2px 0 0 5px;  padding:0; color:#888888;font:normal 12px/16px 돋움;   }
+#cate { margin:0; padding:0; width:95px; }
+
+#price { display:block; margin:0; padding:0 0 0 5px; color:#949494; font:12px/16px 돋움; }
+#sale { margin:0; padding:0; text-decoration:line-through;  font:normal 12px/16px 돋움;  }
+#point { margin:0; padding:0 5px; color:#303030; font:bold 12px/16px Verdana;  }
+#point strong { color:#ff5d31; font:bold 12px/16px 돋움; }
+#percent { margin:0; padding:0; color:#303030; font:normal 12px/16px 돋움; }
+#percent strong { color:#0282f0; font:normal 12px/16px 돋움;  }
+
+.amount_box { float:left; width:208px; font:normal 11px/17px 돋움; color:#1d1d1d; border:#efebec solid 0px; }
+.amount_box img { vertical-align:middle   }
+.amount { border:#cccccc solid 1px; width:34px; height:17px; color:#4c4c4c; text-align:center; margin-left:5px;}
+.amount_box input { vertical-align:middle; border-color:#aeaeae;  }
+.arrow { display:inline-block; width:18px; vertical-align:middle  }
+.arrow img { display:block; padding-bottom:1px;}
+.amount_box .check { padding-left:5px; padding-right:5px; margin-right:5px}
+
+</style>
+</head>
+<body>
+<table width="100%" cellpadding="0" cellspacing="0" border="0">		
+	<tr>
+	<?
+		//$where = " AND a.EVIDX = '88' ";
+		$where = " AND a.EVIDX = '$_GET[EVIDX]' ";
+
+		$query = " SELECT a.* FROM 2011_productInfo AS a ";
+		$query .= " WHERE Pshop='" . $shopID . "' AND Pdeleted=0 AND Pprice3>0 AND Pstate<10 AND Pagree=1 " . $where;
+		$result = sql_query($query);
+		
+
+		$option = "&EVIDX=$_GET[EVIDX]&view=$_GET[view]&kind=$_GET[kind]";
+
+
+		if (!$page) $page = 1;
+		$CntPerPage = $_GET[view];
+		$PagePerList = 5;
+		$TotalCount = mysqli_num_rows($result);
+		$StartPos = ($page - 1) * $CntPerPage;
+		if($_GET[kind] == "2") $query .= " ORDER BY PsellCount DESC ";
+		else if($_GET[kind] == "3") $query .= " ORDER BY Pprice3 ASC ";
+		else if($_GET[kind] == "4") $query .= " ORDER BY Pprice3 DESC ";
+		else  $query .= " ORDER BY Pregdate DESC "; //등록순
+		$query .= " LIMIT ".($page - 1) * $CntPerPage.",".$CntPerPage;
+		$result = sql_query($query);
+
+		$z = 0;
+		$fnBrandName = fnLoadBrandName();
+		$z = $z + $StartPos;
+		while($rs = sql_fetch_array($result)){
+			$z ++;
+
+			foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+
+			//-- 이미지 파일 변수화
+			for($k=1;$k<=7;$k++)$dbPimage[$k]=$rs["PsaveFile".$k];
+			
+			$imgUrl = getImgUrl($dbPsaveFile1);
+			$pImg = "<img src='".$imgUrl."' id='PhotoMain". $dbIDX ."'  width='208' border=0 />";
+			
+			$dbPready = getProductReady($dbIDX);
+			$dbPstockCount = $dbPstockCount - $dbPready;
+			$getInfo = getListInfo($rs, $dbPstockCount);
+			
+			$icon = $getInfo['icon'];
+			$icon2 = $getInfo['icon2'];
+			$icon3 = $getInfo['icon3'];
+			$boxin2 = $getInfo['boxin2'];
+			$nCount = $getInfo['nCount'];
+			$addCheckMsg = $getInfo['addCheckMsg'];
+			$dbPstockCount = $getInfo['dbPstockCount'];
+
+			if(!$dbPstockCount && $dbPorderMinus != 1)$nCount=0;
+			else $nCount=1;		
+
+			#-- 판매가격 계산
+			$priceInfo = fnCalPrice($dbPprice3,$rs);
+			$link = "<a href='/product/view.html?qIDX=" . $dbIDX . $option ."'  title='" . $dbPname . "'>";
+			
+			$dbPname_list = $dbPname;
+			//$dbPname = strcut_utf8($dbPname,17,"","..");
+				
+			#-- 직접 입력 옵션을 가진 상품은 체크시 안내 문구 처리
+			$addCheckMsg="";
+			if($dbPcartWith==2)$addCheckMsg=" onclick='alert(\"본 상품은 다른 제품과 함께 구매하실 수 없습니다.\");this.checked=false' ";	
+							
+	?>
+		<td>
+			<table width="218" height="400" border="0" cellpadding="0" cellspacing="0">
+				<tr height="208">
+					<td><?=$pImg;?></td>
+					<td width="10">&nbsp;</td>
+				</tr>
+				<tr>
+					<td style="height:55px;">
+					<?
+						for($i=1;$i<=5;$i++){
+							if($dbPimage[$i]){
+								if(!is_file("../../image/_DATA/product/".$dbPimage[$i])) continue;
+								
+								$fPosition = explode("/",$dbPimage[$i]);
+								$thumb[$i] = $fPosition[0] . "/thumb/" . $fPosition[1];
+
+								$thumlink = "/_DATA/product/".$dbPimage[$i];
+								
+								$pImgS = "<img src='/_DATA/product/" . $thumb[$i] . "' id='sImg".$dbIDX.$i."'  style='width:38px; height:38px; border:0' alt='".$dbPname."' />";
+					?>
+					<span style="width:40px; height:40px;"><a onmouseover="changeImg('<?=$dbIDX?>','<?=$thumlink?>','sImg<?=$dbIDX?><?=$i?>')" onmouseout="changeImg2('sImg<?=$dbIDX?><?=$i?>');" style="cursor:pointer"><?=$pImgS?></a></span>
+					<? } }?>
+					</td>
+					<td></td>
+				</tr>
+				<tr>
+					<td valign="top">
+						<span id="tit">
+							<table border="0" cellpadding="0" cellspacing="0">
+								<tr>
+									<td><table cellpadding="0" cellspacing="0" border="0"><tr><td  style="width:25px; height:14px;background-color:#2237ad;" align="center"><span style="font-family: 돋움; font-size: 12px; color: #FFFFFF; font-weight: bold;"><?=$z?></span></td></tr></table></td>
+									<td>[<?=$fnBrandName[$dbBRIDX]?>] <?=$dbIDX?></span></td>
+								</tr>
+							</table>
+						<span id="text" style="display:block; width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><?=$dbPname?></a></span>
+						<span id="price">
+							<font id="sale"><?=number_format($dbPprice2)?>원</font>&nbsp;<font id="point"><strong><?=$priceInfo["dcPrice_txt"] ?></strong><font style="font-weight:normal">원</font></font>
+							<?if($priceInfo["dcPer"]){?>[<strong><font color="#0282F0"><?=$priceInfo["dcPer"]?></font></strong>%<?=fnGETPricePer($rs,2); ?>]</span><? } ?>
+						</span>
+					</td>
+					<td></td>
+				</tr>
+				<tr><td style="height:3px;"></td><td></td></tr>
+				<tr><td style="height:1px;background-color:#EFEBEC"></td><td></td></tr>
+				<tr>
+					<td style="height:30px;">
+					<span class="amount_box">  
+						<span id="icon"><?= $icon . $icon2 . $icon3 . $boxin2 ?></span>
+					   <img src="/img/btn_choice.gif" alt="선택하기" style="cursor:pointer;" id="btn_addCart" onclick="fnPselect('<?=$dbIDX?>','<?=$dbPoptionUse?>','<?=$z?>')">
+					   <a href="javascript:popupOpen(<?=$dbIDX?>)"><img src="/img/pview.gif" border="0"></a>
+					 </span>
+					</td>
+				</tr>
+				<tr><td style="height:1px;background-color:#E4E4E4"></td><td></td></tr>
+				<tr>
+					<td style="height:30px;"></td>
+					<td></td>
+				</tr>
+			</table>
+		</td>
+	<? 
+			if($z % 3 == 0) echo "</tr><tr>";
+		}
+	?>
+</table>
+
+<div align="center" id="paging"><br/><? echo page_nav($TotalCount,$CntPerPage,$PagePerList,$page,$option); ?></div>
+
+<script>
+	function fnPselect(str1,str2,str3){
+		var str = str1 + "^" + str2 + "^" + str3;
+		parent.document.getElementById("eventP").value = str;
+		parent.fnEventP(str);
+		if(str2 > 1){
+			alert('우측상단에서 상품 옵션을 선택하여 주세요.');
+		} else {
+			alert('상품 수량을 선택하여 주세요.');
+		}
+		parent.document.getElementById("eventP").focus();
+	}
+
+</script>
+
+<script> window.parent.scroll(0,0); </script>
+</body>
+</html>

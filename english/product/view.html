@@ -1,0 +1,1209 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+
+	$qIDX = mysqli_real_escape_string($g5['connect_db'], $qIDX);
+	// 오늘 본 상품 저장 시작
+	$saved = false;
+	$tv_idx = (int)get_session("ss_tv_idx");
+	if ($tv_idx > 0) {
+		for ($i=1; $i<=$tv_idx; $i++) {
+			if (get_session("ss_tv[$i]") == $qIDX) {
+				$saved = true;
+				break;
+			}
+		}
+	}
+	if (!$saved) {
+		$tv_idx++;
+		set_session("ss_tv_idx", $tv_idx);
+		set_session("ss_tv[$tv_idx]", $qIDX);
+	}
+	// 오늘 본 상품 저장 끝
+	
+	if (in_array($_GET['qIDX'], $outIdx)) {		
+		ob_clean();
+		echo "<script>alert('We coundn't find the product at the moment.');document.location='/';</script>";
+		exit();
+	}
+
+	/*==================================================================
+	상품 정보 불러오기
+	==================================================================*/
+	$sql = " SELECT * FROM 2011_productInfo WHERE IDX = '" . $qIDX . "' AND Pshop='" . $shopID . "' AND Pdeleted=0 ";
+	if($rs = sql_fetch($sql))
+	{
+		$rsData = $rs;
+		# DB 레코드 결과값 모두 변수로 전환
+		foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+	}
+	else
+	{
+		ob_clean();
+		echo "<script>alert('We coundn't find the product at the moment.');document.location='/';</script>";
+		exit();
+	}	
+
+	if($dbPenglishView == 1){
+		if(!$MID == 'monslimey2') {
+			ob_clean();
+			echo "<script>alert('This item cannot be shipped overseas.');document.location='/';</script>";
+			exit();
+		}
+	}
+
+	$cateIDXdb = getCategoryNew($dbPcategory1);
+	$len = ceil(strlen($cateIDXdb) / 2);
+	$cateIDXName = array();
+	
+	$BrandRow = sql_fetch(" SELECT BRkname, BRbrand, BRename, BRsaveFile1 FROM 2011_brandInfo WHERE IDX = '" . $dbBRIDX . "' AND BRdeleted = 0 ");
+
+	for ($i=1; $i<=$len; $i++)
+	{
+		if($i == 1) $code = substr($cateIDXdb,0,1);
+		else if($i == 2) $code = substr($cateIDXdb,0,3);
+		else if($i == 3) $code = substr($cateIDXdb,0,5);
+		else $code = substr($cateIDXdb,0,1);
+
+		$sql = " SELECT IDX, CTename FROM 2011_categoryInfo WHERE CTcode = '$code' ";
+		$row = sql_fetch($sql);
+		$cateIDXCode[$i] = $row['IDX'];
+		$cateIDXName[$i] = $row['CTename'];
+	}
+
+	if($dbPdeleted==1)
+	{
+		echo "<script>alert('The product is not existed.');document.location.replace('/');</script>";
+		exit();
+	}
+
+	/*==================================================================
+	회원일경우 가격계산
+	==================================================================*/
+
+	/*--- 가격계산 함수화 --*/
+	$priceInfo = fnCalPrice($dbPprice3,$rs);
+
+	//-- 자바스크립트에서 계산에 사용될 변수
+	//$jsPrice=$priceInfo['dcPrice'];
+	//$jsPrice2=$priceInfo['dcPrice2'];
+	//$jsPriceBox=$priceInfo['dcPriceBox'];
+	//$jsPriceBox2=$priceInfo['dcPriceBox2'];
+	$jsPrice=$priceInfo['dcDollar'];
+	$jsPrice2 = 0;
+	$jsPriceBox=$priceInfo['dcDollarBox_txt'];
+	$jsPriceBox2=$priceInfo['dcDollarBox2_txt'];
+	$discount = number_format($discount);
+	if($_Minus == 1) $dbPorderMinus = 1;
+
+	#-- 브랜드 샵 링크
+	if($dbBRIDX)$BRlink = "<a href='/product/brandProduct.html?s3=". $dbBRIDX . "'>";
+
+	//-- 이미지 파일 변수화
+	for($k=1;$k<=7;$k++)$dbPimage[$k]=$rs["PsaveFile".$k];
+
+	/*==================================================================
+	옵션불러오기 추가 - 재고 처리 변형
+	==================================================================*/
+	#-- 총 재고 변경
+	$sql = "select sum(ORPcount) as Pready from 2011_orderProduct where PIDX='" . $qIDX . "' and ORPcountCheck=1 and ORPdeleted=0 group by PIDX";
+	$rs = sql_fetch($sql);
+	$PstockReady = $rs['Pready'];
+	$dbPstockCount = $dbPstockCount - $PstockReady;
+
+	if($dbPoptionUse==2)
+	{
+		$sql = " SELECT IDX, OPname, OPbarcode, OPvalue, OPvalueEng, OPstock FROM 2011_productOption WHERE PIDX = '" . $qIDX . "' AND OPhidden = 0 ";
+		$opResult = sql_query($sql);
+
+		$opValueCount=0;
+		$opNowName="";
+		$opNameCnt=0;
+		while($opRs = sql_fetch_array($opResult))
+		{
+			$opRs2 = sql_fetch(" SELECT SUM(ORPcount) AS Pready FROM 2011_orderProduct WHERE ORPoption = '" . $opRs['IDX'] . "' AND ORPcountCheck = 1 AND ORPdeleted = 0 GROUP BY ORPoption  ");
+			$opArray[$opValueCount]["IDX"]		=	$opRs['IDX'];
+			$opArray[$opValueCount]["name"]	=	$opRs['OPname'];
+			if($opRs['OPvalueEng']) $opArray[$opValueCount]["value"]	=	$opRs['OPvalueEng'];
+			else $opArray[$opValueCount]["value"]	=	$opRs['OPvalue'];
+			$opArray[$opValueCount]["barcode"]	=	$opRs['OPbarcode'];
+			$opArray[$opValueCount]["stock"]	=	$opRs['OPstock'] - $opRs2['Pready'];
+
+			//-- 차후 옵션 추가급액도 고려... 잠시 딜레이
+			//$opArray[$opValueCount]["addPrice"]	=	$opRs["addPrice"];
+			$opArray[$opValueCount]["addPrice"]	=	0;
+
+			$opValueCount++;
+			if($opNowName!=$opRs['OPname'])
+			{
+				$opNameCnt++;
+				$opNowName = $opRs['OPname'];
+			}
+		}
+	}
+
+	#== 상품 조회수 카운트
+	/*$sql = "select * from 2011_LogProductView where LPy='" . date("Y") . "' and LPm='" . date("m") . "' and LPd='" . date("d") . "' and LPPIDX='" . $qIDX . "'";	
+	if($rs = sql_fetch($sql))
+	{
+		#-- 기록을 찾으면 카운트 증가
+		$sql = "update 2011_LogProductView set LPcount=LPcount+1 where IDX='" . $rs['IDX'] . "'";
+		sql_query($sql);
+	}
+	else
+	{
+		#-- 기록이 없으면 새로 기록
+		$sql = "insert into 2011_LogProductView (LPPIDX,LPcount,LPy,LPm,LPd,LPs1) values('" . $qIDX . "','1','" . date("Y") . "','" . date("m") . "','" . date("d") . "','" . $s1 . "')";
+		sql_query($sql);
+	}*/
+	
+	$PsizeInfo = getSizeInfo($rsData);
+	$getInfo = getListInfo($rsData, $dbPstockCount);
+	
+	$icon = $getInfo['icon'];
+	$icon2 = $getInfo['icon2'];
+	$icon3 = $getInfo['icon3'];
+	$boxin2 = "<span style='font-size:9pt; font-weight:normal;'>".$getInfo['boxin2']."</font>";
+	$dbPstockCount = $getInfo['dbPstockCount'];
+
+	#-- 상품 공지 처리
+	if($dbPcouponUse1==1) $dbPnotice.="<br>※ Voucher can not be used ※";
+	if($dbPcouponUse2==1) $dbPnotice.="<br>※ Coupon can not be used ※";
+	if(!$dbPnotice) $dbPnotice="";
+?>
+
+<script>
+
+	//배송정책
+	function fn_onMsg(val) { $("#deliveryMsg"+val).show(); }
+	function fn_offMsg(val) { $("#deliveryMsg"+val).hide(); }
+	function changeImg(ImgLink){ document.getElementById("PhotoMain").src = ImgLink; }
+
+	//-- 현 제품의 가격
+	Pprice2="<?=$jsPrice?>";
+	Pprice22="<?=$jsPrice2?>";
+	Pprice2Box="<?=$jsPriceBox?>";
+	Pprice2Box2="<?=$jsPriceBox2?>";
+
+	<? if(!$opValueCount){ ?>
+	//=== 옵션 미사용시 수량 + - =====================================
+
+	function fnPcountPlus(v)
+	{
+		jQuery("#inOPcount").val(parseInt(jQuery("#inOPcount").val())+v);
+		if(parseInt(jQuery("#inOPcount").val())<1)jQuery("#inOPcount").val(1);
+		fnPcountCheck();
+	}
+
+	//=== 옵션 미사용시 수량 체크 =====================================
+	function fnPcountCheck()
+	{
+		var maxCount='<?=$dbPstockCount?>';
+		var PorderMinus='<?=$dbPorderMinus?>';
+		var jsMLV = "<?=$MLV?>";
+		if( (jQuery("#inOPcount").val()>parseInt(maxCount)) && (parseInt(PorderMinus) != "1") )
+		{
+			alert(maxCount + " pcs ramainning now.");
+			jQuery("#inOPcount").val(maxCount);
+		}
+		
+		var boxCountOpt = "<?=$dbPboxCount?>";
+		var boxCountOpt2 = "<?=$dbPboxCount2?>";
+
+		if(!boxCountOpt) boxCountOpt = 0;
+		if(!boxCountOpt2) boxCountOpt2 = 0;
+
+		if(jQuery("#inOPcount").val() >= parseInt(boxCountOpt2) && Pprice2Box2 > 0 && boxCountOpt2 > 0 && jsMLV){		//박스 주문
+			var dc8 = document.getElementById("dc8").value;
+			$("[id='htmlDC']").html(dc8+"%");
+		} else if(jQuery("#inOPcount").val() >= parseInt(boxCountOpt) && Pprice2Box > 0 && boxCountOpt > 0 && jsMLV){		//박스 주문
+			var dc9 = document.getElementById("dc9").value;
+			$("[id='htmlDC']").html(dc9+"%");
+		} else {
+			var dc0 = document.getElementById("dc0").value;
+			$("[id='htmlDC']").html(dc0+"%");
+		}
+		fnSumTotalPrice();
+	}
+	<?	} else if($opValueCount) { ?>
+
+	//-- 옵션 선택 효과
+	function fnSelectOption(obj)
+	{
+		
+		var PorderMinus='<?=$dbPorderMinus?>';
+		v = obj.options[obj.selectedIndex].value;
+		
+		v = v.split("##");
+		
+		OPidx = v[0];
+		OPname = v[1];
+		OPmaxCount = v[2];
+		OPaddPrice = v[3];
+		
+		if(OPmaxCount<1 && (parseInt(PorderMinus) != "1") )
+		{
+			alert("Sorry, The product is currently out of stock.");
+			return;
+		}		
+
+		if(OPidx==0)return;
+
+		//-- 중복 옵션 검사
+		opLen = $("input[id='inOPidx']").length;
+
+		for(k=0;k<opLen;k++)
+		{
+			v = $("input[id='inOPidx']").eq(k).val();
+			if(v==OPidx)
+			{
+				alert("This option has already been added.\n\nPlease correct qty as following category.");
+				return;
+			}
+		}
+
+		//-- 객체생성 ----------------------------------
+		td1 = document.createElement("TD");
+		td2 = document.createElement("TD");
+		td3 = document.createElement("TD");
+		tr1 = document.createElement("TR");
+
+		input1 = document.createElement("input");
+		input2 = document.createElement("input");
+		input3 = document.createElement("input");
+		
+		
+		input1.setAttribute("value",OPidx);
+		input2.setAttribute("value",OPmaxCount);
+		input3.setAttribute("value",OPaddPrice);
+		
+
+		//-- 객체 스타일 지정 --------------------------
+		td1.className="optionList";
+		td2.className="optionList";
+		td3.className="optionList";
+
+		td1.style.width="60%";
+		td2.style.width="25%";
+		td3.style.width="15%";
+
+		td1.style.textAlign="left";
+
+
+		//input1.type="text";
+		input1.id = "inOPidx";
+		input1.name = "inOPidx";
+		input1.style.width="30px";
+		input1.style.display="none";
+		
+
+		input2.id = "inOPMaxStock";
+		input2.name = "inOPMaxStock";
+		input2.style.width="30px";
+		input2.style.display="none";
+
+		input3.id = "inOPaddPrice";
+		input3.name = "inOPaddPrice";
+		input3.style.width="30px";
+		input3.style.display="none";
+
+		tr1.id = "inOptionTR";
+
+		//-- 객체 붙이기
+		td3.appendChild(input1);
+		td3.appendChild(input2);
+		td3.appendChild(input3);
+		tr1.appendChild(td1);
+		tr1.appendChild(td2);
+		tr1.appendChild(td3);
+		
+		var dc0opt = document.getElementById("dc0").value;
+
+		//-- 객체 값 할당
+		td1.innerHTML = "<span style=line-height:130%;>" + OPname + "</span>";
+		htmlTxt	= "<table class='table-opt' width='100%' border='0' align='left' cellpadding='0' cellspacing='0'><Tr><td rowspan=2 align=right style='padding-top:2px;'>";
+        htmlTxt+=	"<td style='display: flex;'><img src='/img/ico/ico-item-minus.svg' alt='down' id='btn_minus' style='cursor:pointer' onclick='fnPcountPlus(this,-1)'></span>";
+        htmlTxt+=	"<input name='inOPcount' type='text' class='amount' id='inOPcount' align='absmiddle' size='3' maxlength='5' value=1 style='ime-mode:disabled;' onkeydown='onlyNum()' onblur='if(!this.value || this.value==0){this.value=1;}fnPcountCheck(this);'/>";
+        htmlTxt+=	"<span class='arrow'><img src='/img/ico/ico-item-plus.svg' alt='up' id='btn_plus' style='cur+sor:pointer' onclick='fnPcountPlus(this,1)'></td>";
+		htmlTxt+=  "<div id='htmlDC' class='DCOpt'>"+dc0opt+"%</div>";
+		htmlTxt+=  "</td>";
+
+		td2.innerHTML = htmlTxt;
+		td3.innerHTML = "<table cellspacing=0 cellpadding=0 border=0><Tr><Td id='inOPprice' style='font-size:1.1em;'><span id='htmlPrice' class='option2_amount'>USD " + Pprice2 + "&nbsp;</span></td><td>&nbsp;</td><td style='width:90px'><img src='/img/view/ico_del.gif' alt='취소' align='absmiddle' style='cursor:pointer;' onclick='fnOptionDel(this)'></td><td>&nbsp;&nbsp;</td></tr></table>" + td3.innerHTML;
+
+		jQuery("#opSelectedList").append(tr1);
+		fnSumTotalPrice();
+	}
+
+	//=== 옵션 사용시 수량 + - =====================================
+	function fnPcountPlus(obj,v)
+	{
+		//-- 자신이 몇번째 객체 인지 체크
+		myID = obj.id;
+		nNum = $("img[id='" + myID + "']").index(obj);
+		
+		inputObj = $("input[id='inOPcount']").eq(nNum);
+		//jQuery("#inOPcount").val(parseInt(jQuery("#inOPcount").val())+v);
+		inputObj.val(parseInt(inputObj.val())+v);
+		if(parseInt(inputObj.val())<1)inputObj.val(1);
+		fnPcountCheck(obj);
+	}
+
+	//=== 옵션 사용시 수량 체크 =====================================
+	function fnPcountCheck(obj)
+	{
+		//-- 자신이 몇번째 객체 인지 체크
+		myID = obj.id;
+		nNum = $("img[id='" + myID + "']").index(obj);
+		if(nNum<0)nNum = $("input[id='" + myID + "']").index(obj);
+		
+		var obj = $("input[id='inOPcount']").eq(nNum);
+		var objIDX = $("input[id='inOPidx']").eq(nNum).val();
+
+		var maxCount = $("input[id='inOPMaxStock']").eq(nNum).val();
+		var PorderMinus = "<?=$dbPorderMinus?>";
+		
+		var boxCountOpt = "<?=$dbPboxCount?>";
+		var boxCountOpt2 = "<?=$dbPboxCount2?>";
+		var jsMLV = "<?=$MLV?>";
+
+		if(!boxCountOpt) boxCountOpt = 0;
+		if(!boxCountOpt2) boxCountOpt2 = 0;
+
+		if(obj.val() >= parseInt(boxCountOpt2) && Pprice2Box2 > 0 && boxCountOpt2 > 0 && jsMLV){		//박스 주문
+			var dc8 = document.getElementById("dc8").value;
+			var dcPrice = document.getElementById("dcPrice2").value;
+			$("[id='htmlDC']").eq(nNum).html(dc8+"%");	
+			$("[id='htmlPrice']").eq(nNum).html("USD " + dcPrice + "&nbsp;");
+		} else if(obj.val() >= parseInt(boxCountOpt) && Pprice2Box > 0 && boxCountOpt > 0 && jsMLV){		//박스 주문
+			var dc9 = document.getElementById("dc9").value;
+			var dcPrice = document.getElementById("dcPrice").value;
+			$("[id='htmlDC']").eq(nNum).html(dc9+"%");	
+			$("[id='htmlPrice']").eq(nNum).html("USD " + dcPrice + "&nbsp;");
+		} else {
+			var dc0 = document.getElementById("dc0").value;
+			var oPrice = document.getElementById("oPrice").value;
+			$("[id='htmlDC']").eq(nNum).html(dc0+"%");	
+			$("[id='htmlPrice']").eq(nNum).html("USD " + oPrice + "&nbsp;");
+		}
+
+		if( (obj.val()>parseInt(maxCount)) && (parseInt(PorderMinus) != "1") )
+		{
+			alert(maxCount + " pcs ramainning now.");
+			obj.val(maxCount);
+		}
+		fnSumTotalPrice();
+	}
+
+	//=== 옵션 사용시 옵션 삭제 기능 =====================================
+	function fnOptionDel(delBtn)
+	{
+		loop=10;
+		trObj = delBtn.parentNode;
+		while(loop){trObj = trObj.parentNode;if(trObj.id=="inOptionTR"){break;}loop--;}
+		tblObj = trObj.parentNode;
+		tblObj.removeChild(trObj);
+		fnSumTotalPrice();
+	}
+	<? } ?>
+
+	//-- 종합가격 계산
+	function fnSumTotalPrice()
+	{
+		var boxCount = "<?=$dbPboxCount?>";
+		var boxCount2 = "<?=$dbPboxCount2?>";
+		var jsMLV = "<?=$MLV?>";
+		if(!boxCount) boxCount = 0;		
+		if(!boxCount2) boxCount2 = 0;
+
+		len = $("input[id='inOPcount']").length;
+
+		//if(!len)return;
+
+		totPrice = 0;
+		for(k=0;k<len;k++)
+		{
+			v1 = parseInt($("input[id='inOPcount']").eq(k).val());
+			v2 = parseFloat($("input[id='inOPaddPrice']").eq(k).val());
+
+			if(!v1) v1=0;
+			if(!v2) v2=0;
+			
+			if(v1 >= parseInt(boxCount2) && Pprice2Box2 > 0 && boxCount2 > 0 && jsMLV){		//박스 주문
+				v2 = parseFloat(Pprice2Box2) + v2;
+			} else if(v1 >= parseInt(boxCount) && Pprice2Box > 0 && boxCount > 0 && jsMLV){		//박스 주문
+				v2 = parseFloat(Pprice2Box) + v2;
+			} else {
+				v2 = parseFloat(Pprice2) + v2;
+			}
+			totPrice=totPrice+(v1*v2);
+		}
+		totPrice = parseFloat(totPrice).toFixed(2);
+		<? if($MID) { ?>
+            jQuery("#totalPriceSpan").html("USD " + commify(totPrice));
+        <? } else { ?>
+            jQuery("#totalPriceSpan").html("Login To See Price");
+        <? } ?>
+	}
+
+
+
+	/*=============================================================================
+		카트 저장
+	=============================================================================*/
+	function fnInCart(inCAstate)
+	{
+		//== 옵션 검사 =================
+		OPcount = $("select[id='inOPselect']").length;			
+		if(OPcount)
+		{
+			len = $("input[id='inOPcount']").length;
+			if(!len)
+			{
+				alert("You need to choose over 1 option.");
+				return;
+			}
+		}
+		//== 옵션 검사 =================
+		
+		//== 저장할 데이터 문자열 생성 =================
+		param="qIDX=<?=$qIDX?>";
+		for(k=0;k<len;k++)
+		{
+			opIDX = $("input[id='inOPidx']").eq(k).val();
+			opCount = $("input[id='inOPcount']").eq(k).val();
+			opAddprice = $("input[id='inOPaddPrice']").eq(k).val();
+			
+			if(opIDX)opIDX = parseInt(opIDX);
+			else opIDX=0;
+				
+			if(opCount)opCount = parseInt(opCount);
+			else opCount=0;
+				
+			if(opAddprice)opAddprice = parseInt(opAddprice);
+			else opAddprice=0;
+			
+			param+= "&opIDX[]=" + opIDX + "&opCount[]=" + opCount + "&opAddprice[]=" + opAddprice;
+			
+			//param+= "&opIDX" + k + "=" + opIDX + "&opCount" + k + "=" + opCount + "&opAddprice" + k + "=" + opAddprice;			
+		}
+		
+		param+="&inCAstate=" + inCAstate;
+		
+		//== 텍스트 옵션 검사 ==========================
+		obj = $("#inPoptionText");
+		if(obj.attr("tagName"))
+		{
+			if(!obj.val())
+			{
+				alert("Please check up the option.");
+				return;
+			}
+			
+			//-- 특수문자 제거
+			v = obj.val();
+			v = v.replaceAll("'","",v);
+			v = v.replaceAll('"',"",v);
+			v = v.replaceAll('&',"/",v);
+			param+="&opTEXT=" + v;
+		}
+		
+		$.ajax({
+			url:'ajaxCartAdd.php',
+			type:"POST",
+			data : param,
+			dataType:"text",
+			error:fnErrorAjax,
+			success:function(_response)
+			{
+				if(_response=="##error##")
+				{
+					fnErrorAjax();
+				}
+				else if(_response=="##OK##")
+				{
+					fnViewPopup("pop_04");
+				}
+				else if(_response=="##noWith##")
+				{
+					alert("My Cart has inavailable item to be purchased together at the moment.");
+					return;
+				}
+				else if(_response=="##noWithThis##")
+				{
+					alert("The product can not be ordered with other product.");
+					return;
+				}
+				else if(_response=="##ORDERGO##")
+				{
+					document.location="/order/order.html?tempCode=6";
+				}
+				else
+				{
+					//alert(_response);
+					fnErrorAjax();
+				}
+			}
+		});
+	}
+
+	/*==========================================================
+	대량구매 문의하기
+	============================================================*/
+	function fnHeavyBuying(step)
+	{
+		param="step=" + step + "&qIDX=<?=$qIDX?>";
+		if(step==1)
+		{
+			//-- 페이지 로드
+		}
+		else if(step==2)
+		{
+			if(!VCheckjQuery($("#inHBper"),"Discount Rate"))return;
+			if(!VCheckjQuery($("#inHBname"),"Name"))return;
+			
+			if(!VCheckjQuery($("#inHBemail"),"E-mail"))return;
+			
+			//-- 값 조합
+			telVal = $("#inHBtel").val();
+			emailVal = $("#inHBemail").val();
+
+			//-- 값 변형
+			HBmemo = $("#inHBmemo").val();			
+			HBmemo = HBmemo.toString().replaceAll("&"," ");
+			HBper = $("#inHBper").val() 
+			
+			//-- 저장 파라매터 생성
+			param+="&inHBname=" + $("#inHBname").val();
+			param+="&inHBtel=" + telVal;
+			param+="&inHBemail=" + emailVal;
+			param+="&inHBmemo=" + HBmemo;
+			param+="&inHBper=" + HBper;
+		}
+		else if(step==3)
+		{
+			//- 처리끝 메세지 닫기
+			fnClosePopup();
+			return;
+		}
+		
+		$.ajax({
+		url:'ajaxHeabyBuying.php',
+		type:"POST",
+		cache:false,
+		data : param,
+		dataType:"text",
+		error:fnErrorAjax,
+		success:function(_response)
+		{
+			v = _response.split("##");
+			
+			if(v[1]=="OK")
+			{
+				alert("We will answer as soon as possible.");
+				fnClosePopup();
+			}
+			else if(v[1]=="error")
+			{
+				fnErrorAjax();
+			}
+			else
+			{
+				loadPopup();
+				divPop = popBox1 + _response + popBox2;
+				$("#popContent").html(divPop);
+				fnPopupResize();
+				centerPopup();
+			}
+		}
+	});		
+}
+
+</script>
+<link rel="stylesheet" type="text/css" href="productView.css?v=<?= time(); ?>">
+<link rel="stylesheet" type="text/css" href="/css/hint.css?2203">
+<style>
+	.InfoWrap .DetailWrap li {display: flex; margin-bottom: 12px;}
+	.InfoWrap .DetailWrap span {font-family: 'Satoshi', sans-serif; font-weight: 600; font-size: 15px;}
+	.InfoWrap .DetailWrap {width: 50%; margin:32px 0 0 24px; color: #333333;}
+	.InfoWrap .DetailWrap span img { vertical-align:middle }
+	.InfoWrap .DetailWrap .tit {float:left; width:224px; color: #555555; font-family: 'Satoshi', sans-serif; font-weight: 400;}
+	.brand_top {text-align: right;}
+	.brand_top img {display: none;}
+	.top_bsm_tit {display: inline-block; padding:25px 8px 0 0; font-family: 'Montserrat', sans-serif; font-size:22px; letter-spacing:-0.05em; font-weight:500; color:#666;}
+    .subtotal-price {font-size: 22px;}
+	.InfoWrap .PhotoWrap p { width:560px; height:560px; margin: 32px 0 0 0; }
+	.InfoWrap .PhotoWrap img { width:560px; height:560px}
+</style>
+
+<!-- 제품상세 시작 --->    
+<div id="wrap" >
+
+	<!-- productView -->
+	<div id="productView">
+		<div class="location"><a href="/">Home</a> 
+		<?php if($cateIDXName[1]) { ?><img src="/img/ico/ico_arrow_02.gif" alt="arrow"> <a href="/product/list.html?cateIDX=<?php echo $cateIDXCode[1]; ?>"><?php if($cateIDXCode[1] == $dbPcategory1) echo "<b>"; ?><?php echo $cateIDXName[1]; ?></b></a><? } ?>
+		<?php if($cateIDXName[2]) { ?><img src="/img/ico/ico_arrow_02.gif" alt="arrow"> <a href="/product/list.html?cateIDX=<?php echo $cateIDXCode[2]; ?>"><?php if($cateIDXCode[2] == $dbPcategory1) echo "<b>"; ?><?php echo $cateIDXName[2]; ?></b></a><? } ?>
+		<?php if($cateIDXName[3]) { ?><img src="/img/ico/ico_arrow_02.gif" alt="arrow"> <a href="/product/list.html?cateIDX=<?php echo $cateIDXCode[3]; ?>"><?php if($cateIDXCode[3] == $dbPcategory1) echo "<b>"; ?><?php echo $cateIDXName[3]; ?></b></a><? } ?>
+		</div>
+
+        <!-- product_box -->
+        <div id="product_box">
+			<!-- 01.이미지 -->
+			<div class="title">
+				<span class="nameInfo">
+					<? if($dbPstate == 4){ ?><span class="hint hint--top" data-hint="This product will not be restocked once it is sold out."><img src="//cheonyu.com/images/reorder_step_s3.png" ></span><? } ?> </span>
+				<span class="name"><?=$BrandRow['BRename']?> - <?=$dbPengName?> <?= $icon . $icon2 . $icon3 ?></span>
+			</div>
+			<?
+				if($BrandRow['BRsaveFile1'])
+					$brandIMG = "<img src=\"/_DATA/brand/".$BrandRow['BRsaveFile1']."\" alt=\"".$BrandRow['BRkname']."\" />";
+				else
+					$brandIMG = "<img src='/img/ico/no.gif' alt=\"".$BrandRow['BRkname']."\" />";
+			?>
+			<div class="brand">
+				<span class="shop">Go to the brand shop</span>
+				<a href="/brand/brandView.html?s3=<?=$dbBRIDX?>">
+					<?if($BrandRow['BRbrand'] == '1'){?>
+						
+						<span class="top_bsm_tit"><?=$BrandRow['BRename']?></span></a>
+					<?}else{?><?=$brandIMG?></a><?}?>
+				</a>
+			</div>
+            
+            <!-- 02.가격정보 -->
+			<div class="InfoWrap">
+                <div class="PhotoWrap">
+					<?
+						if($dbPsaveFile1){
+							$pImg = "<img src='/_DATA/product/" . $dbPsaveFile1 . "' id='PhotoMain' style='border:0' alt='".$dbPengName."'/>";
+						} else {
+							$pImg = "<div style='width:465px; height:465px;'/>&nbsp;</div>";
+                        }
+					?>
+					<div style="position:relative"> 
+						<? if($dbPicon1 > 5){ ?>
+						<div style="position:absolute;left:10px;top:10px;width:98px;height:106px;background-image: url('/img/circle400_<?=$dbPicon1?>.png?2291');    background-repeat:no-repeat;"></div> 
+						<? } ?>
+						<p><?=$pImg?></p>
+					</div>
+                    <ul>
+					<?
+					for($i=1;$i<=6;$i++){
+						if($dbPimage[$i]){
+							if(!is_file("../../image/_DATA/product/".$dbPimage[$i])) continue;
+							
+							$fPosition = explode("/",$dbPimage[$i]);
+							$thumb[$i] = $fPosition[0] . "/thumb/" . $fPosition[1];
+
+							$thumlink = "/_DATA/product/".$dbPimage[$i];
+							
+							$pImgS = "<img src='/_DATA/product/" . $thumb[$i] . "' style='max-width:70px; max-height:70px; border:0' alt='".$dbPengName."' />";
+					?>
+                    <li><a onmouseover="changeImg('<?=$thumlink?>')" style="cursor:pointer"><?=$pImgS?></a></li>
+					<?	
+						}
+					}
+					?>
+                    </ul>
+                </div>
+				<?
+					$boxPer2 = fnGetPriceMem("2");
+					$boxPer = fnGetPriceMem("1");
+					if(!$dbPbarcode) {
+						if ($opArray[0]["barcode"]) $dbPbarcode = $opArray[0]["barcode"];
+						else $dbPbarcode = "&nbsp;";
+					}
+				?>
+				<ul class="DetailWrap">
+					<li>
+                        <span class="tit">Item No.</span>
+                        <span><?=$dbIDX?></span>
+                    </li>
+                    <li>
+                        <span class="tit">Barcode</span>
+                        <span><?=$dbPbarcode?></span>
+                    </li>
+                    <li>
+                        <span class="tit">Country of Origin</span>
+                        <span><?=fnPmade($dbPmade, $dbPmadeAny)?>&nbsp;</span>
+                    </li>
+                    <?php if ($dbPboxin) { ?>
+                    <li>
+                        <span class="tit">Carton Box</span>
+                        <span><?=$dbPboxin?> pcs</span>
+                    </li>
+                    <?php } ?>
+                    <?php if ($dbPboxin2) { ?>
+                    <li>
+                        <span class="tit">Inner Box</span>
+                        <span><?=$dbPboxin2?> pcs</span>
+                    </li>
+                    <?php } ?>
+                    <li>
+                        <span class="tit">Weight</span>
+                        <span><?=$dbPweight?> g</span>
+                    </li>
+                    <li>
+                        <span class="tit">Size</span>
+                        <span><?=$dbPsizeWidth?> × <?=$dbPsizeWidth?> × <?=$dbPsizeHeight?> mm</span>
+                    </li>
+                    <li>
+                        <span class="tit">Retail Price</span>
+                            <span class="sale">
+                                USD <?=$priceInfo["dollar_txt"]?>
+                            </span>
+                        </span>
+                    </li>
+                    <li>
+                        <span class="tit">Discounted Price</span>
+                        <span class="supply">
+                            <? if($MID) { ?>
+                                USD <?=$priceInfo["dcDollar_txt"]?>
+                            <? } else { ?>
+                                Login To See Price
+                            <? } ?>
+                        </span>
+                    </li>
+                    <li>
+                        <span class="tit">Discount Rate</span>
+                        <span class="discount">
+                            <?php if ($MID) { ?>
+                                <?=$priceInfo["dcPer"]?>% 
+                                <?php if ($MID) { echo fnGETPricePer($rsData, 1); } ?>
+                            <?php } else { ?>
+                                Login To See Price
+                            <?php } ?>
+                        </span>
+                    </li>
+                    <?php if ($MID && $dbPboxCount > 0) { ?>
+                    <li>
+                        <span class="tit">Additional Discount</span>
+                        <span>
+                            <b><?=$dbPboxCount?> pcs
+                                <?php if ($dbPboxCount2 > 0) { echo ", ".$dbPboxCount2." pcs"; } ?>
+                            </b> over purchase
+                        </span>
+                    </li>
+                    <?php } ?>
+                    <li class="line">
+                        <img src="/img/ico/bg_view_line.gif" alt="line">
+                    </li>
+                    <input type="hidden" name="oPrice" id="oPrice" value="<?=$priceInfo["dcDollar_txt"]?>">
+                    <input type="hidden" name="dcPrice" id="dcPrice" value="<?=$priceInfo["dcDollarBox_txt"]?>">
+                    <input type="hidden" name="dcPrice2" id="dcPrice2" value="<?=$priceInfo["dcDollarBox2_txt"]?>">
+                    <input type="hidden" name="dc0" id="dc0" value="<?=$priceInfo["dcPer"]?>">
+                    <input type="hidden" name="dc8" id="dc8" value="<?php if ($dbPboxCount2 > 0) { echo ${'dbPdiscount'.$boxPer2}; } else { echo "0"; } ?>">
+                    <input type="hidden" name="dc9" id="dc9" value="<?php if ($dbPboxCount > 0) { echo ${'dbPdiscount'.$boxPer}; } else { echo "0"; } ?>">
+                    <input type="hidden" name="inPorderMinus" id="inPorderMinus" value="<?=$dbPorderMinus?>">                    
+					<?
+						$wtime = time() - (86400 * 5); 
+						$wtimeNow = time();
+						if($dbPstockDate && ($dbPstockDate > $wtime)){	//날짜가 있고 10일 뒤 
+							$PDate = $dbPstockDate + 86400;
+							$inWdate = date("Y-m-d",$PDate);
+						} else {
+
+							$query1 = " SELECT ACAreplyDate FROM 2011_adminCart WHERE ACAPIDX = '$dbIDX' AND ACAreplyCount > 0 AND ACAreplyDate != '' ORDER BY IDX DESC ";
+							$data1 = sql_fetch($query1);
+							if($data1['ACAreplyDate']){
+								$arrayDate = explode("-",$data1['ACAreplyDate']); 
+								$wtime2 = mktime(0,0,0,$arrayDate[1],$arrayDate[2],$arrayDate[0]);
+								if($wtime2 > $wtimeNow){
+									$wtime3 = $wtime2 + 86400;
+									$inWdate =  date("Y-m-d",$wtime3);
+								} else {
+									$inWdate = "";
+								}
+							} else {
+								$inWdate = "";
+							}
+
+						}
+					?>
+					<? if($inWdate != ""){ ?>
+					<li>
+						<span class="tit">Expectation date of warehoused</span>
+						<span><?=$inWdate?></span>
+					</li>
+					<? } ?>
+					<li><span class="tit">International Shipping</span><span>Available <a href="/customer/help.html" target="_blank"><font color="blue"><u>Shipping Fee</u></font></a></li>
+					<?
+					/*===========================================================================================
+					설정한 옵션이 있을때 인터페이스
+					===========================================================================================*/
+					if($opNameCnt){
+						$nOpname="";
+						$opCheck=0;
+						for($k=0;$k<$opNameCnt;$k++){
+					?>
+                        <? if($MID) { ?>
+                            <li class="option"><span>Option</span>
+                                <select name="inOPselect" id="inOPselect" onchange='fnSelectOption(this);'>
+                                    <option value='0'>= Select option =</option>
+                                    <?
+                                        for($i=$opCheck;$i<$opValueCount;$i++){
+                                            if($nOpname!=$opArray[$i]["name"] && $i>$opCheck)break;
+                                            if(!$dbPstockCount){
+                                                if($dbPorderMinus == 1) $opArray[$i]["stock"]=1;
+                                                else $opArray[$i]["stock"]=0;
+                                            }
+                                    ?>
+                                    <option 
+                                        id='option<?=$opArray[$i]["IDX"]?>' 
+                                        value='<?=$opArray[$i]["IDX"]?>##<?=$opArray[$i]["value"]?>##<?=$opArray[$i]["stock"]?>##<?=$opArray[$i]["addPrice"]?>'>
+                                        <?=$opArray[$i]["value"]?>
+                                        <?php 
+                                            // Show stock count if conditions are met
+                                            if ($dbPorderMinus != 1 && ($dbPstockView == 2 || ($opArray[$i]["stock"] < 6 && $opArray[$i]["stock"] > 0))) {
+                                                echo "(Current stock: " . $opArray[$i]["stock"] . " pcs)";
+                                            }
+                                            // Show out-of-stock message if stock is less than 1 and ordering is not allowed
+                                            if ($opArray[$i]["stock"] < 1 && $dbPorderMinus != 1) {
+                                                echo " -Out of stock- ";
+                                            }
+                                        ?>
+                                    </option>
+                                    <?
+                                            $nOpname = $opArray[$i]["name"];
+                                        }
+                                        $opCheck=$i;
+                                    ?>
+                                </select> 
+                            </li>
+                        <? } else { ?>
+                            <!-- 로그인 상태가 아닐 때 -->
+                            <li class="option">
+                                <span>Option</span>
+                                <select name="inOPselect" id="inOPselect" onchange='fnSelectOption(this);'>
+                                    <option value='0'>Login To See Price</option>
+                                </select>
+                            </li>
+                        <? } ?>
+					<?
+						}
+					}else if($dbPstockCount || $dbPorderMinus == 1){
+					/*===========================================================================================
+					설정한 옵션이 없을때 인터페이스
+					===========================================================================================*/
+					?>
+					<li class="optionB">
+                        <span>Qty</span>
+                        <img 
+                            src="/img/ico/ico-item-minus.svg" 
+                            alt="down" 
+                            id="btn_minus" 
+                            style="cursor:pointer;" 
+                            onclick="fnPcountPlus(-1)"
+                        >
+                        <input 
+                            type="text" 
+                            id="inOPcount" 
+                            name="inOPcount" 
+                            class="amount" 
+                            value="1" 
+                            style="ime-mode:disabled;" 
+                            onkeydown="onlyNum()" 
+                            onblur="if (!this.value || this.value == 0) { this.value = 1; } fnPcountCheck();"
+                        >
+                        <img 
+                            src="/img/ico/ico-item-plus.svg" 
+                            alt="up" 
+                            id="btn_plus" 
+                            style="cursor:pointer;" 
+                            onclick="fnPcountPlus(1)"
+                        >
+                        &nbsp;&nbsp;pcs 
+                        <? if ($MID) { ?>
+                            <div id="htmlDC" class="qty-discount"><?=$priceInfo["dcPer"]?>%</div>
+                        <? } ?>
+                    </li>
+					<?
+					//== Text 형식 옵션 입력
+						if($dbPoptionUse==3){
+					?>					
+					<li class="optionB"><span>Option direct input</span> 
+					<center><textarea name='inPoptionText' id='inPoptionText' style='width:90%;height:50px;border:1px solid #afafaf;'></textarea></center>
+					</li>
+					<?
+					}
+					}
+						if($dbPstockCount < 1 && $dbPorderMinus != 1){
+					?>
+					<li class="optionC"><span>Product is not available to buy at the moment.</span></li>
+					<? } ?>
+					<?php
+					if($MID){
+						$rsFV = sql_fetch("select IDX from 2011_favoriteInfo where MID='" . htmlspecialchars($MID) . "' and FAtype='1' and FAIDX='" . htmlspecialchars($dbIDX) . "'");
+						$rsFVonClick = "toggleFavorite(this,'".$dbIDX."');";
+					} else {
+						$rsFVonClick = "alert('After you login, you will be able to use your wishlist.');";						
+					}
+					?>
+					<li class="option2">
+						<table width='100%' cellspacing=0 cellpadding=0 border=0 id='opSelectedList' style='border:0px solid #000000;'>
+						</table>
+					</li>
+					<li class="amount_end">Total Amount<span id="totalPriceSpan" class="subtotal-price">USD 0</span></li>
+                    <li class="payment btn-list">
+                        <button 
+                            style="width: 56px; padding: 0 27px;"
+                            class="btn-style btn-color-white" 
+							onClick="<?=$rsFVonClick?>"
+                        ">
+                            <img src="/img/ico/ico-wishlist<?php if($rsFV['IDX']) { echo "_added"; } ?>.svg" alt="wishlist icon" width="28">
+                        </button>
+                        <?php if ($dbPstockCount > 0 || $dbPorderMinus == 1) : ?>
+                            <button class="btn-style btn-color-CTA" onclick="fnInCart(1);">Add to Cart</button>
+                        <?php endif; ?>
+                    </li>
+				</ul>
+			</div>
+        </div>
+        <!-- //product_box -->
+
+        <div class="tab_4rd">
+            <span><a href="#tab_01" class="on"><img src="/img/view/tab_01.gif" alt="Detail"></a></span>
+            <span><a href="#tab_02"><img src="/img/view/tab_02.gif" alt="Relation"></a></span>
+            <span><a href="#tab_03"><img src="/img/view/tab_03.gif" alt="Brand"></a></span>
+            <span><a href="#tab_04" class="none"><img src="/img/view/tab_04.gif" alt="Delivery"></a></span>
+        </div>
+        
+        <div id="tab_01">
+			<div class="pic" id="viewPcontent"></div>
+			
+			<div class="tab-title">Item Details</div>
+			<div class="info" alt="Detail">
+				<table width="100%" border="0" cellspacing="0" cellpadding="0">
+					<tr>
+						<th scope="row">Item Name or Model</th>
+						<td colspan="3"><?=$dbPengName?></td>
+					</tr>
+					<? if($dbPconsist){ ?>
+					<tr>
+						<th scope="row">Compositions</th>
+						<td colspan="3"><?=$dbPconsist?></td>
+					</tr>
+					<? } ?>	
+					<tr>
+						<th scope="row">Manufacturing company</th>
+						<td><?=getMKkname($dbMKIDX)?></td>
+						<th scope="row">Material</th>
+						<td><?=$dbPresource?></td>
+					</tr>
+					<tr>
+						<th scope="row">Size</th>
+						<td><?=$PsizeInfo?></td>
+						<th scope="row">Weight</th>
+						<td><?=number_format((double)str_replace("g","",$dbPweight),0)?>g</td>
+					</tr>
+					<tr>
+						<th scope="row">Country of Origin</th>
+						<td><?=fnPmade($dbPmade,$dbPmadeAny)?></td>
+						<th scope="row">Permitted verification</th>
+						<td><?=$dbPsafe?></td>
+					</tr>
+					<?
+						$queryDetail = "SELECT NO, KIND, MEMO FROM 2011_productInfoDetail WHERE NO = '$qIDX'";
+						if($dataDetail = sql_fetch($queryDetail)){
+							$arrayDetail = explode("@@@",$dataDetail['MEMO']);
+
+							for($j = 0; $j < count($arrayDetail); $j ++){
+								$contentDetail = explode("||",$arrayDetail[$j]);
+								if($contentDetail[0] == "") continue;
+					?>
+					<tr>
+						<th scope="row"><?=$contentDetail[0]?></th>
+						<td colspan="3"><?=$contentDetail[1]?></td>
+					</tr>
+					<?
+							}
+						}
+					?>
+					<tr height="44px" >
+						<th scope="row">Contacts A/S </th>
+						<td colspan="3"><?="CHEONYU.COM Service Center : tel. +82 70 4060 5292"?></td>
+					</tr>			
+				</table>
+			</div>
+			
+		</div>          
+          
+		<div id="tab_04">
+			<div class="tab-title">Delivery / Return / Exchange Policy</div>
+			<table width="100%" border="0" cellspacing="0" cellpadding="0">
+				<tr>
+					<th scope="row" >Shipping Guide</th>
+					<td>
+						<p><b>Korea Domestic Delivery</b></p>
+						<p>
+						- Basic Fee: $3<br/>
+						- Free Shipping: For purchases over $200<br/>
+						- Parcel Delivery Service Company: CJ Korea Express
+						</p>
+						<p><b>International Shipping</b></p>
+						<p>
+                        - Shipping Method: EMS / EMS Premium (UPS)<br/>
+                        - Shipping Period: 4-5 business days (standard delivery time) for all items.<br/>
+                        - Please note that the above shipping fee policy applies only to certain countries.<br/>
+                        - For other destinations, shipping fees will be automatically calculated based on the region and the weight of each parcel.<br/>
+                        - <a href="/customer/help.html" target="_blank"><font color="blue">Please click here to check more details about EMS Premium (UPS) Shipping Fees.</font></a><br/>
+                        - For more information after placing an order, please contact our customer service center at +82 70 4060 5292<br/>
+                        - It is shipped by UPS, and taxes may be incurred depending on the country when you receive the items.<br/>
+                        - The export freight standard for overseas shipments is EXW (Ex Works).
+						</p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><p>Cancel /</p><p>Exchange /</p><p>Return</p><p>Guide</p></th>
+					<td>
+						<p><b>Cancel</b></p>
+						
+						<p>
+                            If you choose to cancel your order for any reason, you may do so only if the seller has not yet accepted your order or initiated delivery.<br/>
+                            However, you will be responsible for any additional cost incurred in relation to such cancellation.<br/>
+                            In some cases, the seller may have already delivered your item(s) prior to updating the shipping status.<br/>
+                            In such cases, you may not cancel the order, but you may apply for a return and pay for the return cost only.
+                        </p>
+						
+						<p><b>Exchange</b></p>
+						<p>Generally, we do not accept exchanges and returns except for defective items.<br/>
+						If you have any enquiry about it, please email us at mkmd4@cheonyu.com or <a href="/customer/dealer.html"><font color="blue"><u>click here</u></font></a>.</br>
+						(Please contact us with a photo within 7 days after receiving the items.)</p>
+						
+						<p><b>Return</b></p>						
+						<p>
+                            Please be careful and ensure to double-check when you want to ship your item(s) internationally.<br/>
+                            Basically, it is not possible to cancel the order when the status indicates ‘On Delivery' during the domestic delivery process.<br/>
+                            Once the item has been shipped overseas (after repacking & shipment by Cheonyu Warehouse), <br>
+                            no return will be accepted unless you return the item(s) due to a discrepancy or defective item(s).<br/>
+                            If a discrepancy or defective item is found, please contact the Customer Service Center immediately with your Cheonyu.com ID, transaction number, and an image of the discrepancy/defective item(s).
+                            We will guide you on what to do after reviewing your claims.
+                        </p>
+
+						<p>
+                            Our return address is:<br/>
+                            THE CHEONYU<br/>
+                            Geumsahwasin Bldg 2F, 49, Gongdanseo-ro 8beon-gil, Geumjeong-gu, Busan, Korea<br/>
+                            Zip code: 46332
+                        </p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">Customer Center</th>
+					<td>
+						<p><a href="/customer/dealer.html"><font color="blue"><u>Leave an inquiry</u></font></a>,&nbsp;&nbsp; Tel : <strong>+82 70 4060 5292</strong>,&nbsp;&nbsp; E-mail : mkmd4@cheonyu.com<br>
+						Monday - Friday (Sat, Sun, Holiday Closed) 10:00 ~ 17:00 KST<br></p>
+					</td>
+				</tr>
+			</table>
+        </div>  
+        
+		<div id="tab_02">
+			<div class="tab-title">Frequently Bought Together</div>
+			<ul>
+				<?				
+					$sql = " SELECT SUM(c.ORPcount) AS sumCount, d.* FROM (SELECT a.OIDX FROM 2011_orderProduct AS a LEFT JOIN 2011_orderInfo AS b ON a.OIDX = b.IDX WHERE a.PIDX = '". $qIDX ."' GROUP BY a.OIDX ORDER BY a.OIDX DESC LIMIT 0,10) AS aa ";
+					$sql .= " LEFT JOIN 2011_orderProduct AS c ON aa.OIDX = c.OIDX ";
+					$sql .= " LEFT JOIN 2011_productInfo AS d ON c.PIDX = d.IDX ";
+					$sql .= " WHERE c.PIDX != '" . $qIDX . "' AND Pshop='" . $shopID . "' AND Pdeleted=0 AND Pprice3>0 AND Pstate<10 AND Pagree=1 ";
+					$sql .= " GROUP BY c.PIDX ORDER BY sumCount DESC, c.IDX DESC LIMIT 0,7 ";
+					$result = sql_query($sql);
+					$k = 0;
+					while($rs = sql_fetch_array($result)){
+						$k ++;
+						if($rs['PsaveFile1']){
+							$pImg = "<img src='/_DATA/product/" . $rs['PsaveFile1'] . "' alt='".$rs['Pname']."' border=0 />";
+						} else {
+							$pImg = "<div>&nbsp;</div>";
+						}							
+						if($k == "6") $none = " none";
+						else $none = "";							
+						$priceInfo = fnCalPrice($rs['Pprice3'],$rs);
+				?>
+				<li>
+					<span class='box<?=$none?>'>
+						<a href='/product/view.html?qIDX=<?=$rs['IDX']?>'><?=$pImg?>
+						<span class='tit'><?=$rs['PengName'];?></span>
+						<span class='price'>USD <strong><?=$priceInfo['dcDollar_txt']?></strong></span></a>
+					</span>
+				</li>
+				<? } ?>
+				<?
+					if($k == 0) echo "<li><span class='boxNo'>No item list</span></li>";
+				?>
+			</ul>
+		</div>
+        
+		<div id="tab_03">
+			<div class="tab-title">Related Brands</div>
+            <div class="flex-row-gap0" style="align-items: flex-start;">
+                <div class="brand_all" onclick="location.href='/brand/brandView.html?s3=<?=$dbBRIDX?>'" style="cursor:pointer;">
+                    <span class="brand_name"><?=$BrandRow['BRkname']?></span>
+                    <span class="brand_name_eng"><? if($BrandRow['BRename']) { echo $BrandRow['BRename']; } else { echo "&nbsp;"; } ?></span>
+                    <span class="brand_img">
+                        <?
+                            if($BrandRow['BRsaveFile1']){
+                                $brandIMG = "<img src=\"/_DATA/brand/".$BrandRow['BRsaveFile1']."\" alt=\"".$BrandRow['BRkname']."\" />";
+                            } else {
+                                $brandIMG = "&nbsp;";
+                            }
+                        ?><?=$brandIMG?>
+                    </span>
+                    <span class="brand-button">Go to Brand Shop</span>
+                </div>
+                <ul>
+                    <?
+                        $sql = " SELECT * FROM 2011_productInfo ";
+                        $sql .= " WHERE Pshop='" . $shopID . "' AND Pdeleted=0 AND Pprice3>0 AND Pstate<10 AND Pagree=1 AND BRIDX = ".$dbBRIDX;
+                        $sql .= " ORDER BY PsellCount DESC ";
+                        $sql .= " LIMIT 0,5 ";
+                        $result = sql_query($sql);
+                        $k = 0;
+                        while($rs = sql_fetch_array($result)){
+                            $k ++;
+                            if($rs['PsaveFile1']){
+                                $pImg = "<img src='/_DATA/product/" . $rs['PsaveFile1'] . "' alt='".$rs['Pname']."' border=0 />";
+                            } else {
+                                $pImg = "<div style='width: 140px; height: 140px;'>&nbsp;</div>";
+                            }							
+                            if($k == "4") $none = " none";
+                            else $none = "";							
+                            $priceInfo = fnCalPrice($rs['Pprice3'],$rs);
+                    ?>
+                    <li>
+                        <span class='box<?=$none?>'>
+                            <a href='/product/view.html?qIDX=<?=$rs['IDX']?>'><?=$pImg?>
+                            <span class='tit'><?=$rs['PengName'];?></span>
+                            <span class='price'>USD <strong><?=$priceInfo['dcDollar_txt']?></strong></span></a>
+                        </span>
+                    </li>
+                    <? } ?>
+                </ul>
+            </div>
+		</div>
+	</div>  
+	<!-- // productView -->
+</div>    
+<!-- // 제품상세 끝 --->  
+
+
+<script>
+$(document).ready(function() {
+	fnSumTotalPrice();
+
+	$.ajax({
+		url:'ajaxView.php',
+		type:"GET",
+		data : 'qIDX=<?=$qIDX?>&mode=image',
+		error:fnErrorAjax,
+		success:function(_response)	{
+			$("#viewPcontent").html(_response);
+		}
+	});
+});
+</script>
+<!-- 메인 끝// --->
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

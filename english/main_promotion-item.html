@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/css/style.css"/>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.css"/>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+
+    <style>
+        .bargain-tabs {width: 1200px; margin: 0 auto;}
+        .bargain-tabs .tabs {display: flex; justify-content: center; padding: 32px 24px 0 24px; border-radius: 20px 20px 0 0; border-style: solid; border-width: 1px 1px 0 1px; border-color: #dedede;}
+        .bargain-tabs .tabs .tab {width: 128px; height: 112px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; gap: 8px; font-family: "PLRegular"; font-size: 14px; cursor: pointer;}
+        .bargain-tabs .tabs .tab img {width: 56px; filter: grayscale(1); opacity: 0.6;}
+        .bargain-tabs .tabs .tab span {width: 96px; height: 42px; color: #979797; text-align: center;}
+        .bargain-tabs .tabs .tab.active {position: relative;}
+        .bargain-tabs .tabs .tab.active::after {
+            content: ""; display: block; position: absolute; top: -8px; right: 50%; transform: translateX(50%); background-color: #E9F5FF;
+            width: 72px; height: 72px; z-index: -1; border-radius: 8px;
+        }
+        .bargain-tabs .tabs .tab.active img {filter: none; opacity: 1;}
+        .bargain-tabs .tabs .tab.active span {color: #005bf1;}
+        .bargain-tabs .content {padding: 16px 24px 24px 24px; border-color: #dedede; border-width: 0 1px 1px 1px; border-radius: 0 0 20px 20px; border-style: solid;}
+        .bargain-tabs .content .content-section { display: none; }
+        .bargain-tabs .content .content-section.active { display: block; }
+        .bargain-tabs .content .content-section .slick-initialized .slick-track {display: flex; gap: 16px;}
+        .bargain-tabs .content .content-section .slick-initialized .slick-slide {width: fit-content !important;}
+        .bargain-tabs .content .content-section .slick-initialized .slick-slide img {width: 166px; height: auto; border-radius: 8px; border:1px solid #dedede;}
+        .bargain-tabs .content .content-section .slick-initialized .slick-prev {left: -97px;}
+        .bargain-tabs .content .content-section .slick-initialized .slick-next {right: -97px;}
+        .bargain-tabs .content .content-section .slick-initialized .slick-prev,
+        .bargain-tabs .content .content-section .slick-initialized .slick-next {
+            width: 40px; height: 40px; background: rgba(0,0,0,0.1); border-radius: 24px;
+        }
+        .bargain-tabs .content .content-section .slick-initialized .slick-prev:hover,
+        .bargain-tabs .content .content-section .slick-initialized .slick-next:hover {background: rgba(0,0,0,0.4);}
+        .bargain-tabs .content .content-section .slick-initialized .slick-prev::before,
+        .bargain-tabs .content .content-section .slick-initialized .slick-next::before {
+            content: ""; display: block; border-width: 2px 2px 0 0; border-style: solid; border-color: #888888 #888888 transparent transparent; 
+            position: absolute; width: 10px; height: 10px; top: 50%;
+        }
+        .bargain-tabs .content .content-section .slick-initialized .slick-prev::before {transform: rotate(-135deg) translateY(60%); left: 12px;}
+        .bargain-tabs .content .content-section .slick-initialized .slick-next::before {transform: rotate(45deg) translateY(-60%); right: 20px;}
+    </style>
+</head>
+<body>
+
+    <div id="bargainArea" class="bargain-tabs">
+        <div class="tabs">
+            <div class="tab active" data-target="tab1-cont"><img src="/image_1/icon-best.png?241114" alt="Best Sellers"><span>Best Sellers</span></div>
+            <div class="tab" data-target="tab2-cont"><img src="/image_1/circle160_6.png?241114" alt="Super Ultra Sale"><span>Super Ultra Sale</span></div>
+            <div class="tab" data-target="tab3-cont"><img src="/image_1/circle160_7.png?241114" alt="Rock-bottom Prices"><span>Rock-bottom Prices</span></div>
+            <div class="tab" data-target="tab4-cont"><img src="/image_1/circle160_8.png?2411152" alt="Now Hot Items"><span>Now Hot Items</span></div>
+            <div class="tab" data-target="tab5-cont"><img src="/image_1/circle160_9.png?241114" alt="Our Pick"><span>Our Pick</span></div>
+            <div class="tab" data-target="tab6-cont"><img src="/image_1/circle160_10.png?241114" alt="Last Chance Sale"><span>Last Chance Sale</span></div>
+            <div class="tab" data-target="tab7-cont"><img src="/image_1/circle160_14.png?241114" alt="Final Half Price"><span>Final Half Price</span></div>
+            <div class="tab" data-target="tab8-cont"><img src="/image_1/circle160_16.png?241114" alt="Kind Deal"><span>Kind Deal</span></div>
+            <div class="tab" data-target="tab9-cont"><img src="/image_1/circle160_17.png?241114" alt="Flash Sale"><span>Flash Sale</span></div>
+        </div>
+        
+        <div class="content">
+            <div id="tab1-cont" class="content-section active">
+                <div class="slider">
+                    <div><a href=""><img src="/image/main/testimg1.jpg" alt="Content 1-1"></a></div>
+                    <div><a href=""><img src="/image/main/testimg1.jpg" alt="Content 1-2"></a></div>
+                    <div><a href=""><img src="/image/main/testimg1.jpg" alt="Content 1-3"></a></div>
+                    <div><a href=""><img src="/image/main/testimg1.jpg" alt="Content 1-4"></a></div>
+                    <div><a href=""><img src="/image/main/testimg1.jpg" alt="Content 1-5"></a></div>
+                    <div><a href=""><img src="/image/main/testimg1.jpg" alt="Content 1-5"></a></div>
+                    <div><a href=""><img src="/image/main/testimg1.jpg" alt="Content 1-5"></a></div>
+                    <div><a href=""><img src="/image/main/testimg1.jpg" alt="Content 1-5"></a></div>
+                </div>
+            </div>
+            <div id="tab2-cont" class="content-section">
+                <div class="slider">
+                    <div><a href=""><img src="/image/main/testimg2.jpg" alt="Content 2-1"></a></div>
+                    <div><a href=""><img src="/image/main/testimg2.jpg" alt="Content 2-2"></a></div>
+                    <div><a href=""><img src="/image/main/testimg2.jpg" alt="Content 2-3"></a></div>
+                    <div><a href=""><img src="/image/main/testimg2.jpg" alt="Content 2-4"></a></div>
+                    <div><a href=""><img src="/image/main/testimg2.jpg" alt="Content 2-5"></a></div>
+                    <div><a href=""><img src="/image/main/testimg2.jpg" alt="Content 2-6"></a></div>
+                </div>
+            </div>
+            <div id="tab3-cont" class="content-section">
+                <div class="slider">
+                    <div><a href=""><img src="/image/main/testimg3.jpg" alt="Content 3-1"></a></div>
+                    <div><a href=""><img src="/image/main/testimg3.jpg" alt="Content 3-2"></a></div>
+                    <div><a href=""><img src="/image/main/testimg3.jpg" alt="Content 3-3"></a></div>
+                    <div><a href=""><img src="/image/main/testimg3.jpg" alt="Content 3-4"></a></div>
+                    <div><a href=""><img src="/image/main/testimg3.jpg" alt="Content 3-5"></a></div>
+                </div>
+            </div>
+            <div id="tab4-cont" class="content-section">
+                <div class="slider">
+                    <div><a href=""><img src="/image/main/testimg4.jpg" alt="Content 4-1"></a></div>
+                    <div><a href=""><img src="/image/main/testimg4.jpg" alt="Content 4-2"></a></div>
+                    <div><a href=""><img src="/image/main/testimg4.jpg" alt="Content 4-3"></a></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+
+    <script>
+        $(document).ready(function(){
+            $('.slider').slick({
+                slidesToShow: 6,          // 한 번에 보여줄 슬라이드 개수
+                slidesToScroll: 1,        // 한 번에 스크롤할 슬라이드 개수
+                autoplay: true,           // 자동 재생 활성화
+                autoplaySpeed: 2000,         // 자동 재생 속도 (밀리초)
+                infinite: true,           // 무한 반복 활성화
+                arrows: true,            // 화살표 숨기기
+                dots: false,              // 도트 네비게이션 숨기기
+                speed: 6000,              // 슬라이드 전환 속도
+                cssEase: 'linear',        // 부드러운 롤링 효과
+                pauseOnHover: false,       // 호버 시 멈추지 않음
+                initialSlide: 0
+            });
+
+            // 탭 클릭 이벤트
+            $('.tab').click(function(){
+                // 모든 탭에서 active 클래스 제거
+                $('.tab').removeClass('active');
+                $(this).addClass('active');
+
+                // 모든 콘텐츠 섹션 숨기기
+                $('.content-section').removeClass('active');
+
+                // 선택한 탭의 콘텐츠 섹션만 표시
+                var target = $(this).data('target');
+                $('#' + target).addClass('active');
+
+                // Slick Slider 재설정 (초기화된 슬라이더를 다시 로드)
+                $('.slider').slick('setPosition');
+            });
+        });
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,128 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+?>
+
+<link rel="stylesheet" type="text/css" href="/customer/customer.css?250220">
+
+<!-- 고객센터 시작 --->    
+<div id="wrap">
+
+<?
+include_once $_SERVER['DOCUMENT_ROOT']."/customer/menu.html";
+?>      
+
+	<!-- customerMain -->
+	<div id="customerMain">
+	
+		<!-- 도매회원자주묻는질문 -->
+		<div class="info_help">
+			<span>Please leave your inquiry or suggestion to Cheonyu.com anytime. (Hours : Mon-Friday / 10 am - 5 pm (KST))</span>
+			<ul>
+				<li><a href="/customer/dealer.html"><img src="/img/customer/help01.jpg"></a></li>
+				<li><a href="/customer/paymentmethod.html"><img src="/img/customer/help02.jpg"></a></li>
+				<li><a href="/customer/help.html"><img src="/img/customer/help03.jpg"></a></li>
+				<li><a href="/customer/return.html"><img src="/img/customer/help04.jpg"></a></li>
+			</ul>
+		</div>
+
+		<div class="helpTitle">Korea Domestic Delivery</div>
+		<div class="line2px"></div>
+		<div class="helpMemo">
+			- Basic Fee : <span style="color:#005bf1;">$3</span><br/>
+			- Free of charge (over purchase amount $200)<br/>
+			- Parcel delivery service company : CJ Korea Express
+			<br/><br/>
+		</div>
+
+
+		<div class="helpTitle">International Shipping</div>
+		<div class="line2px"></div>
+		<div class="helpMemo" style="word-break:normal;">		
+			<span style="font-weight:bold; color:#444444;">Shipping</span>
+			<br/>
+			<p>
+				- Shipping Method: EMS / EMS Premium (UPS)<br/>
+				- Shipping Period: 4 ~ 5 business days for all items as the standard delivery time.<br/>
+				- Please kindly understand that the above shipping fee policy will only be applied to certain countries.<br/>
+				- For others, shipping fees will be automatically calculated based on the regions and the weight of each parcel.<br/>
+				- Overseas shipments may incur duties, VAT, and other taxes. These charges are not included in the shipping fees and must be paid by the buyer.<br/>
+				- For more information after placing an order, please contact our customer service center at +82 70 4060 5292
+			</p>
+			<br/>
+			<span style="font-weight:bold; color:#444444;">Duties and Taxes</span>
+			<br/>
+			<p>Regarding to certain item for importing goods which being shipped from overseas.<br/>
+			There may collect taxes such as duties and VAT or special value-added tax in accordance with customs tariff law.<br/>
+			Foreign country also may have a tax laws in according to the destination.<br/>
+			You might be a taxpayer for the importing goods.<br/>
+			However, Except for special cases, there is no tax on goods to be received.</p>
+			<p><a href="/customer/dealer.html"><span style="color:#e60000;">Leave an inquiry ></span></a></p>
+			<br/>
+			<!--<p><span style="font-weight:bold; color:#444444;">DHL Regional Shipping conditions</span></p>-->
+		</div>
+		<!--
+		<script type="text/javascript">
+		var pareacode="";
+		function emsCountryChange() {
+			if ($("#emsCountry").val() == ""){
+				$("#divAreaCode").html("-");
+				$("#divMaxWeight").html("-");				
+			}else{
+				
+				var areacode = $("#emsCountry").find("option:selected").attr("id").substr(0,1);
+				$("#divAreaCode").html(areacode);
+				$("#divMaxWeight").html((Number($("#emsCountry").find("option:selected").attr("id").substr(2,255)) / 1000) + " Kg");
+
+				$.ajax({
+					url: "ajaxDHL.php?code=" + areacode,
+					cache: false,
+					success: function(message) {
+						$("#iWeightList").empty().append(message);
+						pareacode = areacode;
+					}
+					,error: function(err) {
+						alert(err.responseText);
+					}
+				});
+			}
+		}
+		</script>
+
+		<div class="countrySearch">
+			<span style="color:#666666;"></span>
+			<select id="emsCountry" style="margin:0px 10px;">
+				<option value=""> Select Country </option>
+				<?
+					$query = sql_query(" SELECT * FROM `nDHL` ORDER BY EName ASC ");
+					while($data = sql_fetch_array($query)){
+				?>
+				<option value="<?=$data['ESName']?>" id="<?=$data['ECode']?>|<?=$data['EMaxWeight']?>"><?=$data['EName']?></option>
+				<? } ?>
+			</select>
+			<input type="button" value=" Check country delivery term " style="background-color:#666666; color:#fff; border:0; cursor:pointer; height:20px;" onClick="emsCountryChange();">
+		</div>
+		
+		<div class="countryResult">
+			<ul>
+				<li style="background-color:#f9f9f9; font-weight:bold;">Area Code</li>
+				<li><span id="divAreaCode"></span></li>
+				<li style="background-color:#f9f9f9; font-weight:bold;">Weight Limits</li>
+				<li><span id="divMaxWeight"></span></li>
+			</ul>
+		</div>
+
+		<div id="iWeightList" class="emsWrap"></div>-->
+
+		<p>&nbsp;</p>
+		<p>&nbsp;</p>
+
+	</div>
+
+<!-- //고객센터 끝 ---> 
+</div>
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

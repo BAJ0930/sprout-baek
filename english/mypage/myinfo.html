@@ -1,0 +1,276 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+	
+	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/common.html";	
+?>
+
+<link rel="stylesheet" type="text/css" href="/mypage/mypage.css?25021422">
+
+<!-- 마이페이지 시작 --->
+<div id="wrap">
+
+	<?
+		include_once $_SERVER['DOCUMENT_ROOT']."/mypage/menu.html";
+	?>
+
+	<!-- mypageMain -->
+	<div id="mypageMain">
+				
+		<? include_once $_SERVER['DOCUMENT_ROOT']."/mypage/top.html"; ?>
+		
+		<?
+					
+			if($setPost)
+			{
+				if(!$inMtax) $inMtax = 0;
+				
+				//-- 수정 처리
+				$sql = "update 2011_memberInfo set ";
+				if($inMpw1)$sql.="MPWD=old_password('"	. htmlspecialchars($inMpw1)       ."'),";	
+				$sql.="MTEL       ='"	. htmlspecialchars($inMTEL)       ."',";
+				$sql.="MHP        ='"	. htmlspecialchars($inMHP)        ."',";
+				$sql.="Mpost      ='"	. htmlspecialchars($inMpost)     ."',";
+				$sql.="Maddr1     ='"	. htmlspecialchars($inMaddr1)     ."',";
+				$sql.="Maddr2     ='"	. htmlspecialchars($inMaddr2)     ."',";
+				$sql.="Memail     ='"	. htmlspecialchars($inMemail)     ."',";
+				$sql.="MemailAgree='"	. htmlspecialchars($inMemailAgree)."',";
+									
+				#-- IP 기록
+				$sql.="MwriteIP     ='"	. htmlspecialchars($_SERVER['REMOTE_ADDR'])     ."',";
+				$sql.="Mtax			='" . htmlspecialchars($inMtax) . "', ";
+				
+				$sql.="MaccountEmail ='". htmlspecialchars($inMaccountEmail)."',";    
+				$sql.="McomArea  ='"	. htmlspecialchars($inMcomArea)  ."',";
+				$sql.="McomName   ='"	. htmlspecialchars($inMcomName)   ."',";
+				$sql.="McomCode   ='"	. htmlspecialchars($inMcomCode)   ."',";
+				$sql.="McomCeo    ='"	. htmlspecialchars($inMcomCeo)    ."',";
+				$sql.="McomPost   ='"	. htmlspecialchars($inMcomPost)   ."',";
+				$sql.="McomAddr1  ='"	. htmlspecialchars($inMcomAddr1)  ."',";
+				$sql.="McomAddr2  ='"	. htmlspecialchars($inMcomAddr2)  ."',";
+				$sql.="McomItem   ='"	. htmlspecialchars($inMcomItem)   ."',";
+				$sql.="McomURL   ='"	. htmlspecialchars($inMcomURL)   ."',";			
+				$sql.="McomType   ='"	. htmlspecialchars($inMcomType)   ."' ";
+				$sql.= " where MID='" . htmlspecialchars($MID) . "'";
+				sql_query($sql);
+				
+				echo "<script>document.location.replace('/mypage/myinfo.html');</script>";
+				exit();					
+			}
+				
+			#-- 일반(도매) 회원 및 관리자 정보 로드
+			$sql = "select * from 2011_memberInfo where MID='" . htmlspecialchars($MID) . "'";
+			$m_rs = sql_fetch($sql);
+								
+			# DB 레코드 결과값 모두 변수로 전환
+			foreach ($m_rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+				
+		?>
+		<script>
+		
+			passChecked=1;	
+			function fnCheckPW(n)	{
+				obj = jQuery("#inMpw" + n);
+				msgObj = jQuery("#msgPW" + n);
+				
+				v = obj.val();
+				if(v.length<4 || v.length>12) {
+					str = "Please enter characters more than 4 and less than 12.";
+					msgObj.html("<font color=red>" + str + "</font>");
+					return;
+				}
+				var regExp=/^[A-Za-z]+$/g;
+				var regExp2=/^[0-9]+$/g;
+				if(regExp.test(v) || regExp2.test(v)) {
+					str = "To complete account is required English small letter + number only.";
+					msgObj.html("<font color=red>" + str + "</font>");
+					return;
+				} else {
+					if(n==1) {
+						str="User password is available.";
+						msgObj.html("<font color=blue>" + str + "</font>");
+						return;
+					}
+				}
+				if(jQuery("#inMpw1").val() != jQuery("#inMpw2").val() && jQuery("#inMpw2").val()!="") {
+					str = "Password you entered is not correct.";
+					jQuery("#msgPW2").html("<font color=red>" + str + "</font>");
+					passChecked=0;
+					return;
+				} else if(jQuery("#inMpw2").val()!="") {
+					str="User password is available.";
+					jQuery("#msgPW2").html("<font color=blue>" + str + "</font>");
+					passChecked=1;
+					return;
+				}
+			}
+			
+			function fnSave()	{
+				if(passChecked==0) {
+					alert("Password you entered is not correct.");
+					return;
+				}
+				//-- 입력값 체크
+				if(!VCheckjQuery(jQuery("#inMTEL"),"Phone Number"))return;
+
+				if(!VCheckjQuery(jQuery("#inMHP"),"Mobile Number"))return;
+
+				if($("#inMcomAddr2_Sel").val()){
+					$("#inMcomAddr2").val($("#inMcomAddr2_Sel").val());
+				}
+				document.formObject.submit();
+			}
+
+		</script>
+
+		<div class="member_info">
+			<h3><img src="/img/mypage/tit_04.gif" alt="기본회원정보수정"></h3>
+			
+			<table border="0" cellspacing="0" cellpadding="0" class="">
+			<form name='formObject' method='post'>
+				<tr>
+					<th scope="row">Name</th>
+					<td><?=$dbMname?> <?=$dbMjumin?></td>
+				</tr>
+				<tr>
+					<th scope="row">User ID</th>
+					<td><?=$MID?></td>
+				</tr>
+				<tr>
+					<th scope="row">Password</th>
+					<td><input type="password" name="inMpw1" id="inMpw1" onkeyup='fnCheckPW(1);passChecked=0;' maxlength=12 />&nbsp;&nbsp;<span class="style20" id='msgPW1' ></span></td>
+				</tr>
+				<tr>
+					<th scope="row">Confirm Password</th>
+					<td><input type="password" onkeyup='fnCheckPW(2)' name="inMpw2" id="inMpw2" maxlength=12 />&nbsp;&nbsp;<span class="style20" id='msgPW2' ></span></td>
+				</tr>
+				<tr>
+					<th scope="row"><span class="ico_star"><img src="/image/login/ico_star.png"></span>Phone Number</th>
+					<td>
+						<input name="inMTEL" type="text" id="inMTEL" value="<?=$dbMTEL?>" size="40" />
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><span class="ico_star"><img src="/image/login/ico_star.png"></span>Mobile Number</th>
+					<td>
+						<input name="inMHP" type="text" id="inMHP" value="<?=$dbMHP?>" size="40" />
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><span class="ico_star"><img src="/image/login/ico_star.png"></span>E-mail</th>
+					<td>
+						<input name="inMemail" type="text" id="inMemail" size="60" value="<?=$dbMemail?>"/>
+						<p><input name="inMemailAgree" type="checkbox" id="inMemailAgree" value="1" <?if($dbMemailAgree==1)echo "checked";?>/>&nbsp;Sign me up for Cheonyu.com E-mail Updates about new services and special offers!</p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">Country</th>
+					<td>
+						<select name="inMcomAddr1" id="inMcomAddr1" onChange="fnSelectCountry(this.value);">
+							<option value="">-- Select Country --</option>
+							<?
+								$sql = sql_query(" SELECT EIDX,EName FROM nEMS ORDER BY EName ASC ");
+								while($data = sql_fetch_array($sql)){
+									if($data['EIDX'] == $dbMcomAddr1) $sel = "selected";
+									else $sel = "";
+							?>
+							<option value="<?=$data['EIDX'];?>" <?=$sel?>><?=$data['EName'];?></option>
+							<?
+								}
+							?>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">Zip/Postal Code</th>
+					<td><input name="inMpost" type="text" id="inMpost" size="60" value="<?=$dbMpost?>"/></td>
+				</tr>
+				<tr>
+					<th scope="row">Street Address</th>
+					<td><input name="inMaddr2" type="text" id="inMaddr2" value="<?=$dbMaddr2?>" size="60" /></td>
+				</tr>
+				<tr>
+					<th scope="row">City</th>
+					<td><input name="inMaddr1" type="text" id="inMaddr1" value="<?=$dbMaddr1?>" size="60" /></td>
+				</tr>
+				<tr>
+					<th scope="row">State/Region</th>
+					<td>
+						<div id="htmlStateSelect" style="display:none;"><select name="inMcomAddr2_Sel" id="inMcomAddr2_Sel"></select></div>
+						<div id="htmlStateText"><input name="inMcomAddr2" type="text" id="inMcomAddr2" value="<?=$dbMcomAddr2?>" size="60"/></div>
+					</td>
+				</tr>
+			</table>
+
+			</form>
+
+			<div class="div_btn"><a href="javascript:fnSave();"><img src="/img/mypage/btn_edit.gif" alt="수정하기"></a> <a href="/"><img src="/img/mypage/btn_cancel.gif" alt="취소"></a></div>
+			
+		<!-- //회원정보수정 -->
+		</div>             
+		<p>&nbsp;</p> 
+		<p>&nbsp;</p>
+		
+	<!-- //접속내역 -->
+	</div>             
+
+</div>   
+<!-- //마이페이지 끝 ---> 
+    
+<script>
+function fnSelectCountry(v, s){
+	//console.log(`country: ${v}`);
+
+	if(v){
+			
+		var param = "&vIDX=" + v;
+		$.ajax({
+			url: "../ajax_paypal_state.php",
+			type: "POST",
+			cache: false,
+			data : param,
+			dataType: "text",
+			error: fnErrorAjax,
+			success: function(obj) {
+				let data = JSON.parse(obj);
+				let selectTerm = ""; 
+				$("#inMcomAddr2_Sel option").remove(); 
+				$("#inMcomAddr2").val("");
+				
+				if(data.message == 'Success') {
+					
+					for (let i = 0; i < data.datas.length; i++) {
+						selectTerm += "<option value=" + data.datas[i].PROVINCE_CD + ">" + data.datas[i].PROVINCE + "</option>";
+					}
+	                $("#inMcomAddr2_Sel").append(selectTerm);
+
+					$("#htmlStateText").hide();
+					$("#htmlStateSelect").show();
+
+					$("#inMcomAddr2_Sel").val(s).attr("selected", true);
+				
+				} else {	// state 코드 없음 No Data 포함
+					$("#htmlStateSelect").hide();
+					$("#htmlStateText").show();
+				}
+	
+			}
+		});
+				
+	} else {
+		$("#inMcomAddr2_Sel option").remove(); 
+		$("#inMcomAddr2").val("");
+		$("#htmlStateSelect").hide();
+		$("#htmlStateText").show();
+	}
+}
+
+$(document).ready(function(){
+	fnSelectCountry("<?=$dbMcomAddr1?>", "<?=$dbMcomAddr2?>");
+});
+</script>
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

@@ -1,0 +1,139 @@
+<?php
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+	ob_clean();
+	
+	//-- 신규주문 카트 코드 / 추가주문 카트코드
+	if($isAddOrder)$CAcode = "5";
+	else if($tempCode)$CAcode=$tempCode;
+	else $CAcode = "1";
+
+	$inOdepositCheck=1;
+
+	/*=====================================================================================
+		상품권 정보 입력
+	=====================================================================================*/
+	$sql = "insert into 2011_memberGift (MID,GFpoint,GFprice,GFcount,GFcontent,GFtype,GFstate,GFregdate,GFdeleted) values(";
+	$sql.= "'" . $MID . "',";
+	$sql.= "'" . $inGFpoint . "',";
+	$sql.= "'" . $inGFprice . "',";
+	$sql.= "'" . $inSetCount[$inSetPrice] . "',";
+	$sql.= "'구매적립',";	
+	$sql.= "'1',";	//-- 사용표시
+	$sql.= "'" . $inOdepositCheck . "',";	//-- 처리완료		여부
+	$sql.= "'". date(time()) . "',";
+	$sql.= "'0')";
+	sql_query($sql);
+	//-- IDX값 저장
+	$GFIDX = mysqli_insert_id($g5['connect_db']);
+
+	//추가 포인트 적립		
+	//-- 포인트 적립
+	if($inGFpoint == 500000){
+		$ppPoint = 3000 * $inSetCount[$inSetPrice];
+	} else if($inGFpoint == 1000000){
+		$ppPoint = 10000 * $inSetCount[$inSetPrice];
+	} else if($inGFpoint == 2000000){
+		$ppPoint = 30000 * $inSetCount[$inSetPrice];
+	} else {
+		$ppPoint = 0;
+	}
+		
+	if($ppPoint > 0){
+		$sql = "insert into 2011_memberPoint (MID,PIDX,OIDX,POpoint,POcount,POcontent,POtype,POstate,POregdate) values(";
+		$sql.= "'" . $MID . "',";
+		$sql.= "'" . $GFIDX . "',";
+		$sql.= "'',";
+		$sql.= "'" . $ppPoint . "',";
+		//$sql.= "'" . $inSetCount[$inSetPrice] . "',";
+		$sql.= "'1',";
+		$sql.= "'상품권 추가 적립',";
+		$sql.= "'1',"; //-- 적립표시
+		$sql.= "'1',"; //-- 대기표시
+		$sql.= "'" . date(time()) . "')";
+		sql_query($sql);
+		$GPIDX = mysqli_insert_id($g5['connect_db']);
+	}
+	
+	/*=====================================================================================
+	결제정보 저장
+	=====================================================================================*/
+	
+	//-- 무통장은 별도 정보 생성
+	if($inOpayType==1) {
+		$REPLYMSG = "무통장결제";
+		//$Amt=$inGFprice * $inSetCount[$inSetPrice];	//-- 결제총액 = 상품금액 + 배송비
+		$Amt=$inGFprice;
+		$PAY_TYPE=$inOpayType;
+	}
+	
+	$sql = "insert into 2011_memberGiftPayment  (GFIDX,GFpayType,GFbill,GFdeposit,GFdepositCheck,REPLYCD,REPLYMSG,ORDER_NO,AMT,PAY_TYPE,APPROVAL_YMDHMS,SEQ_NO,ESCROW_YN,APPROVAL_NO,CARD_ID,";
+	$sql.= "CARD_NM,SELL_MM,ZEROFEE_YN,CERT_YN,CONTRACT_YN,SAVE_AMT,BANK_ID,BANK_NM,CASH_BILL_NO,ACCOUNT_NO,INCOME_ACC_NM,ACCOUNT_NM,INCOME_LIMIT_YMD,";
+	$sql.= "INCOME_EXPECT_YMD,CASH_YN,HP_ID,TICKET_ID,TICKET_NAME,TICKET_PAY_TYPE) values(";
+			
+	$sql.= "'" . $GFIDX . "',";
+	
+	$sql.= "'" . $inOpayType . "',";	//-- 결재방식
+	$sql.= "'" . $inObill . "',";	//-- 계산서 첨부
+	$sql.= "'" . $inOdeposit . "',"; //-- 입금자명
+	$sql.= "'" . $inOdepositCheck . "',"; //-- 입금상태
+				
+	$sql.= "'" . $REPLYCD . "',";
+	$sql.= "'" . $REPLYMSG . "',";
+	$sql.= "'" . $ORDER_NO . "',";
+	$sql.= "'" . $Amt . "',";
+	$sql.= "'" . $PAY_TYPE . "',";
+	$sql.= "'" . $APPROVAL_YMDHMS . "',";
+	$sql.= "'" . $SEQ_NO . "',";
+	$sql.= "'" . $ESCROW_YN . "',";
+	$sql.= "'" . $APPROVAL_NO . "',";
+	$sql.= "'" . $CARD_ID . "',";
+	$sql.= "'" . $CARD_NM . "',";
+	$sql.= "'" . $SELL_MM . "',";
+	$sql.= "'" . $ZEROFEE_YN . "',";
+	$sql.= "'" . $CERT_YN . "',";
+	$sql.= "'" . $CONTRACT_YN . "',";
+	$sql.= "'" . $SAVE_AMT . "',";
+	$sql.= "'" . $BANK_ID . "',";
+	$sql.= "'" . $BANK_NM . "',";
+	$sql.= "'" . $CASH_BILL_NO . "',";
+	$sql.= "'" . $ACCOUNT_NO . "',";
+	$sql.= "'" . $INCOME_ACC_NM . "',";
+	$sql.= "'" . $ACCOUNT_NM . "',";
+	$sql.= "'" . $INCOME_LIMIT_YMD . "',";
+	$sql.= "'" . $INCOME_EXPECT_YMD . "',";
+	$sql.= "'" . $CASH_YN . "',";
+	$sql.= "'" . $HP_ID . "',";
+	$sql.= "'" . $TICKET_ID . "',";
+	$sql.= "'" . $TICKET_NAME . "',";
+	$sql.= "'" . $TICKET_PAY_TYPE . "')";
+	sql_query($sql);
+	$PAYIDX = mysqli_insert_id($g5['connect_db']);
+		
+	/*=====================================================================================
+	현금영수증 발급 정보 저장
+	=====================================================================================*/
+	if($inObill==2) {
+		$certCode=$inOorderHP;
+		if(!$certCode)$certCode=$inOtel;
+			
+		$CBVAT = $Amt * 0.1;
+		$CBsupply = $Amt - $CBVAT;
+			
+		$sql = "insert into 2011_cashbillInfo (MID,CBtype,ORDER_NO,PAYIDX,CBcertName,CBcertCode,CBAMT,CBsupply,CBVAT,CBregdate) values(";
+		$sql.= "'" . $MID . "',";
+		$sql.= "'2',";	// 1 : order  /  2 : gift
+		$sql.= "'상품권구매',";	// ORDER_NO
+		$sql.= "'" . $PAYIDX . "',";	// PayIDX
+		$sql.= "'" . $Mname . "',";	// 주문자(영수증인증자 명)
+		$sql.= "'" . $certCode . "',";
+		$sql.= "'" . $Amt . "',";	//-- 총액
+		$sql.= "'" . $CBsupply . "',";	//-- 공급가
+		$sql.= "'" . $CBVAT . "',";
+		$sql.= "'" . date(time()) . "')";
+		sql_query($sql);
+	}
+	
+	if($inOpayType==1){
+		echo "<script> parent.location.href = 'gift_order_end.html?gNum=$GFIDX'; </script>";
+	}
+?>

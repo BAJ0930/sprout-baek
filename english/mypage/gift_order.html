@@ -1,0 +1,333 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+	
+	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/common.html";	
+
+	if(!$giftNum)$giftNum=1;
+
+	#-- 도매회원용
+	$type=1;	
+		
+	$GFprice[1]="1000000";
+	$GFprice[2]="2000000";	
+	$GFprice[0]="500000";	
+		
+	$GFdcPrice[1]="1000000";
+	$GFdcPrice[2]="2000000";
+	$GFdcPrice[0]="500000";
+		
+	$GFdcPer[1]="1";
+	$GFdcPer[2]="1.5";
+	$GFdcPer[0]="0.6";
+
+	if($giftNum == 1) $giftNum = 2;
+	else if($giftNum == 2) $giftNum = 3;
+	else if($giftNum == 3) $giftNum = 1;
+
+	if($MHP)$addrHP=explode("-",$MHP);
+?>
+<script>
+	var giftPrice = new Array;
+	var giftPoint = new Array;
+	<?
+		for($k=0;$k<sizeof($GFdcPrice);$k++){
+	?>
+	giftPrice[<?=$k?>]="<?=$GFdcPrice[$k]?>";
+	giftPoint[<?=$k?>]="<?=$GFprice[$k]?>";
+	<? } ?>
+
+	
+	/*========================================================
+	주문서 작성 모듈 불러서 결제 하기
+	========================================================*/
+	var ViewLoading = "0";
+	function fnAllTheGateStart(v) {			
+		ViewLoading = v;
+		chkNum = $("INPUT[name='inOpayType']:checked").eq(0).val();
+		
+		if(chkNum==1)loadModule=0;
+		else loadModule=1;
+		
+		//-- 결제 정보 입력
+		$("#Amt").val(totalPrice);
+		if(chkNum==1) {
+			//-- 입금자 입력 검사
+			if(!VCheckjQuery(jQuery("#inOdeposit"),"입금자명"))return;
+		}
+			
+		document.orderForm.submit();
+	}
+		
+	function fnSetCount(objNum,num) {
+		var obj = $("INPUT[id='inSetCount']").eq(objNum);
+		
+		obj.val(parseInt(obj.val()) + num);
+		if(parseInt(obj.val())<1)obj.val(1);
+		if(parseInt(obj.val())>99)obj.val(99);
+		
+		fnSetTotalPrice();
+	}
+	
+	var totalPrice = 0;
+	function fnSetTotalPrice() {
+		var obj = $("[id='inSetPrice']:checked").eq(0);	
+		var nNum = $("[id='inSetPrice']").index(obj);
+		
+		var nPrice = parseInt(giftPrice[nNum]);
+		var nPoint = parseInt(giftPoint[nNum]);
+		var nCount = parseInt($("INPUT[id='inSetCount']").eq(nNum).val());
+		
+		//-- 넘어가서 계산할 값.(1개 포인트, 1개 결제금액)
+		$("[id='inGFprice']").eq(0).val(nPrice);
+		$("[id='inGFpoint']").eq(0).val(nPoint);
+
+		var tPrice = nPrice * nCount;
+		
+		$("#priceTD4").html(commify(tPrice));	//-- 제품가격
+		//$("#priceTD4").eq(0).html(commify(tPrice));
+		totalPrice = tPrice;
+	}
+	$(document).ready(function() {
+		fnSetTotalPrice();
+	});
+	
+	function fnOrderAction() { fnAllTheGateStart(1); }
+	
+	var isCtrl = false; //ctrl키가 눌렸는지를 확인할 수 있는 전역변수.
+	document.onkeydown = function() {
+		isCtrl = window.event.ctrlKey;
+	}
+</script>
+
+<link rel="stylesheet" type="text/css" href="/mypage/mypage.css?2211">
+
+<!-- 마이페이지 시작 --->
+<div id="wrap">
+
+	<?
+		include_once $_SERVER['DOCUMENT_ROOT']."/mypage/menu.html";
+	?>
+
+	<!-- mypageMain -->
+	<div id="mypageMain">
+	
+	<?
+		include_once $_SERVER['DOCUMENT_ROOT']."/mypage/info.html";
+	?>      
+		<div class="shipping2">
+			<h3><img src="/img/mypage/tit_gift.gif" alt="상품권 구매"></h3>
+			<div class="add_text_tit">
+			* 현금으로만 구매가능하며, 사이트에서 현금처럼 사용하실 수 있습니다.<br>
+            * 상품권 사용시 환불이 되지 않으며, 미사용시에는 환불이 가능합니다.<br>
+            * 일부업체의 경우 도매고객 특별 할인 상품권 구매가 불가능합니다.<br />
+            </div>
+		</div>
+
+		<div>
+			<table width="100%" border="0" cellspacing="0" cellpadding="0">
+			<form name='orderForm' id='orderForm' method='post' action='gift_action.html'>
+			<input type='hidden' value='' name='inGFprice' id='inGFprice'>
+			<input type='hidden' value='' name='inGFpoint' id='inGFpoint'>
+			<input type='hidden' name='ORDER_NO' id='ORDER_NO' value='<?="G" . substr(date("Y"),2).date("m").date("d")."-".date("H").date("i").date("s")?>' alt='주문번호'>
+				<tr><td height="10" colspan="2" ></td></tr>
+				<tr>
+					<td align="center">
+						
+						<table width="100%" border="0" cellspacing="0" cellpadding="0">
+							<tr><td height="1" bgcolor="#CCCCCC" colspan="11"></td></tr>
+							<tr>
+								<td width="1" height="1" bgcolor="#CCCCCC"></td>
+								<td width="40" height="30" align="center"><strong>선택</strong></td>
+								<td width="1" bgcolor="#CCCCCC"></td>
+								<td width="150" align="center"><strong>적립금액</strong></td>
+								<td width="1" bgcolor="#CCCCCC"></td>
+								<td width="150" align="center"><strong>결제금액</strong></td>
+								<td width="1" bgcolor="#CCCCCC"></td>
+								<td width="200" align="center"><strong>할인율</strong></td>
+								<td width="1" bgcolor="#CCCCCC"></td>
+								<td align="center"><strong>수량</strong></td>
+								<td width="1" bgcolor="#CCCCCC"></td>
+							</tr>
+							<tr><td height="1" bgcolor="#CCCCCC" colspan="11"></td></tr>
+							<?
+								#================== 상품권 리스트 시작 =========================================
+								for($k=0;$k<sizeof($GFprice);$k++){
+							?>
+							<tr>
+								<td bgcolor="#CCCCCC"></td>
+								<td height="35" align="center"><input type="radio" name="inSetPrice" id="inSetPrice" value="<?=$k?>" <?if($giftNum==$k+1)echo "checked";?>  onclick='fnSetTotalPrice()' /></td>
+								<td bgcolor="#CCCCCC"></td>
+								<td align="center"><?=number_format($GFprice[$k])?> 원</td>
+								<td bgcolor="#CCCCCC"></td>
+								<td align="center">&nbsp;&nbsp;&nbsp;<?=number_format($GFdcPrice[$k])?> 원</td>
+								<td bgcolor="#CCCCCC"></td>
+								<td align="center"><?=$GFdcPer[$k]?> % 포인트 적립</td>
+								<td bgcolor="#CCCCCC"></td>
+								<td align="center">
+									<table border="0" cellspacing="0" cellpadding="0">
+										<tr>
+											<td><input name="inSetCount[]" type="text" value="1" class="input" id="inSetCount" size="3" maxlength="2" onkeydown='onlyNum()' style='ime-mode:disabled;' onblur='if(this.value<=0||!this.value)this.value=1;fnSetTotalPrice();' /></td>
+											<td><span style="display:inline-block; width:18px; vertical-align:middle;"><img src="/image_2/icon_08.gif" border="0" width="13" height="8" style='cursor:pointer;display:block; padding-bottom:1px;' onclick='fnSetCount(<?=$k?>,1)' /><img src="/image_2/icon_09.gif" border="0" width="13" height="8" style='cursor:pointer;display:block; padding-bottom:1px;' onclick='fnSetCount(<?=$k?>,-1)' /></span></td>
+											<td width="17">장</td>
+										</tr>
+									</table>
+								</td>
+								<td bgcolor="#CCCCCC"></td>
+							</tr>
+							<tr><td height="1" bgcolor="#CCCCCC" colspan="11"></td></tr>
+							<?
+								}
+								#================== 상품권 리스트 끝 =========================================
+							?>
+						</table>
+					</td>
+				</tr>
+				<tr><td height="30" align="left"></td></tr>
+				<tr><td align="left" valign="top"><img src="/image_2/my_g13.jpg" /></td></tr>
+				<TR><TD height="5"></TD></tr>
+				<TR><TD height="5"></TD></TR>
+				<tr>
+					<td>
+						<!---------- 결재 양식 시작 ------------------------------->
+						<table width="100%" border="0" cellspacing="0" cellpadding="0">
+							<tr><td height="1" colspan="2" bgcolor="#224e99"></td></tr>
+							<tr>
+								<td height="31" class='order_t' style="padding-left:15px;">이메일</td>
+								<td align="left" class='order_d' style="padding-left:15px;"><?=FN_Set_Email($Memail,"","")?></td>
+							</tr>
+							<tr>
+								<td height="31" class='order_t' style="padding-left:15px;">휴대폰번호</td>
+								<td align="left" class='order_d' style="padding-left:15px;"><input name="inOhp1" type="text" id="inOhp1" size="8" class="cart_input" maxlength=4 style='ime-mode:disabled;' value='<?=$addrHP[0]?>'/>
+								-
+								<input name="inOhp2" type="text" id="inOhp2" size="8" class="cart_input" maxlength=4 style='ime-mode:disabled;' value='<?=$addrHP[1]?>'/>
+								-
+								<input name="inOhp3" type="text" id="inOhp3" size="8" class="cart_input" maxlength=4 style='ime-mode:disabled;' value='<?=$addrHP[2]?>'/></td>
+							</tr>
+							<tr>
+								<td height="34" class='order_t' style="padding-left:15px;">SMS수신여부</td>
+								<td align="left" class='order_d' style="padding-left:15px;"><input type="radio" name="inOsms" id="inOsms1" value="1" checked />
+								<label for='inOsms1'>주문정보 SMS수신하기</label>
+								<img src="/image_1/spacer.gif" width="20" height="1" />
+								<input type="radio" name="inOsms" id="inOsms2" value="2" />
+								<label for='inOsms2'>수신하지않기</label></td>
+							</tr>
+						</table>
+						
+						<table width="100%" border="0" cellspacing="0" cellpadding="0">
+							<tr>
+								<td bgcolor="#f4f4f4" align="center" height="50">
+									<table border="0" cellspacing="0" cellpadding="0" height=20>
+										<tr>
+											<td class='order_black'><strong>최종 결제금액 :</strong>&nbsp;</td>
+											<td align="right" class="cart_porange" id='priceTD4'></td>
+											<td align="center" class="cart_porangewon">&nbsp;원</td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+							<tr>
+								<td height="30" bgcolor="#eef7fc" style="padding-left:30px;">
+									
+									<table height="16" border="0" cellpadding="0" cellspacing="0">
+										<tr>
+											<td width="20"><input type="radio" name="inOpayType" id="inOpayType1" value="1" checked/></td>
+											<td class="cart_pbblack" width="150"><label for='inOpayType1'>무통장입금</label> </td>
+											<td width="43">&nbsp;</td>
+										</tr>
+									</table>
+									
+								</td>
+							</tr>
+							<tr><td height="1" bgcolor="#dddddd"></td></tr>
+							<tr>
+								<td style="padding:20px 0 20px 0px;">
+								
+									<table width="100%" border="0" cellspacing="0" cellpadding="0">
+										<tr><td height="1" bgcolor="#dddddd" colspan="2"></td></tr>
+										<tr>
+											<td width="100" height="30" class='order_tg'  style="padding-left:20px;">결재방식</td>
+											<td class='order_d' style="padding:0 0 0 15px;text-align:left;" id='payTypeTD'>무통장입금</td>
+										</tr>
+									</table>
+									<table width="100%" border="0" cellspacing="0" cellpadding="0" id='info1'>
+										<tr>
+											<td width="100" height="30" class='order_tg' style="padding-left:20px;">입금하실은행</td>
+											<td class='order_d' style="padding:0 0 0 15px;text-align:left;"><strong><font color="#3f6bb3">국민은행 : 558201-01434944 / 우리은행 : 1005-002-023055 (예금주:주식회사천유닷컴)</font></strong></td>
+										</tr>
+										<tr>
+											<td height="30"  class='order_tg' style="padding-left:20px;">입금자명</td>
+											<td class='order_d' style="padding:0 0 0 15px;">
+												
+												<table border="0" cellspacing="0" cellpadding="0">
+													<tr>
+														<td class='order_black'><input type="text" class="cart_input" name="inOdeposit" type="text" id="inOdeposit" size="15" value='<?=$Mname?>' /></td>
+														<td style="padding:0 0 0 25px;"><span class="cart_black">작성하신 입금자명과 실제 입금자명이 다를경우 결제확인이 되지 않습니다.</span></td>
+													</tr>
+												</table>
+												
+											</td>
+										</tr>
+									</table>
+									
+									<table width="100%" border="0" cellspacing="0" cellpadding="0">
+										<tr>
+											<td width="100" height="30"  class='order_tg' style="padding-left:20px;">증빙서류신청</td>
+											<td class='order_d' style="padding:0 0 0 15px;">
+											
+												<table border="0" cellspacing="0" cellpadding="0">
+													<tr>
+														<td><input type="radio" name="inObill" id="inObill1" value="1" checked /></td>
+														<td class="order_black" width="116"><label for="inObill1">세금계산서/계산서</label></td>
+														<td><input type="radio" name="inObill" id="inObill2" value="2" /></td>
+														<td class="order_black" width="70"><label for="inObill2">현금영수증</label></td>
+														<td><input type="radio" name="inObill" id="inObill3" value="1"  /></td>
+														<td class="order_black" width="70"><label for='inObill3'>필요없음</label></td>
+														<td><span class="cart_orange">* 증빙서류는 주문자정보란의 정보로 발생합니다.</span></td>
+													</tr>
+												</table>
+												
+											</td>
+										</tr>
+									</table>
+									
+									<table width="100%" border="0" cellspacing="0" cellpadding="0" id='info4'>
+										<tr>
+											<td width="100" class='order_tg' style="padding-left:20px;">확인하세요!</td>
+											<td class='order_d' style="padding:15px 0 15px 15px;text-align:left; line-height:200%;"><span class="cart_black">* 무통장입금 확인은 평일 매일 오전 9시~오후 5시까지, 토요일 오전 9시~오후 1시까지 수시로 확인합니다.<br>
+						                    * 무통장 주문 후 5일이 지날때까지 입금이 안 되면 주문은 자동으로 취소됩니다.</td>
+										</tr>
+									</table>						              
+								
+								</td>
+							</tr>
+							<tr>
+								<td style="padding:30px 0 40px 0;text-align:center;">
+								
+									<table border="0" align=center cellspacing="0" cellpadding="0">
+										<tr>
+											<td width="126"><img src="/image_2/neworder_btn4.gif" style='cursor:pointer;' onclick='location.href="/";' /></td>
+											<td width="10"></td>
+											<td width="105"><img src="/image_2/neworder_btn5.gif" style='cursor:pointer;' onclick='fnOrderAction(1)' /></td>
+										</tr>
+									</table>
+									
+								</td>
+							</tr>
+						</table>
+						
+					</td>
+				</tr>
+			</table>
+			</form>
+
+<!-- //나의포인트내역 -->
+</div>             
+            
+</div>   
+<!-- //마이페이지 끝 ---> 
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

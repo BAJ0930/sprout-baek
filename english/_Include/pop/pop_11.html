@@ -1,0 +1,366 @@
+<?php
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+	ob_clean();
+
+	#-- 재고부족 카트 정보 체크
+	/*$sql = "SELECT a . * , b.Pname, b.PstockCount, b.Pstate, PsaveFile1, c.OPname, c.OPvalue, c.OPstock, Pready ";
+	$sql.= " FROM 2011_cartInfo AS a ";
+	$sql.= " LEFT JOIN 2011_productInfo AS b ON a.PIDX = b.IDX ";
+	$sql.= " LEFT JOIN 2011_productOption AS c ON a.OPIDX = c.IDX ";
+	$sql.= " LEFT JOIN ( ";
+	$sql.= " SELECT PIDX, ORPoption, sum( ORPcount ) AS Pready ";
+	$sql.= " FROM 2011_orderProduct ";
+	$sql.= " WHERE ORPcountCheck =1 ";
+	$sql.= " AND ORPdeleted =0 ";
+	$sql.= " GROUP BY PIDX, ORPoption ";
+	$sql.= " ) AS d ON b.IDX = d.PIDX ";
+	$sql.= " AND ifnull( c.IDX, 0 ) = ifnull( d.ORPoption, 0 )  ";
+	$sql.= " WHERE MID = '" . $uid . "'";
+	$sql.= " AND a.CAstate =1 ";
+	$sql.= " AND ( ";
+	$sql.= " ifnull(OPstock,b.PstockCount) - ifnull(Pready,0) < a.CAcount ";
+	$sql.= " OR b.Pstate <>1 ";
+	$sql.= " ) ";*/
+	$sql = "SELECT a.*, b.Pname, b.PengName, b.PstockCount, b.Pstate, b.PsaveFile1, c.OPname, c.OPvalue, c.OPvalueEng, c.OPstock ";
+	$sql.= " FROM 2011_cartInfo AS a ";
+	$sql.= " LEFT JOIN 2011_productInfo AS b ON a.PIDX = b.IDX ";
+	$sql.= " LEFT JOIN 2011_productOption AS c ON a.OPIDX = c.IDX ";
+	$sql.= " WHERE MID = '" . $uid . "'";
+	$sql.= " AND a.CAstate = 1 ";
+	$sql.= " AND a.CAcheck = '1' ";
+	//$sql.= " AND a.CAorder = '0' ";
+	if($_Minus != 1) $sql.= " AND b.PorderMinus != 1 ";
+	$result = sql_query($sql);
+?>
+
+<script>
+	ajaxUrl = '/order/ajaxCart.php';	
+	isOrder="<?=$isOrder?>";
+	
+	//=== 옵션 사용시 수량 + - =====================================
+	function fnPcountPlusOver(obj,v)
+	{
+		//-- 자신이 몇번째 객체 인지 체크
+		myID = obj.id;
+		tempNum = $("img[id='" + myID + "']").index(obj);
+		inputObj = $("input[id='inPcountOver']").eq(tempNum);
+
+		inputObj.val(parseInt(inputObj.val())+v);
+		if(parseInt(inputObj.val())<1)inputObj.val(1);
+		$("DIV[id='msgDiv']").eq(tempNum).html("<font color=red>please be sure to click 'Change' button after change quantity.</font>");
+		fnPcountCheckOver(obj);
+	}
+
+	//=== 수량 제한 체크 =====================================
+	function fnPcountCheckOver(obj)
+	{
+		//-- 자신이 몇번째 객체 인지 체크
+		obj = $("input[id='inPcountOver']");
+		maxCount = $("input[id='inMaxStockOver']");
+		idxObj = $("input[id='inPIDXOver']");
+
+		len = obj.length;
+
+		for(k=0;k<len;k++)
+		{
+			if(parseInt(obj.eq(k).val())>parseInt(maxCount.eq(k).val()))
+			{
+				alert(maxCount.eq(k).val() + " pcs ramainning now.");
+				obj.val(maxCount.eq(k).val());
+				return;
+			}
+		}
+	}
+
+	function fnProductDeleteOver(obj)
+	{
+		try{if(!ajaxUrl){}}
+		catch(E){alert("The completion page is not defined.");return;}
+
+		//-- 자신이 몇번째 객체 인지 체크
+		myID = obj.id;
+		myTag = obj.tagName;
+		tempNum = $(myTag + "[id='" + myID + "']").index(obj);
+		IDX = $("INPUT[id='inPIDXOver']").eq(tempNum).val();
+		param='qIDX=' + IDX + '&mode=delete&tempNum='+ tempNum;
+		$.ajax({
+		url:ajaxUrl,
+		type:"POST",
+		cache:false,
+		data : param,
+		dataType:"text",
+		error:fnErrorAjax,
+		success:function(_response)
+		{
+			v = _response.split("##");
+			if(v[1]=="OK")
+			{
+				$("TR[id='cartListOver']").eq(v[2]).remove();
+			}
+			else
+			{
+				alert("ERROR");
+			}
+		}
+		});
+	}
+
+
+	//=== 옵션 적용 =====================================
+	function fnPcountSetTemp()
+	{
+		try{if(!ajaxUrl){}}
+		catch(E){alert("The completion page is not defined.");return;}
+
+		IDX = $("INPUT[id='inPIDXOver']");
+		nCount = $("INPUT[id='inPcountOver']");
+		maxCount = $("INPUT[id='inMaxStockOver']");
+		PnameOver = $("INPUT[id='inPnameOver']");		
+		len = nCount.length;
+		paramstr1="";
+		paramstr2="";
+		for(k=0;k<len;k++)
+		{
+			maxVal = maxCount.eq(k).val();
+			idxVal = IDX.eq(k).val();
+			countVal = nCount.eq(k).val();
+						
+			if(countVal<=0)countVal=1;
+			
+			if(maxVal==0)
+			{
+				alert("There is not available item\n\nPlease verify, clicking [x] icon to remove");
+				return;
+			}
+
+			if(maxVal<countVal)
+			{
+				if(!confirm("[" + PnameOver.eq(k).val() + "] " + maxVal +" pcs ramainning now.\n\n Confirmation: Add to cart [ " + maxVal + " pcs ] \n\nCancel: Abort"))
+				{
+					document.location='/';
+				}
+				nCount.eq(k).val(maxVal);
+			}
+				
+			if(paramstr1)paramstr1+=",";
+			if(paramstr2)paramstr2+=",";
+			paramstr1+=idxVal;
+			paramstr2+=countVal;
+		}
+
+		paramstr1="qIDX=" + paramstr1;
+		paramstr2="nCount=" + paramstr2;
+
+		param="&mode=edit&" + paramstr1 + "&" + paramstr2;
+		
+		$.ajax({
+		url:ajaxUrl,
+		type:"POST",
+		cache:false,
+		data : param,
+		dataType:"text",
+		error:fnErrorAjax,
+		success:function(_response)
+		{
+			v = _response.split("##");
+			if(v[1]=="OK")
+			{
+				if(isOrder==1)
+				{
+					alert("Order quantity is verified.\n\nPlease check order amount.");
+					jQuery("#inOuseTicket").val(0);
+					jQuery("#inOusePoint").val(0);
+					fnGetTotalInfo();
+					fnClosePopup();
+					return;
+				}
+				else
+				{
+					document.location.reload();
+					return;
+				}
+			}
+			else
+			{
+				alert("ERROR.");
+				document.location='/';
+			}
+			
+		}
+	});
+	}
+</script>
+
+<style>
+	.x-icon {
+		position: relative;
+		width: 16px;
+		height: 16px;
+		cursor: pointer;
+	}
+
+	.x-icon::before,
+	.x-icon::after {
+		content: "";
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: 100%;
+		height: 2px; /* 선의 두께 */
+		background-color: #555555; /* 선 색상 */
+		transform-origin: center;
+	}
+
+	.x-icon::before {
+		transform: translate(-50%, -50%) rotate(45deg);
+	}
+
+	.x-icon::after {
+		transform: translate(-50%, -50%) rotate(-45deg);
+	}
+</style>
+
+<table border="0" cellpadding="0" cellspacing="0">
+	<tr>
+		<td align="center">
+			<table border="0" cellpadding="0" cellspacing="0" bgcolor="#FFFFFF" style="
+				display: block;
+				background: #ffffff;
+				padding: 24px;
+				border-radius: 20px;
+			">
+				<tr>
+					<td align="center" valign="bottom" style="
+						display: block;
+						margin-bottom: 16px; 
+						color: #555555;
+						font-size: 18px;
+						line-height: 1.4;
+						position: relative;
+					">
+						<img src="/image_1/ico_close.svg" onclick="fnClosePopup()" width="24" height="24" style="
+							cursor:pointer; 
+							position: absolute; 
+							right: 0px; 
+							top: 0px;
+						"/>
+						<span style="
+							font-size: 22px;
+							display: block;
+							margin-bottom: 4px;
+							color: #333333;
+							font-weight: 600;
+							padding: 18px 0 0;
+						">Order Issues</span>
+						The selected quantity exceeds available stock.<br>
+						Please adjust your order.
+					</td>
+				</tr>
+				<tr>
+					<td height="20" align="center">
+						
+						<table width="752" border="0" bordercolor=red cellspacing="0" cellpadding="0">
+							<colgroup>
+								<col width="30%">
+								<col width="18%">
+								<col width="14%">
+								<col width="14%">
+								<col width="16%">
+								<col width="8%">
+							</colgroup>
+							<tr>
+								<td width="200" height="40" align="center" bgcolor="#f4f4f4">Item</td>
+								<td width="140" align="center" bgcolor="#f4f4f4">Option</td>
+								<td width="70" align="center" bgcolor="#f4f4f4">Order Quantity</td>
+								<td width="70" align="center" bgcolor="#f4f4f4">Available Stock</td>
+								<td align="center" bgcolor="#f4f4f4">Adjust Quantity</td>
+								<td align="center" bgcolor="#f4f4f4">Remove</td>
+							</tr>
+							<?
+								while($rs=sql_fetch_array($result)){
+									# DB 레코드 결과값 모두 변수로 전환
+									foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+									if($dbPstate == "1" || $dbPstate == "2" || $dbPstate == "3" || $dbPstate == "4") {
+										$dbPreadyChk = getProductReady($dbPIDX,$dbOPIDX);
+										if($dbOPIDX) $maxStock = $dbOPstock;
+										else $maxStock = $dbPstockCount;
+										$dbPready = $maxStock - $dbPreadyChk;
+										if($dbPready >= $dbCAcount) continue;
+
+										$dbPprice2=$dbPprice2;										
+										$link = "<a href='/product/view.html?qIDX=" . $dbPIDX . "'>";
+										
+										$maxStockStr = $maxStock . " pcs";
+									} else {
+										$maxStock=0;
+										$maxStockStr = "<font color=red>Out of stock</font>";
+										//if($dbPstate==2 || $dbPstate==4) $maxStockStr = "<font color=red>Out of stock</font>";
+										//else if($dbPstate==3) $maxStockStr = "<font color=red>Soldout</font>";
+										//else $maxStockStr = "<font color=red>Out of stock</font>";
+									}
+							?>
+							<tr id='cartListOver' style="border-bottom: 1px solid #dedede;">
+								<td height="40"><?=$link . $dbPengName?></td>
+								<td align="center"><?if($dbOPvalue){?>[<?=$dbOPvalueEng?$dbOPvalueEng:$dbOPvalue?>]<?}?></td>
+								<td align="center"><?=$dbCAcount?> ea</td>
+								<td align="center"><?=$dbPready?> ea</td>
+								<td align="center">
+									<table  border="0" cellspacing="0" cellpadding="0">
+										<tr>
+											<td align="left" style="display: flex;">
+												<img src="/img/ico/ico-item-minus.svg" style='cursor:pointer;display:block;' id='minusIconOver' onclick='fnPcountPlusOver(this,-1);' />
+												<input name="inPcountOver" type="text" class="input" id="inPcountOver" size="3" maxlength="3" value="1" onkeydown='onlyNum()'  onblur='fnPcountCheckOver(this);' style="
+													height: 24px;
+													line-height: 22px;
+													border-radius: 0;
+													border-color: #dedede;
+													border-style: solid;
+													border-width: 1px 0 1px 0;
+													text-align: center;
+													padding: 0;
+												"/>
+												<img src="/img/ico/ico-item-plus.svg" style='cursor:pointer;display:block;' id='plusIconOver' onclick='fnPcountPlusOver(this,1);' />
+											</td>			
+										</tr>
+										<!-- 재고 총합 -->
+										<input type='hidden' value='<?=$dbPname?>' name='inPnameOver' id='inPnameOver'>
+										<input type='hidden' value='<?=$dbIDX?>' name='inPIDXOver' id='inPIDXOver'>
+										<input type='hidden' value='<?=$maxStock?>' name='inMaxStockOver' id='inMaxStockOver'>
+									</table>
+									
+								</td>
+								<td align="center">
+									<div class="x-icon" id="CartOverDel" onclick="fnProductDeleteOver(this)"></div>
+								</td>
+							</tr>
+							<?}?>
+							<tr>
+								<td align="center" valign="middle" colspan=6>
+									<button type="button" onclick="fnPcountSetTemp()" style="
+										cursor: pointer;
+										display: block;
+										padding: 0 16px;
+										width: -webkit-fill-available;
+										height: 48px;
+										background: #005bf1;
+										border-radius: 8px;
+										color: #ffffff;
+										font-size: 17px;
+										line-height: 48px;
+										text-align: center;
+										font-weight: 600;
+										margin-top: 40px;
+									">
+										Update Order
+									</button>
+								</td>	
+							</tr>
+						</table>
+
+					</td>
+				</tr>
+			</table>
+
+		</td>
+	</tr>
+</table>

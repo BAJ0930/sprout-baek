@@ -1,0 +1,73 @@
+<?php
+include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+if(!$cateIDX) $cateIDX = 1;
+?>
+
+
+<link rel="stylesheet" type="text/css" href="/product/storage.css?3">
+<!-- 메인 시작/ --->    
+<div id="wrap">
+	<style>
+	#wrap {width: 1200px;}
+	.flexbox_container {background:#aaa; border-collapse: collapse; width:100%; }
+	.flexbox_container td {text-align:center; border-left:1px solid #fff; height: 100%}
+	.flexbox_container td:first-child {border:0;}
+	.flexbox_container td a {display:inline-block; height:100%; font-size:13px; color:#fff; letter-spacing: -0.5px; padding:10px 5px; text-align:left; }
+	.flexbox_container td.on {background:#005bf1 !important;}
+	.flexbox_container td:hover {background:#999;}
+	#sub_list .list_brand_box {margin-top: -34px;}
+	#sub_list .tab_02 {height: 40px; padding-top: 8px;}
+	.main-tit {margin: 0 0 24px 0;}
+	.sum_box {margin: 20px 0 56px;}
+	.list_option > div {width: 100%; justify-content: flex-end;}
+	</style>
+	<div>
+        <h2 class="main-tit">BEST SELLERS</h2>
+    </div>
+	<table class="flexbox_container">
+		<tr>
+            <td class="<? if($cateIDX == 'none' || $cateIDX == 'ALL') { echo 'on'; } ?>"><a href="/product/bests.html?cateIDX=ALL">ALL</a></td>
+			<td class=<? if($cateIDX == 1) { echo "on"; } ?>><a href="/product/bests.html?cateIDX=1">Stationery</a></td>
+			<td class=<? if($cateIDX == 14) { echo "on"; } ?>><a href="/product/bests.html?cateIDX=14">Office Supplies</a></td>
+			<td class=<? if($cateIDX == 22) { echo "on"; } ?>><a href="/product/bests.html?cateIDX=22">Fashion Acc.</a></td>
+			<td class=<? if($cateIDX == 33) { echo "on"; } ?>><a href="/product/bests.html?cateIDX=33">Home Deco.</a></td>
+			<td class=<? if($cateIDX == 46) { echo "on"; } ?>><a href="/product/bests.html?cateIDX=46">Electronic Acc.</a></td>
+			<td class=<? if($cateIDX == 376) { echo "on"; } ?>><a href="/product/bests.html?cateIDX=376">Kitchen/Kids Tableware</a></td>
+			<td class=<? if($cateIDX == 375) { echo "on"; } ?>><a href="/product/bests.html?cateIDX=375">Toys & Dolls</a></td>
+			<td class=<? if($cateIDX == 38) { echo "on"; } ?>><a href="/product/bests.html?cateIDX=38">Pens & School Supplies</a></td>
+		</tr>
+	</table>
+
+<div style="height:20px;"></div>
+
+<!-- 서브리스트 -->
+<div id="sub_list">
+
+<!-- product_top -->
+<?
+	$page = 1;
+	$listSize = 50;
+	$actOn = "best";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/product/top.html"; 
+	include_once $_SERVER['DOCUMENT_ROOT']."/product/list_inc.html"; 
+?>
+
+</div>
+<div style="height:20px;"></div>
+
+</div>
+
+<script>
+    $(document).ready(function() {
+        $('.sum_box .box').each(function(index) {
+            // 번호(순위) 마크 추가
+            $(this).prepend('<div class="rank-marker">' + (index + 1) + '</div>');
+        });
+    });
+</script>
+<!-- 메인 끝// ---> 
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

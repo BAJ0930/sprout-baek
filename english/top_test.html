@@ -1,0 +1,1043 @@
+<?php
+if (!defined('_CHEONYU_')) exit; // 개별 페이지 접근 불가
+?>
+
+<style>
+
+    a { text-decoration: none; }
+
+    #header { position: relative; width: 100%; z-index: 1000; border-bottom: 0; transition: top 0.3s ease-in-out, opacity 0.3s ease-in-out; }
+    #header * { box-sizing: border-box; }
+    #header .nav { width: 1200px; margin: 0 auto; padding-top: 0 !important; overflow: hidden; }
+    #header .logo { position: initial; margin-left: 0; width: 174px; }
+    #header .searchForm { position: relative; width: auto; margin: 0 16px 0 0; z-index: 1; top: inherit; left: inherit; }
+
+    .header { position: fixed; z-index: 999; top: 0; width: 100%; min-width: 1200px; background-color: #005bf1; padding: 10px 40px; display: flex; align-items: center; justify-content: space-between; color: white; }
+    .header-layout { display: flex; align-items: center; justify-content: space-between; width: 1200px; margin: 0 auto; }
+
+    .nav-search-wrap { position: relative; height: 48px; width: 448px; background-color: #ffffff; border-radius: 24px; }
+    .nav-searchfield-outer { height: 48px; border-radius: 24px; margin: 0; width: 100%; left: 0; border: 0; z-index: 1; }
+    #nav-search-in { height: auto; width: 112px; line-height: 48px; }
+
+    .header-menu { display: flex; align-items: center; gap: 24px; }
+    span.top-menu { font-family: "PLRegular"; font-size: 14px; color: #ffffff; }
+    span.top-menu + span { font-family: "PLBold"; display: block; font-size: 15px; margin-top: 4px; color: #ffffff; cursor: pointer; }
+    a.menu-link { font-family: "PLRegular"; }
+
+    .hamburger-menu { margin-right: 20px; cursor: pointer; }
+    .account-menu input { display: none; }
+    .account-menu { position: relative; }
+    .account-menu .dropdown-content { display: none; flex-direction: column; line-height: 40px; position: absolute; background: #ffffff; border-radius: 5px; padding: 4px; box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.2); width: 216px; top: 63px; left: 50%; margin-left: -108px; }
+    .account-menu .dropdown-content.show { display: flex; }
+    .account-menu .dropdown-content::after { content: ''; position: absolute; top: -18px; right: 35px; width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-bottom: 20px solid #ffffff; }
+    .account-menu .mem-menu { padding: 12px 12px 4px 12px; }
+    .account-menu .mem-menu button { width: 100%; }
+    .account-menu .mem-menu span { display: block; margin-top: 8px; text-align: center; color: #333333; font-size: 14px; border-bottom: 1px solid #eeeeee; line-height: 1; padding-bottom: 16px; }
+    .account-menu .mem-menu span a { color: #005bf1; text-decoration: underline; }
+    .account-menu .mem-menu ~ a { display: flex; position: relative; color: #333333; border-radius: 5px; width: 100%; font-size: 14px; text-align: left; text-indent: 16px; }
+    .account-menu .mem-menu ~ a:hover { background-color: #E9ECF4; }
+    .account-menu button.menu-toggle { font-family: "PLRegular"; padding: 0; }
+    .cart-link { display: flex; margin-top: 0px; flex-direction: column; gap: 2px; }
+    .cart-link > div { display: flex; }
+    .cart-count { min-width: 32px; color: #005bf1; font-size: 13px; line-height: 22px; background-color: #ffffff; padding: 0 10px; font-family: PLBold; border-radius: 11px; margin: 0 0 0 4px; }
+
+    .custom-dropdown { width: 160px; position: relative; display: inline-block; }
+    .custom-select { padding-left: 20px; line-height: 48px; cursor: pointer; font-size: 15px; color: #005bf1; width: 100%; box-sizing: border-box; background: url('/image_1/ico_arrow_dropdown_bl.svg') no-repeat right 20px center; background-size: 8px auto; }
+    #search_s1 { height: 48px; margin: 0; padding: 8px 0; outline: none; border: 0; box-shadow: none; width: calc(100% - 216px); }
+    .nav-submit-button { height: 40px; width: 40px; top: 4px; right: 8px; left: initial; }
+    .custom-options { display: none; position: absolute; width: 160px; border-radius: 5px; background-color: #fff; box-shadow: 0px 4px 16px rgba(0,0,0,0.2); z-index: 10; box-sizing: border-box; margin-top: 6px; }
+    .custom-options div { padding: 0 16px; line-height: 40px; cursor: pointer; font-size: 14px; color: #333; position: relative; }
+    .custom-options div:hover::after { content: ""; position: absolute; border-radius: 5px; width: calc(100% - 8px); height: calc(100% - 8px); top: 4px; left: 4px; background-color: #E9ECF4; z-index: -1; }
+    .custom-options.active { display: block; }
+
+    .navbar { background-color: #e9f5ff; margin: 68px auto 20px; min-width: 1200px; }
+    .main-menu { width: 1200px; margin: 0 auto; padding: 0; display: flex; align-items: center; justify-content: space-between;font-size: 14px; }
+    .main-menu .menu-item { position: relative; display: flex; align-items: center; font-size: 14px; }
+    .main-menu .menu-item > a {color: #162a4a; display: block; font-size: 14px; font-family: "PLBold";}
+    .main-menu .menu-item > a:hover, 
+    .main-menu .menu-item > a:focus,
+    .main-menu .menu-item.dropdown-active > a { color: #005bf1; }
+    .main-menu .menu-item .dropdown-content {
+        display: none; position: absolute; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); z-index: 1; top: calc(100% + -4px);
+        height: fit-content; overflow: auto; background: #ffffff;
+    }
+    .menu-total-wrap .go-home {display: flex; align-items: center;}
+    .menu-total-wrap .go-home a {display: flex; align-items: center;}
+    
+    /*.main-menu .menu-item .dropdown-content > ul > li:nth-child(2n) {border-top: 1px solid #e9e9e9; border-bottom: 1px solid #e9e9e9;}*/
+    /*.main-menu .menu-item .dropdown-content > ul > li:nth-child(2n) a {background-color: #f4f4f4}*/
+    .main-menu .menu-item .dropdown-content ul {list-style-type: none; padding: 0 0 8px; margin: 0; width: max-content; max-width: 616px; background: #e0e3e7;}
+    .main-menu .menu-item .dropdown-content > ul {display: flex; flex-direction: row; gap: 12px; flex-wrap: wrap; padding: 20px 20px 8px; height: 100%;}
+    .main-menu .menu-item .dropdown-content > ul > div {display: flex; flex-direction: column; gap: 12px;}
+    .main-menu .menu-item .dropdown-content > ul > :last-child {margin-right: 0;}
+    .main-menu .menu-item .dropdown-content ul li a {color: #555555; text-decoration: none; display: block; text-align: left; padding: 6px 16px; font-size: 14px;}
+    .main-menu .menu-item .dropdown-content ul li a.dep2-menu {text-indent: 0; color: #333333; font-size: 15px; font-weight: 600; padding: 10px 16px 4px;}
+    .main-menu .menu-item .dropdown-content ul li a:hover {text-decoration: underline;}
+    .main-menu .menu-item:hover .dropdown-content {display: block;}
+    .main-menu .menu-item .dropdown-content > ul::after {content: ""; display: block; clear: both;}
+    .main-menu .menu-item .dropdown-content > ul .second-level-item {width: 184px; background: #ffffff; height: fit-content; border-radius: 8px; overflow: hidden;}
+    .main-menu .menu-item .dropdown-content > ul .second-level-item > ul {width: 100%; background: #ffffff;}
+    .main-menu .menu-item .dropdown-content > ul .second-level-item > ul > li {}
+    .main-menu .menu-item .dropdown-content .banner-area {text-align: left; height: 100%;}
+    .main-menu .menu-item .dropdown-content .banner-area > a {padding: 0;}
+    
+    .menu-total-wrap {display: none; width: 174px; height: 48px; align-items: center; font-size: 16px;}
+    .menu-total-wrap > .menu-item a.menu-total {color: #ffffff; display: block; line-height: 68px;}
+    .menu-total-wrap.visible {display: block}
+    .menu-total-wrap .menu-item {position: relative;}
+    .menu-total-wrap .menu-item .dropdown-menu {top: 100%;}
+    .menu-total-wrap.visible:hover .dropdown-menu { display: block;}
+
+    .main-menu li a { color: #333333; display: flex; align-items: center; justify-content: space-between; padding: 15px 0; font-size: 15px; }
+    .main-menu > li > a:hover {color: #005bf1;}
+    .menu-total .svg-fill {fill: #ffffff;}
+    /*.menu-total:hover svg .svg-fill, 
+    .menu-total:focus svg .svg-fill {fill: #005bf1;}*/
+
+    .dropdown-menu { display: none; position: absolute; top: 58px; left: 0; background-color: #ffffff; box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.2); width: 224px; z-index: 999; text-align: left; }
+    .dropdown-menu .first-level-item > a {color: #333; padding: 15px 20px; display: flex; margin: 0; font-weight: 500; font-size: 15px; position: relative;}
+    .dropdown-menu .first-level-item > a::after { 
+        content: ""; display: inline-block; background: transparent; width: 4px; height: 4px; border-width: 1px 1px 0 0; 
+        border-color: #333333 #333333 transparent transparent; border-style: solid; transform: rotate(45deg); right: 20px; top: 21px; position: absolute;;
+    }
+    .dropdown-menu .first-level-item > a:hover {color: #005bf1;}
+    .dropdown-menu .first-level-item > a:hover::after { border-color: #005bf1 #005bf1 transparent transparent; }
+    .dropdown-menu .first-level-item > a.hover-active {background: #e9f5ff; color: #005bf1;}
+    .dropdown-menu .first-level-item > a.hover-active::after { border-color: #005bf1 #005bf1 transparent transparent; }
+    .dropdown-menu .first-level-item:hover .sub-menu {display: flex;}
+    .sub-menu {position: absolute; top: 0; left: 224px; display: none; box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.2); background: #e0e3e7;}
+    .sub-menu .second-level {max-height: calc(100vh - 174px); padding: 24px 24px 0; margin-bottom: 12px; display: flex; gap: 12px; align-items: flex-start; overflow: auto;}
+    .sub-menu .second-level > div {flex: 1;}
+    .sub-menu .second-level .second-level-item {border-radius: 5px; background: #ffffff; margin: 12px 0; padding-bottom: 6px; break-inside: avoid; width: 192px;}
+    .sub-menu .second-level .second-level-item:first-child {margin: 0;}
+    .sub-menu .second-level .second-level-item h3 { margin: 0; }
+    .sub-menu .second-level .second-level-item h3 a {display: block; color: #333; font-weight: 600; font-size: 15px; position: relative; padding: 12px 16px; position: relative;}
+    .sub-menu .second-level .second-level-item h3 a:hover { text-decoration: underline; }
+    .sub-menu .second-level .second-level-item h3 a.hover-active {color: #005bf1;}
+    .sub-menu .second-level .second-level-item .third-level {display: block; list-style: none; margin: 0 auto;}
+    .sub-menu .second-level .second-level-item .third-level li {margin-bottom: 12px; padding: 0 16px;}
+    .sub-menu .second-level .second-level-item .third-level li a {padding: 6px 0; font-size: 14px; color: #555555;}
+    .sub-menu .second-level .second-level-item .third-level li a:hover {text-decoration: underline;}
+    .banner-area {width: 232px; padding: 20px; background: #ffffff;}
+    .banner-area a {line-height: 0; padding: 0;}
+    .banner-area a figure {margin:0}
+    .banner-area a figcaption h3 {margin: 20px 0 8px 0; line-height: 1.4; font-size: 17px; letter-spacing: -0.025em; color: #333333;}
+    .banner-area a figcaption p {margin: 0; line-height: 1.4; color: #555555;}
+    .banner-area a.btn-goShop {
+        line-height: 40px; border: 1px solid #333333; border-radius: 100px; text-align: center; color: #333333; font-weight: 600; font-size: 15px; display: block; margin-top: 16px;
+    }
+    .banner-area a.btn-goShop:hover {border-color: #005bf1; background: #005bf1; color: #ffffff; transition: border-color 0.15s ease-in-out, background 0.15s ease-in-out;}
+    .menu-item:hover .dropdown-menu { display: block; }
+
+    .first-level-item > a.hover-active { color: #005bf1; }
+    .first-level-item > a.hover-active::after { border-color: #005bf1 #005bf1 transparent transparent; }
+
+</style>
+
+<div id="header">
+	<!-- 헤더 추가 -->
+    <header class="header">
+        <div class="header-layout">
+            <!-- 로고 -->
+            <div id="logoImg" class="logo">
+                <a href="/"><img src="/image_1/logo_wh.png" alt="Logo"></a>
+            </div>
+            <div id="menuTotalWrap" class="menu-total-wrap">
+                <div class="menu-item">
+                    <a href="#" class="menu-total" style="font-weight: 700; margin-right: 24px;">
+                        <svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 12" width="16px" style="margin-right: 4px;">
+                            <g id="Layer_1-2" data-name="Layer 1">
+                                <rect class="svg-fill" y="5" width="12" height="2" rx="1" ry="1"/>
+                                <rect class="svg-fill" y="10" width="16" height="2" rx="1" ry="1"/>
+                                <rect class="svg-fill" y="0" width="16" height="2" rx="1" ry="1"/>
+                            </g>
+                        </svg>
+                        ALL
+                    </a>
+                    <div class="dropdown-menu">
+                        <ul class="first-level">
+                            <li class="first-level-item">
+                                <a href="/product/list.html?cateIDX=1">Stationery</a>
+                                <div class="sub-menu">
+                                    <ul class="second-level" style="display: flex;">
+                                        <div>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=2">Diaries and Calendars</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('A01');?></ul>
+                                            </li>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=3">Planners</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('A02');?></ul>
+                                            </li>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=4">Albums</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('A03');?></ul>
+                                            </li>
+                                        </div>
+                                        <div>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=6">Pencil Cases</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('A04');?></ul>
+                                            </li>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=8">Notebooks and Memo Pads</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('A06');?></ul>
+                                            </li>
+                                        </div>
+                                        <div>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=9">Stickers and Decoration</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('A07');?></ul>
+                                            </li>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=10">Letters and Cards</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('A08');?></ul>
+                                            </li>
+                                        </div>
+                                    </ul>
+                                    <div class="banner-area">
+                                        <a href="/product/view.html?qIDX=47532&s1=47532"><figure><img src="/img/nav/img_catePromo1.jpg" alt="카테고리 메인 프로모션 브랜드"></figure></a>
+                                        <a href="/brand/brandView.html?s3=39">
+                                            <figcaption>
+                                                <h3 class="item-name">Start Your Year Right with Indigo</h3>
+                                                <p class="item-info">Discover the New Diary Collection from Indigo, the Ultimate Planner Destination.</p>
+                                            </figcaption>
+                                        </a>
+                                        <a href="/brand/brandView.html?s3=39" class="btn-goShop">Go brand shop</a>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="first-level-item">
+                                <a href="/product/list.html?cateIDX=14">Office Supplies</a>
+                                <div class="sub-menu">
+                                    <ul class="second-level">
+                                        <div>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=15">Design Office Supplies</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('B01');?></ul>
+                                            </li>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=87">Files and Binders</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('B03');?></ul>
+                                            </li>
+                                        </div>
+                                        <div>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=454">Office Supplies</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('B04');?></ul>
+                                            </li>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=455">Desk Organizers</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('B05');?></ul>
+                                            </li>
+                                        </div>
+                                    </ul>
+                                    <div class="banner-area">
+                                        <a href="/product/view.html?qIDX=48714&s1=48714"><figure><img src="/img/nav/img_catePromo2.jpg" alt="카테고리 메인 프로모션 브랜드"></figure></a>
+                                        <a href="/brand/brandView.html?s3=63">
+                                            <figcaption>
+                                                <h3 class="item-name">ICONIC: Where Emotion, Experience, and Value Meet</h3>
+                                                <p class="item-info">Explore ICONIC’s beloved collection of unique and charming accessories, crafted to inspire and delight.</p>
+                                            </figcaption>
+                                        </a>
+                                        <a href="/brand/brandView.html?s3=63" class="btn-goShop">Go brand shop</a>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="first-level-item">
+                                <a href="/product/list.html?cateIDX=22">Fashion Acc.</a>
+                                <div class="sub-menu">
+                                    <ul class="second-level">
+                                        <div>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=23">Pouches / Wallets</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('C01');?></ul>
+                                            </li>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=25">Bags</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('C03');?></ul>
+                                            </li>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=149">Personal Accessories</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('C04');?></ul>
+                                            </li>
+                                        </div>
+                                        <div>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=442">Seasonal and Umbrellas</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('C06');?></ul>
+                                            </li>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=845">Travel</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('C08');?></ul>
+                                            </li>
+                                        </div>
+                                    </ul>
+                                    <div class="banner-area">
+                                        <a href="/product/view.html?qIDX=60392&s1=60392"><figure><img src="/img/nav/img_catePromo3.jpg" alt="카테고리 메인 프로모션 브랜드"></figure></a>
+                                        <a href="/brand/brandView.html?s3=50">
+                                            <figcaption>
+                                                <h3 class="item-name">Life’s Essence is “Fun” – Romane</h3>
+                                                <p class="item-info">Discover Romane’s playful and curiosity-filled designs at even more affordable prices!</p>
+                                            </figcaption>
+                                        </a>
+                                        <a href="/brand/brandView.html?s3=50" class="btn-goShop">Go brand shop</a>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="first-level-item">
+                                <a href="/product/list.html?cateIDX=33">Home Deco.</a>
+                                <div class="sub-menu">
+                                    <ul class="second-level">
+                                        <div>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=34">Clothes and Blanket Storage Case</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('E01');?></ul>
+                                            </li>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=59">DIY / Daily Supplies</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('E02');?></ul>
+                                            </li>
+                                        </div>
+                                        <div>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=35">Home Décor Supplies</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('E03');?></ul>
+                                            </li>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=37">Bathroom Supplies</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('E05');?></ul>
+                                            </li>
+                                        </div>
+                                    </ul>
+                                    <div class="banner-area">
+                                        <a href="/product/view.html?qIDX=65420&s1=65420"><figure><img src="/img/nav/img_catePromo4.jpg" alt="카테고리 메인 프로모션 브랜드"></figure></a>
+                                        <a href="/brand/brandView.html?s3=522">
+                                            <figcaption>
+                                                <h3 class="item-name">"Crayon Shinchan" Merchandise – A Wholesale Hit!</h3>
+                                                <p class="item-info">Bring Shinchan’s charm and laughter to your store with character goods fans love!</p>
+                                            </figcaption>
+                                        </a>
+                                        <a href="/brand/brandView.html?s3=522" class="btn-goShop">Go brand shop</a>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="first-level-item">
+                                <a href=/product/list.html?cateIDX=46">Electronic Acc.</a>
+                                <div class="sub-menu">
+                                    <ul class="second-level">
+                                        <li class="second-level-item">
+                                            <h3><a href="/product/list.html?cateIDX=47">Cell Phone / Earphone Accessories</a></h3>
+                                            <ul class="third-level"><?=getSubCategory('G01');?></ul>
+                                        </li>
+                                        <li class="second-level-item" style="margin-top: 0;">
+                                            <h3><a href="/product/list.html?cateIDX=48">Computer Accessories</a></h3>
+                                            <ul class="third-level"><?=getSubCategory('G02');?></ul>
+                                        </li>
+                                        <li class="second-level-item" style="margin-top: 0;">
+                                            <h3><a href="/product/list.html?cateIDX=51">Other Electronics Accessories</a></h3>
+                                            <ul class="third-level"><?=getSubCategory('G04');?></ul>
+                                        </li>
+                                    </ul>
+                                    <div class="banner-area">
+                                        <a href="/product/view.html?qIDX=70662"><figure><img src="/img/nav/img_catePromo5.jpg" alt="카테고리 메인 프로모션 브랜드"></figure></a>
+                                        <a href="/brand/brandView.html?s3=669">
+                                            <figcaption>
+                                                <h3 class="item-name">Chiikawa: Adorable Hits for Your Store</h3>
+                                                <p class="item-info">Stock up on Chiikawa’s lovable merchandise and delight fans of all ages!</p>
+                                            </figcaption>
+                                        </a>
+                                        <a href="/brand/brandView.html?s3=669" class="btn-goShop">Go brand shop</a>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="first-level-item">
+                                <a href="/product/list.html?cateIDX=376">Kitchen/Kidsware</a>
+                                <div class="sub-menu">
+                                    <ul class="second-level">
+                                        <li class="second-level-item">
+                                            <h3><a href="/product/list.html?cateIDX=381">Kids Dinnerware</a></h3>
+                                            <ul class="third-level"><?=getSubCategory('I02');?></ul>
+                                        </li>
+                                        <li class="second-level-item" style="margin-top: 0;">
+                                            <h3><a href="/product/list.html?cateIDX=758">Kitchen</a></h3>
+                                            <ul class="third-level"><?=getSubCategory('I03');?></ul>
+                                        </li>
+                                    </ul>
+                                    <div class="banner-area">
+                                        <a href="/product/view.html?qIDX=63305"><figure><img src="/img/nav/img_catePromo6.jpg" alt="카테고리 메인 프로모션 브랜드"></figure></a>
+                                        <a href="/brand/brandView.html?s3=675">
+                                            <figcaption>
+                                                <h3 class="item-name">Sanrio: Spread the Joy with Iconic Characters</h3>
+                                                <p class="item-info">Discover the unique characters of Sanrio, the leader in the character industry, through a wide range of products!</p>
+                                            </figcaption>
+                                        </a>
+                                        <a href="/brand/brandView.html?s3=675" class="btn-goShop">Go brand shop</a>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="first-level-item">
+                                <a href="/product/list.html?cateIDX=375">Toys &amp; Dolls</a>
+                                <div class="sub-menu">
+                                    <ul class="second-level">
+                                        <li class="second-level-item">
+                                            <h3><a href="/product/list.html?cateIDX=381">Character Toys and Dolls</a></h3>
+                                            <ul class="third-level"><?=getSubCategory('H01');?></ul>
+                                        </li>
+                                        <li class="second-level-item" style="margin-top: 0;">
+                                            <h3><a href="/product/list.html?cateIDX=758">Toys</a></h3>
+                                            <ul class="third-level"><?=getSubCategory('H02');?></ul>
+                                        </li>
+                                    </ul>
+                                    <div class="banner-area">
+                                        <a href="/product/view.html?qIDX=69516"><figure><img src="/img/nav/img_catePromo7.jpg" alt="카테고리 메인 프로모션 브랜드"></figure></a>
+                                        <a href="/brand/brandView.html?s3=668">
+                                            <figcaption>
+                                                <h3 class="item-name">Moru Doll: Adorable and Affordable!</h3>
+                                                <p class="item-info">Whether it’s for gifting or collecting, Moru is here to make happiness accessible for everyone.</p>
+                                            </figcaption>
+                                        </a>
+                                        <a href="/brand/brandView.html?s3=668" class="btn-goShop">Go brand shop</a>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="first-level-item">
+                                <a href="/product/list.html?cateIDX=38">Pens & School Supplies</a>
+                                <div class="sub-menu">
+                                    <ul class="second-level">
+                                        <div>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=41">Study Supplies</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('F02');?></ul>
+                                            </li>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=42">Art Supplies</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('F03');?></ul>
+                                            </li>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=45">School Supplies</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('F05');?></ul>
+                                            </li>
+                                        </div>
+                                        <div>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=787">Writing Supplies</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('F01');?></ul>
+                                            </li>
+                                            <li class="second-level-item">
+                                                <h3><a href="/product/list.html?cateIDX=825">Books</a></h3>
+                                                <ul class="third-level"><?=getSubCategory('F06');?></ul>
+                                            </li>
+                                        </div>
+                                    </ul>
+                                    <div class="banner-area">
+                                        <a href="/product/view.html?qIDX=56495"><figure><img src="/img/nav/img_catePromo8.jpg" alt="카테고리 메인 프로모션 브랜드"></figure></a>
+                                        <a href="/brand/brandView.html?s3=369">
+                                            <figcaption>
+                                                <h3 class="item-name">Everyday Life with Monami</h3>
+                                                <p class="item-info">Your friendly brand, Monami—closer than ever with the biggest discounts yet!</p>
+                                            </figcaption>
+                                        </a>
+                                        <a href="/brand/brandView.html?s3=369" class="btn-goShop">Go brand shop</a>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 홈으로 바로가기 -->
+                <div class="go-home">
+                    <a href="/" class="go-home" style="font-weight: 700; color: #ffffff;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" id="House-1--Streamline-Ultimate.svg" height="18" width="18" style="margin: -4px 4px 0 0;">
+                            <path stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" d="M3.75299 13.944v8.25h6v-6c0 -0.3979 0.15804 -0.7794 0.43931 -1.0607 0.2813 -0.2813 0.6629 -0.4393 1.0607 -0.4393h1.5c0.3978 0 0.7793 0.158 1.0607 0.4393 0.2813 0.2813 0.4393 0.6628 0.4393 1.0607v6h6v-8.25" stroke-width="3.3"/>
+                            <path stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" d="M0.752991 12.444 10.942 2.25499c0.1393 -0.13939 0.3047 -0.24997 0.4867 -0.32541 0.1821 -0.07544 0.3772 -0.11427 0.5743 -0.11427 0.1971 0 0.3922 0.03883 0.5742 0.11427 0.1821 0.07544 0.3475 0.18602 0.4868 0.32541L23.253 12.444" stroke-width="3.3"/>
+                        </svg>
+                        HOME
+                    </a>
+                </div>
+            </div>
+
+        <!-- 드롭다운 메뉴 및 검색 영역 -->
+        <div class="search-bar">
+            <div class="searchForm">				
+                <form id="searchForm" name="searchForm" method="get" action="/product/list.html">
+                    <div class="nav-search-wrap">
+                        <div class="nav-searchfield-outer nav-sprite">
+                            <!-- dropdown 검색어 분류 -->
+                            <div class="custom-dropdown">
+                                <div class="custom-select" id="selectedOption">All</div>
+                                <div class="custom-options">
+                                    <div data-value="">All</div>
+                                    <div data-value="productNo">Item Number</div>
+                                    <div data-value="Brand">Brand</div>
+                                    <div data-value="productName">Item Name</div>
+                                    <div data-value="barcode">Barcode</div>
+                                </div>
+                            </div>
+                            <input type="hidden" name="searchKind" id="searchDropdownBox" value="">
+                            <!-- input 검색어 입력 -->
+                            <input type="text" autocomplete="off" name="s1" title="Search For" id="search_s1">
+                        </div>
+                    </div>
+                    <div class="nav-submit-button" style="cursor:pointer;" onclick="fnProductSearchEng();"></div>
+                </form>
+            </div>
+        </div>
+        <!-- 우측 메뉴 -->
+        <div class="header-menu">
+            <div class="account-menu">
+                <div class="dropdown">
+                    <button class="menu-toggle"><span class="top-menu"><?= (!empty($uid)) ? htmlspecialchars($MID) : "Sign in"; ?></span><span>Account & Lists <img src="/image_1/ico_arrow_dropdown.svg" height="6px;" style="margin: 0 0 2px 4px"></span></button>
+                    <div class="dropdown-content">
+                        <? if($MID) { ?>
+                            <div class="mem-menu">
+                                <button onclick="location.href='/member/logout.html'" type="button" class="btn-style btn-color-yellow btn-round btn-h40">Log Out</button>
+                            </div>
+                        <? } else { ?>
+                            <div class="mem-menu">
+                                <button onclick="fnViewPopup('pop_test_login',''); return false;" type="button" class="btn-style btn-color-yellow btn-round btn-h40">Sign in</button>
+                                <span>New customer? <a href="#" class="menu-toggle" onclick="fnViewPopup('pop_test',''); return false;">Click here!</a></span>
+                            </div>
+                        <? } ?>
+                        <a href="/mypage/mypage.html">My page</a>
+                        <a href="/customer/dealer.html">1:1 Inquiry</a>
+                        <a href="/mypage/shipping.html">Order/Tracking</a>
+                        <a href="/mypage/wish.html">Wish list</a>
+                    </div>
+                </div>
+            </div>
+            
+            <a href="/mypage/shipping.html" class="menu-link"><span class="top-menu">Returns</span><span>& Orders</span></a>
+            <a href="/order/cart.html" class="cart-link">
+                <span class="top-menu">Cart</span>
+                <div>
+                    <img src="/image_1/ico_cart_w20.png">
+                    <span id="cartCount" class="cart-count">0</span>
+                </div>
+            </a>
+        </div>
+        </div>
+    </header>
+
+    <nav class="navbar">
+        <ul class="main-menu menu">
+            <li class="menu-item">
+                <a href="/product/list.html?cateIDX=1" class="menu-link">Stationery</a>
+                <div class="dropdown-content">
+                    <ul>
+                        <div>
+                            <li class="second-level-item">
+                                <a href="/product/list.html?cateIDX=3" class="dep2-menu">Planners</a>
+                                <ul class="third-level"><?=getSubCategory('A02');?></ul>
+                            </li>
+                            <li class="second-level-item">
+                                <a href="/product/list.html?cateIDX=3" class="dep2-menu">Albums</a>
+                                <ul class="third-level"><?=getSubCategory('A03');?></ul>
+                            </li>
+                        </div>
+                        <div>
+                            <li class="second-level-item">
+                                <a href="/product/list.html?cateIDX=3" class="dep2-menu">Pencil Cases</a>
+                                <ul class="third-level"><?=getSubCategory('A04');?></ul>
+                            </li>
+                            <li class="second-level-item">
+                                <a href="/product/list.html?cateIDX=3" class="dep2-menu">Notebooks and Memo Pads</a>
+                                <ul class="third-level"><?=getSubCategory('A06');?></ul>
+                            </li>
+                        </div>
+                        <div>
+                            <li class="second-level-item">
+                                <a href="/product/list.html?cateIDX=3" class="dep2-menu">Stickers and Decoration</a>
+                                <ul class="third-level"><?=getSubCategory('A07');?></ul>
+                            </li>
+                            <li class="second-level-item">
+                                <a href="/product/list.html?cateIDX=3" class="dep2-menu">Letters and Cards</a>
+                                <ul class="third-level"><?=getSubCategory('A08');?></ul>
+                            </li>
+                        </div>
+                    </ul>
+                    <div class="banner-area">
+                        <a href="/product/view.html?qIDX=47532&s1=47532"><figure><img src="/img/nav/img_catePromo1.jpg" alt="카테고리 메인 프로모션 브랜드"></figure></a>
+                        <a href="/brand/brandView.html?s3=39">
+                            <figcaption>
+                                <h3 class="item-name">Start Your Year Right with Indigo</h3>
+                                <p class="item-info">Discover the New Diary Collection from Indigo, the Ultimate Planner Destination.</p>
+                            </figcaption>
+                        </a>
+                        <a href="/brand/brandView.html?s3=39" class="btn-goShop">Go brand shop</a>
+                    </div>
+                </div>
+            </li>
+            <li class="menu-item">
+                <a href="/product/list.html?cateIDX=14" class="menu-link">Office Supplies</a>
+                <div class="dropdown-content">
+                    <ul>
+                        <div>
+                            <li class="second-level-item">
+                                <a href="/product/list.html?cateIDX=3" class="dep2-menu">Design Office Supplies</a>
+                                <ul class="third-level"><?=getSubCategory('B01');?></ul>
+                            </li>
+                            <li class="second-level-item">
+                                <a href="/product/list.html?cateIDX=3" class="dep2-menu">Files and Binders</a>
+                                <ul class="third-level"><?=getSubCategory('B03');?></ul>
+                            </li>
+                        </div>
+                        <li class="second-level-item">
+                            <a href="/product/list.html?cateIDX=3" class="dep2-menu">Office Supplies</a>
+                            <ul class="third-level"><?=getSubCategory('B04');?></ul>
+                        </li>
+                        <li class="second-level-item">
+                            <a href="/product/list.html?cateIDX=3" class="dep2-menu">Desk Organizers</a>
+                            <ul class="third-level"><?=getSubCategory('B05');?></ul>
+                        </li>
+                    </ul>
+                    <div class="banner-area">
+                        <a href="/product/view.html?qIDX=48714&s1=48714"><figure><img src="/img/nav/img_catePromo2.jpg" alt="카테고리 메인 프로모션 브랜드"></figure></a>
+                        <a href="/brand/brandView.html?s3=63">
+                            <figcaption>
+                                <h3 class="item-name">ICONIC: Where Emotion, Experience, and Value Meet</h3>
+                                <p class="item-info">Explore ICONIC’s beloved collection of unique and charming accessories, crafted to inspire and delight.</p>
+                            </figcaption>
+                        </a>
+                        <a href="/brand/brandView.html?s3=63" class="btn-goShop">Go brand shop</a>
+                    </div>
+                </div>
+            </li>
+            <li class="menu-item">
+                <a href="/product/list.html?cateIDX=22" class="menu-link">Fashion Acc.</a>
+                <div class="dropdown-content" style="left: -100px;">
+                    <ul>
+                        <div>
+                            <li class="second-level-item">
+                                <a href="/product/list.html?cateIDX=23" class="dep2-menu">Pouches / Wallets</a>
+                                <ul class="third-level"><?=getSubCategory('C01');?></ul>
+                            </li>
+                            <li class="second-level-item">
+                                <a href="/product/list.html?cateIDX=25" class="dep2-menu">Bags</a>
+                                <ul class="third-level"><?=getSubCategory('C03');?></ul>
+                            </li>
+                        </div>
+                        <div>
+                            <li class="second-level-item">
+                                <a href="/product/list.html?cateIDX=149" class="dep2-menu">Personal Accessories</a>
+                                <ul class="third-level"><?=getSubCategory('C04');?></ul>
+                            </li>
+                            <li class="second-level-item">
+                                <a href="/product/list.html?cateIDX=845" class="dep2-menu">Travel</a>
+                                <ul class="third-level"><?=getSubCategory('C08');?></ul>
+                            </li>
+                        </div>
+                        <li class="second-level-item">
+                            <a href="/product/list.html?cateIDX=442" class="dep2-menu">Seasonal and Umbrellas</a>
+                            <ul class="third-level"><?=getSubCategory('C06');?></ul>
+                        </li>
+                    </ul>
+                    <div class="banner-area">
+                        <a href="/product/view.html?qIDX=60392&s1=60392"><figure><img src="/img/nav/img_catePromo3.jpg" alt="카테고리 메인 프로모션 브랜드"></figure></a>
+                        <a href="/brand/brandView.html?s3=50">
+                            <figcaption>
+                                <h3 class="item-name">Life’s Essence is “Fun” – Romane</h3>
+                                <p class="item-info">Discover Romane’s playful and curiosity-filled designs at even more affordable prices!</p>
+                            </figcaption>
+                        </a>
+                        <a href="/brand/brandView.html?s3=50" class="btn-goShop">Go brand shop</a>
+                    </div>
+                </div>
+            </li>
+            <li class="menu-item">
+                <a href="/product/list.html?cateIDX=33" class="menu-link">Home Deco.</a>
+                <div class="dropdown-content" style="left: -100px;">
+                    <ul>
+                        <div>
+                            <li class="second-level-item">
+                                <a href="/product/list.html?cateIDX=34" class="dep2-menu">Clothes and Blanket Storage Case</a>
+                                <ul class="third-level"><?=getSubCategory('E01');?></ul>
+                            </li>
+                            <li class="second-level-item">
+                                <a href="/product/list.html?cateIDX=35" class="dep2-menu">Home Décor Supplies</a>
+                                <ul class="third-level"><?=getSubCategory('E03');?></ul>
+                            </li>
+                        </div>
+                        <li class="second-level-item">
+                            <a href="/product/list.html?cateIDX=59" class="dep2-menu">DIY / Daily Supplies</a>
+                            <ul class="third-level"><?=getSubCategory('E02');?></ul>
+                        </li>
+                        <li class="second-level-item">
+                            <a href="/product/list.html?cateIDX=37" class="dep2-menu">Bathroom Supplies</a>
+                            <ul class="third-level"><?=getSubCategory('E05');?></ul>
+                        </li>
+                    </ul>
+                    <div class="banner-area">
+                        <a href="/product/view.html?qIDX=65420&s1=65420"><figure><img src="/img/nav/img_catePromo4.jpg" alt="카테고리 메인 프로모션 브랜드"></figure></a>
+                        <a href="/brand/brandView.html?s3=522">
+                            <figcaption>
+                                <h3 class="item-name">"Crayon Shinchan" Merchandise – A Wholesale Hit!</h3>
+                                <p class="item-info">Bring Shinchan’s charm and laughter to your store with character goods fans love!</p>
+                            </figcaption>
+                        </a>
+                        <a href="/brand/brandView.html?s3=522" class="btn-goShop">Go brand shop</a>
+                    </div>
+                </div>
+            </li>
+            <li class="menu-item">
+                <a href="/product/list.html?cateIDX=46" class="menu-link">Electronic Acc.</a>
+                <div class="dropdown-content" style="left: -100px; background: rgb(224, 227, 231);">
+                    <ul>
+                        <li class="second-level-item">
+                            <a href="/product/list.html?cateIDX=47" class="dep2-menu">Cell Phone / Earphone Accessories</a>
+                            <ul class="third-level"><?=getSubCategory('G01');?></ul>
+                        </li>
+                        <li class="second-level-item">
+                            <a href="/product/list.html?cateIDX=48" class="dep2-menu">Computer Accessories</a>
+                            <ul class="third-level"><?=getSubCategory('G02');?></ul>
+                        </li>
+                        <li class="second-level-item">
+                            <a href="/product/list.html?cateIDX=51" class="dep2-menu">Other Electronics Accessories</a>
+                            <ul class="third-level"><?=getSubCategory('G04');?></ul>
+                        </li>
+                    </ul>
+                    <div class="banner-area">
+                        <a href="/product/view.html?qIDX=70662"><figure><img src="/img/nav/img_catePromo5.jpg" alt="카테고리 메인 프로모션 브랜드"></figure></a>
+                        <a href="/brand/brandView.html?s3=669">
+                            <figcaption>
+                                <h3 class="item-name">Chiikawa: Adorable Hits for Your Store</h3>
+                                <p class="item-info">Stock up on Chiikawa’s lovable merchandise and delight fans of all ages!</p>
+                            </figcaption>
+                        </a>
+                        <a href="/brand/brandView.html?s3=669" class="btn-goShop">Go brand shop</a>
+                    </div>
+                </div>
+            </li>
+            <li class="menu-item">
+                <a href="/product/list.html?cateIDX=376" class="menu-link">Kitchen/Kidsware</a>
+                <div class="dropdown-content" style="left: -64px; background: rgb(224, 227, 231);">
+                    <ul style="width: 420px;">
+                        <li class="second-level-item">
+                            <a href="/product/list.html?cateIDX=381" class="dep2-menu">Kids Dinnerware</a>
+                            <ul class="third-level"><?=getSubCategory('I02');?></ul>
+                        </li>
+                        <li class="second-level-item">
+                            <a href="/product/list.html?cateIDX=758" class="dep2-menu">Kitchen</a>
+                            <ul class="third-level"><?=getSubCategory('I03');?></ul>
+                        </li>
+                    </ul>
+                    <div class="banner-area">
+                        <a href="/product/view.html?qIDX=63305"><figure><img src="/img/nav/img_catePromo6.jpg" alt="카테고리 메인 프로모션 브랜드"></figure></a>
+                        <a href="/brand/brandView.html?s3=675">
+                            <figcaption>
+                                <h3 class="item-name">Sanrio: Spread the Joy with Iconic Characters</h3>
+                                <p class="item-info">Discover the unique characters of Sanrio, the leader in the character industry, through a wide range of products!</p>
+                            </figcaption>
+                        </a>
+                        <a href="/brand/brandView.html?s3=675" class="btn-goShop">Go brand shop</a>
+                    </div>
+                </div>
+            </li>
+            <li class="menu-item">
+                <a href="/product/list.html?cateIDX=375" class="menu-link">Toys &amp; Dolls</a>
+                <div class="dropdown-content" style="right: -64px;">
+                    <ul style="width: 420px;">
+                        <li class="second-level-item">
+                            <a href="/product/list.html?cateIDX=381" class="dep2-menu">Character Toys and Dolls</a>
+                            <ul class="third-level"><?=getSubCategory('H01');?></ul>
+                        </li>
+                        <li class="second-level-item">
+                            <a href="/product/list.html?cateIDX=758" class="dep2-menu">Toys</a>
+                            <ul class="third-level"><?=getSubCategory('H02');?></ul>
+                        </li>
+                    </ul>
+                    <div class="banner-area">
+                        <a href="/product/view.html?qIDX=69516"><figure><img src="/img/nav/img_catePromo7.jpg" alt="카테고리 메인 프로모션 브랜드"></figure></a>
+                        <a href="/brand/brandView.html?s3=668">
+                            <figcaption>
+                                <h3 class="item-name">Moru Doll: Adorable and Affordable!</h3>
+                                <p class="item-info">Whether it’s for gifting or collecting, Moru is here to make happiness accessible for everyone.</p>
+                            </figcaption>
+                        </a>
+                        <a href="/brand/brandView.html?s3=668" class="btn-goShop">Go brand shop</a>
+                    </div>
+                </div>
+            </li>
+            <li class="menu-item">
+                <a href="/product/list.html?cateIDX=38" class="menu-link">Pens &amp; School Supplies</a>
+                <div class="dropdown-content" style="right: 0;">
+                    <ul>
+                        <div>
+                            <li class="second-level-item">
+                                <a href="/product/list.html?cateIDX=41" class="dep2-menu">Study Supplies</a>
+                                <ul class="third-level"><?=getSubCategory('F02');?></ul>
+                            </li>
+                            <li class="second-level-item">
+                                <a href="/product/list.html?cateIDX=45" class="dep2-menu">School Supplies</a>
+                                <ul class="third-level"><?=getSubCategory('F05');?></ul>
+                            </li>
+                            <li class="second-level-item">
+                                <a href="/product/list.html?cateIDX=825" class="dep2-menu">Books</a>
+                                <ul class="third-level"><?=getSubCategory('F06');?></ul>
+                            </li>
+                        </div>
+                        <li class="second-level-item">
+                            <a href="/product/list.html?cateIDX=42" class="dep2-menu">Art Supplies</a>
+                            <ul class="third-level"><?=getSubCategory('F03');?></ul>
+                        </li>
+                        <li class="second-level-item">
+                            <a href="/product/list.html?cateIDX=787" class="dep2-menu">Writing Supplies</a>
+                            <ul class="third-level"><?=getSubCategory('F01');?></ul>
+                        </li>
+                    </ul>
+                    <div class="banner-area">
+                        <a href="/product/view.html?qIDX=56495"><figure><img src="/img/nav/img_catePromo8.jpg" alt="카테고리 메인 프로모션 브랜드"></figure></a>
+                        <a href="/brand/brandView.html?s3=369">
+                            <figcaption>
+                                <h3 class="item-name">Everyday Life with Monami</h3>
+                                <p class="item-info">Your friendly brand, Monami—closer than ever with the biggest discounts yet!</p>
+                            </figcaption>
+                        </a>
+                        <a href="/brand/brandView.html?s3=369" class="btn-goShop">Go brand shop</a>
+                    </div>
+                </div>
+            </li>
+        </ul>
+    </nav>
+	
+	<?
+		function EnglishSubMenu($cate){
+			$result = sql_query(" SELECT IDX, CTename FROM 2011_categoryInfo WHERE CTlv1 = '" . $cate . "' AND CTlv2 > 0 AND CTlv3 = 0 AND CTlv4 = 0 ORDER BY CTlv2 ASC ");
+			while($rs = sql_fetch_array($result)){
+				echo '<li><a href="/product/list.html?cateIDX=' . $rs['IDX'] . '">' . $rs['CTename'] . '</a></li>';
+			}
+		}
+	?>
+
+</div><!-- header // -->
+
+<script>
+    function setCookiePromotionBanner ( name, value, expiredays ) {
+        var todayDate = new Date();
+        todayDate.setDate( todayDate.getDate() + expiredays );
+        document.cookie = name + "=" + escape( value ) + "; path=/; expires=" + todayDate.toGMTString() + ";"
+    }
+    function getCookiePromotionBanner() {
+        var cookiedata = document.cookie;
+        if ( cookiedata.indexOf("PromotionBannerCookie=done") < 0 ){
+            $('#promotionBanner').show();
+        } else {
+            $('#promotionBanner').hide();
+            $('.register_layer').hide();
+        }
+    }
+    $(document).ready(function(){
+        getCookiePromotionBanner();
+        $("#promotionBanner .top_banner_close").click(function(){
+            //팝업창을 위로 애니메이트 시킨다. 혹은 slideUp()
+            //$('#promotionBanner').animate({height: 0}, 500);
+            $('#promotionBanner').slideUp(500);
+            $('.register_layer').hide();
+            setCookiePromotionBanner( "PromotionBannerCookie", "done" , 30);
+        });
+    });
+</script>
+
+<script>
+    const dropdown = document.querySelector('.custom-dropdown');
+    const select = document.querySelector('.custom-select');
+    const optionsContainer = document.querySelector('.custom-options');
+    const options = document.querySelectorAll('.custom-options div');
+    const hiddenInput = document.getElementById('searchDropdownBox');
+
+    select.addEventListener('click', function () {
+        optionsContainer.classList.toggle('active');
+    });
+
+    options.forEach(option => {
+        option.addEventListener('click', function () {
+            const selectedValue = this.getAttribute('data-value');
+            select.textContent = this.textContent;
+            hiddenInput.value = selectedValue;
+            optionsContainer.classList.remove('active');
+        });
+    });
+
+    document.addEventListener('click', function (event) {
+        if (!dropdown.contains(event.target)) {
+            optionsContainer.classList.remove('active');
+        }
+    });
+
+    $("#searchDropdownBox").change(function(){
+        var Search_Str = $(this).val();
+        var Search_Str_Text;
+        if(Search_Str == "productNo") Search_Str_Text = "Item Number";
+        else if(Search_Str == "Brand") Search_Str_Text = "Brand";
+        else if(Search_Str == "productName") Search_Str_Text = "Item Name";
+        else if(Search_Str == "barcode") Search_Str_Text = "Barcode";
+        else Search_Str_Text = "All";
+        $("#nav-search-in-content").text(Search_Str_Text);
+    });
+
+</script>
+
+<script>
+    // 드롭다운 메뉴를 열고 닫는 함수
+    document.addEventListener('DOMContentLoaded', function () {
+        const dropdown = document.querySelector('.dropdown');
+        const toggleButton = document.querySelector('.menu-toggle');
+        const dropdownContent = document.querySelector('.dropdown-content');
+
+        toggleButton.addEventListener('click', function (event) {
+            event.stopPropagation(); // 이벤트 전파 방지
+            dropdownContent.classList.toggle('show');
+        });
+
+        document.addEventListener('click', function (event) {
+            // dropdownContent에 'show' 클래스가 있고, 클릭한 부분이 dropdownContent가 아닌 경우
+            if (dropdownContent.classList.contains('show') && !dropdownContent.contains(event.target) && !toggleButton.contains(event.target)) {
+                dropdownContent.classList.remove('show'); // 외부 클릭 시 드롭다운 닫기
+            }
+        });
+        
+        // iframe 클릭 시 또는 포커스가 다른 곳으로 이동했을 때 드롭다운 닫기
+        window.addEventListener('blur', function () {
+            if (dropdownContent.classList.contains('show')) {
+                dropdownContent.classList.remove('show'); // 포커스 상실 시 드롭다운 닫기
+            }
+        });
+    });
+</script>
+
+<script>
+    // 요소 선택
+    const menuContainer = document.getElementById('menuTotalWrap');
+    const logoImg = document.getElementById('logoImg');
+
+    // 스크롤 이벤트 감지
+    window.addEventListener('scroll', () => {
+        const scrollY = window.scrollY;
+        const menuContainerHeight = menuContainer.offsetHeight;
+
+        if (scrollY > menuContainerHeight) {
+            menuContainer.style.display = 'flex';
+            logoImg.style.display = 'none';
+        } else {
+            menuContainer.style.display = 'none';
+            logoImg.style.display = 'block';
+        }
+    });
+</script>
+
+<script>
+    $( document ).ready(function() {
+        $(function () {
+            $("img.mainNavi").hover(
+                function(){
+                    $(this).attr('src', $(this).data('alt-src'));
+                    var showID = $(this).attr('id');
+                    $("#" + showID + "Div").show();
+                },function () {
+                    $(this).attr('src', $(this).data('ori-src'));
+                    var showID = $(this).attr('id');
+                    $("#" + showID + "Div").hide();
+                }
+            );
+            
+            $("div.mainNaviSub").hover(
+                function(){
+                    var imgID = $(this).data('ori-id');				
+                    $("#" + imgID).attr('src', $("#" + imgID).data('alt-src'));
+                    $(this).show();
+                },function () {
+                    var imgID = $(this).data('ori-id');				
+                    $("#" + imgID).attr('src', $("#" + imgID).data('ori-src'));
+                    $(this).hide();
+                }
+            );
+        });
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const menuTotal = document.querySelector('.menu-total');
+        const firstLevelItems = document.querySelectorAll('.first-level-item');
+        const secondLevelItems = document.querySelectorAll('.second-level-item');
+
+        function toggleHoverClass(element, isActive) {
+            if (menuTotal) {
+                menuTotal.classList.toggle('hover-active', isActive);
+            }
+            element.classList.toggle('hover-active', isActive);
+        }
+
+        firstLevelItems.forEach(function(firstLevelItem) {
+            const firstLevelLink = firstLevelItem.querySelector('a');
+            const secondLevelLinks = firstLevelItem.querySelectorAll('.second-level');
+
+            firstLevelLink.addEventListener('mouseenter', function() {
+                toggleHoverClass(firstLevelLink, true);
+            });
+
+            firstLevelLink.addEventListener('mouseleave', function() {
+                toggleHoverClass(firstLevelLink, false);
+            });
+
+            secondLevelLinks.forEach(function(link) {
+                link.addEventListener('mouseenter', function() {
+                    toggleHoverClass(firstLevelLink, true);
+                });
+
+                link.addEventListener('mouseleave', function() {
+                    toggleHoverClass(firstLevelLink, false);
+                });
+            });
+        });
+
+        secondLevelItems.forEach(function(secondLevelItem) {
+            const secondLevelLink = secondLevelItem.querySelector('h3 a');
+            const thirdLevelLinks = secondLevelItem.querySelectorAll('.third-level'); 
+
+            secondLevelLink.addEventListener('mouseenter', function() {
+                toggleHoverClass(secondLevelLink, true);
+            });
+
+            secondLevelLink.addEventListener('mouseleave', function() {
+                toggleHoverClass(secondLevelLink, false);
+            });
+
+            thirdLevelLinks.forEach(function(link) {
+                link.addEventListener('mouseenter', function() {
+                    toggleHoverClass(secondLevelLink, true);
+                });
+
+                link.addEventListener('mouseleave', function() {
+                    toggleHoverClass(secondLevelLink, false);
+                });
+            });
+        });
+    });
+
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    var menuItems = document.querySelectorAll('.main-menu .menu-item');
+
+    menuItems.forEach(function(menuItem) {
+        menuItem.addEventListener('mouseenter', function() {
+            var dropdownContent = menuItem.querySelector('.dropdown-content');
+            if (dropdownContent) {
+                dropdownContent.style.display = 'flex';
+                menuItem.classList.add('dropdown-active');
+            }
+        });
+
+        menuItem.addEventListener('mouseleave', function() {
+            var dropdownContent = menuItem.querySelector('.dropdown-content');
+            if (dropdownContent) {
+                dropdownContent.style.display = 'none';
+                menuItem.classList.remove('dropdown-active');
+            }
+        });
+    });
+});
+</script>

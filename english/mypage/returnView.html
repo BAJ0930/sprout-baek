@@ -1,0 +1,119 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+	
+	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/common.html";
+?>
+
+<link rel="stylesheet" type="text/css" href="/mypage/mypage.css?2211">
+
+<!-- 마이페이지 시작 --->
+<div id="wrap">
+
+	<?
+		include_once $_SERVER['DOCUMENT_ROOT']."/mypage/menu.html";
+	?>
+	
+	<!-- mypageMain -->
+	<div id="mypageMain">
+	
+	<?
+		include_once $_SERVER['DOCUMENT_ROOT']."/mypage/info.html";
+	?>
+	
+	<div class="qa_view">
+		<h3><img src="/img/mypage/tit_return.gif" alt="반품접수내역"></h3>
+		
+		<?
+			$sql = "SELECT * FROM 2011_returnInfo WHERE IDX='" . $idx . "' AND RTMID = '" . $MID . "' AND RTdeleted = '0' ";
+			$rs = sql_fetch($sql);
+			if($rs['IDX'] == ""){
+				echo "
+					<script>
+						alert('게시물 접근 권한이 없습니다.');
+						history.go(-1);
+					</script>
+				";
+				exit;
+			}
+			foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+			
+			if($dbRTkind == "1") $RTkind = "상품불량";
+			else if($dbRTkind == "2") $RTkind = "오배송";
+			else if($dbRTkind == "3") $RTkind = "고객변심";
+		?>
+		<table border="0" cellspacing="0" cellpadding="0" class="">
+			<tr>
+				<th>업체명(성명)</th>
+				<td><?=$dbRTname?></td>
+				<th>문의일시</th>
+				<td><?=date("Y-m-d H:i",$dbRTregdate)?></td>
+			</tr>
+			<tr>
+				<th>연락처</th>
+				<td><?=$dbRTtel?></td>
+				<th>E-mail</th>
+				<td><?=$dbRTemail?></td>
+			</tr>
+			<tr>
+				<th>분류</th>
+				<td colspan="3"><?=$RTkind?></td>
+			</tr>
+			<tr>
+				<th>문의제목</th>
+				<td colspan="3"><?=$dbRTtitle?></td>
+			</tr>
+			<? if($dbRTorder){ ?>
+			<tr>
+				<th>주문번호</th>
+				<td colspan="3"><?=$dbRTorder?></td>
+			</tr>
+			<? } ?>
+			<tr>
+				<th>문의내용</th>
+				<td colspan="3"><?=nl2br($dbRTcontent)?></td>
+			</tr>
+			<?
+				for($k=1;$k<=3;$k++){
+					if($rs["RTsaveFile" . $k]){
+			?>
+			<tr>
+				<th>첨부파일<?=$k?></th>
+				<td colspan="3"><a href="javascript:fileDownload('inquire','return','RT','<?=$idx?>','<?=$k?>')"><?=$rs["RTrealFile" . $k]?> [다운받기]</a></td>
+			</tr>
+			<?
+					}
+				}
+			?>
+		</table>
+		
+		<?
+			if($dbRTreply){
+				$data = sql_fetch(" SELECT * FROM 2011_returnInfowho WHERE RTIDX = '$dbIDX' ");
+		?>
+		<table border="0" cellspacing="0" cellpadding="0" class="">
+			<tr>
+				<th>천유닷컴 답변 (<b>담당자 <?=$data[UID]?></b>)</th>
+			</tr>
+			<tr>
+				<td><?=nl2br($dbRTreply)?></td>
+			</tr>
+		</table>
+		<? } ?>
+		
+		<p>&nbsp;</p>
+		<div align="center"><a href="return.html?page=<?=$page?>"><img src="/image_3/cu_bt19.jpg" border="0"></a></div>
+
+	</div>
+	
+	<!-- //입고알림신청내역 -->
+	</div>
+
+</div>
+<!-- //마이페이지 끝 --->
+
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

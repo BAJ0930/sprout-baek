@@ -1,0 +1,34 @@
+<table width="980" cellpadding="0" cellspacing="0" border="0" >
+	<tr><td  colspan="2" height="25"></td></tr>
+        <tr>
+         <td width="681" align="center"><img src="/img/event/141_1.jpg" /></td>
+		 <td width="297">
+			
+			<table width="299" cellpadding="0" cellspacing="0" border="0">
+				<tr><td height="206"><img src="/img/event/141_2.jpg" /></td>
+			  </tr>
+				<tr>
+					<td height="23">		
+						<select name="eventSelectList" onChange="viewChange(this.value);" style="width:282px;">
+							<option value="0">다른 기획전 보기</option>
+							<?
+								for($n = 0; $n < count($eventSelectList); $n ++){
+									if($_GET[EVIDX] == $eventSelectList[$n]){
+									} else {
+										$eventOtherData = sql_fetch(" SELECT * FROM `2011_eventInfo` WHERE IDX = '$eventSelectList[$n]'" );
+										echo "<option value='$eventSelectList[$n]'>".$eventOtherData[EVname]."</option>";
+									}
+								}
+							?>
+						</select>
+					</td>
+				</tr>
+				<!--<tr>
+					<td height="86"><a href="/event/event.html?EVIDX=93"><img src="/img/event/travel.jpg" / border="0"></a></td>
+				</tr>     -->                        
+			</table>
+			
+		</td>
+	</tr>
+	<tr><td  colspan="2" height="20"></td></tr>
+</table>

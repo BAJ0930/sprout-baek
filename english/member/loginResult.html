@@ -1,0 +1,100 @@
+<?php
+include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+$inMID = mysqli_real_escape_string($g5['connect_db'], $inMID);	
+$inMPW = mysqli_real_escape_string($g5['connect_db'], $inMPW);
+
+if($inMID && $inMPW){
+
+	$sql = "select * from 2011_memberInfo  where MID ='" . $inMID . "' and  Mlevel<99 and Moutdate=0 and Mdeleted=0";
+	$result = sql_query($sql);
+	
+	$sql = "select old_password('" . $inMPW . "') as oldPass";
+	$pwRs = sql_fetch($sql);
+		
+	if($rs = sql_fetch_array($result)){
+
+		if($rs['MPWD'] == $pwRs['oldPass'] || $rs['MPWD'] == md5($inMPW)){
+
+			if($rs['Mpermit'] == "2"){
+				echo "<script> alert('Log-in is not available due to unapproved.'); </script>";
+				exit;
+			} else if($rs['Mpermit'] == "3"){
+				echo "<script> alert('Log-in is not available due to approval process.'); </script>";
+				exit;
+			}
+
+			if($rs["Mbirthday"] != "1"){
+				echo "
+					<script>
+						alert('A separate membership is required to use the [english.cheonyu.com] website.');
+					</script>
+				";
+				exit;
+			}
+
+			$_SESSION[__U_ID__] = $rs['MID'];
+			$_SESSION[__U_NAME__] = $rs['Mname'];
+			
+			$sql = "insert into 2011_LogLogin (MID,LLIP,LLregdate) values(";
+			$sql.= "'" . $rs['MID'] . "',";
+			$sql.= "'" . $_SERVER['REMOTE_ADDR'] . "',";
+			$sql.= "'" . date(time()) . "')";
+			sql_query($sql);
+
+			sql_query("UPDATE 2011_memberInfo SET Mlastdate = ".date(time())." WHERE MID = '".$inMID."'");
+
+			$MID = $rs['MID'];							
+			$link = urldecode($url);
+			if (preg_match("/s1=/i", $link)) {
+				$linkReturn = explode('s1=',$link);
+				$linkReturn = explode('&',$linkReturn[1]);
+				$linkReturn = trim($linkReturn[0]);
+				$link = str_replace("s1=".$linkReturn, "s1=".urlencode($linkReturn), $link);
+			}
+
+			if($link){
+				echo "<script>	parent.document.location.href = '".$link."';	</script>";
+			} else {
+				echo "<script>	parent.document.location.href = '/';	</script>";
+			}
+			exit();
+		} else {
+
+			$sql = "insert into LogLoginFail (KIND, MID, IPADDR, WDATE) values(";
+			$sql.= "'EN',";
+			$sql.= "'" . $inMID . "',";
+			$sql.= "'" . $_SERVER['REMOTE_ADDR'] . "',";
+			$sql.= "now())";
+			sql_query($sql);
+
+			echo "<script> alert('Your sign-in inforamation is not valid.'); </script>";
+			exit;
+		}
+
+	} else {
+		
+		#-------- 판매자인지 검사 ------------------------------------
+		$sql = "select * from 2011_makerSeller as a left join 2011_makerInfo as b on a.MKIDX=b.IDX  where a.MSID ='" . $inMID . "' and b.MKdeleted=0 ";		
+		$result = sql_query($sql);
+		$sql = "select old_password('" . $inMPW . "') AS oldPass";
+		$pwRs = sql_fetch($sql);
+		
+		if($rs = sql_fetch_array($result))
+		{
+			if($rs['MSpwd'] == $pwRs['oldPass'])
+			{
+				$_SESSION[__MANAGER_ID__] = $rs['MSID'];
+				FN_Location("","/_manager/index.php");
+				exit();
+			}
+		}
+		
+		
+		echo "<script> alert('Your sign-in inforamation is not valid.'); </script>";
+		
+		exit();
+	}
+		
+}	
+?>

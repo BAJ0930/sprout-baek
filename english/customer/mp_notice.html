@@ -1,0 +1,89 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+?>
+
+<link rel="stylesheet" type="text/css" href="/customer/customer.css?250220">
+
+<!-- 고객센터 시작 --->    
+<div id="wrap">
+
+<?
+include_once $_SERVER['DOCUMENT_ROOT']."/customer/menu.html";
+?>      
+<style>
+
+.list-tb.ar-table { border-top:#cdd3dd solid 1px !important; }
+.ar-table th { border-bottom:0; }
+
+.noticebox table td:nth-child(2) a { display:inline-block; width:96%; max-width:640px; padding-left:15px; font-weight:500; color:#000; font-size:14px; overflow:hidden; white-space:nowrap;text-overflow:ellipsis;word-break:break-all; }
+.noticebox table td:nth-child(2) a:hover { text-decoration:underline; }
+.noticebox table td:nth-child(2) a img { margin-left:3px; }
+.noticebox table td:nth-child(4) { color:#888; }
+.noticebox .txtleft { text-align:left; }
+.noticebox-sch { text-align:center;width:100%; padding:15px 0px; overflow:hidden; position:relative; text-align:center; display:flex; align-items:center; justify-content:center; }
+/**/
+.noticebox-sch:after { content:''; display:block; clear:both; }
+.noticebox-sch_box, .noticebox-sch_selec { display:inline-block; height:42px; }
+.noticebox-sch_res { overflow:hidden; position:relative; padding:13px 3px 0 3px; font-size:15px; }
+.noticebox-sch_res .res-excel-btn { display:inline-block; float:right; padding:0 10px; background:#26ab6d; color:#fff; height:30px; line-height:28px; border-radius:5px; letter-spacing:-.05em; transition:all .15s ease-in-out; font-size:12px; }
+.noticebox-sch_res .res-excel-btn > i { font-size:11px; margin-right:3px; }
+.noticebox-sch_res .res-excel-btn:hover { background:#20935c; }
+.noticebox-sch_selec select, .noticebox-sch_box > div { background:#f3f5fa; border:#d8ddea solid 1px; border-radius:6px; color:#333; }
+.noticebox-sch_selec select { height:100%; padding:0 30px 0 8px; font-size:13px; font-weight:500; }
+.noticebox-sch_box div.sch_box_keyw { display:inline-block; height:100%; margin-left:5px; overflow:hidden; }
+.noticebox-sch .noticebox-sch_box div.sch_box_keyw input { width:250px; padding:0 10px; border:0; height:100%; vertical-align:top; color:#555; font-size:14px; font-weight:500; outline:0;background:#f3f5fa; }
+.noticebox-sch .noticebox-sch_box div.sch_box_keyw input::placeholder { font-size:13px; color:#b4b9c7; }
+.noticebox-sch .noticebox-sch_box div.sch_box_keyw button { display:inline-block; padding:8px 0 0 3px; width:46px; height:35px; border:0; outline:0; background:#f3f5fa; }
+.sch_box_keyw .mag-glass { font-size:10em; display:inline-block; box-sizing:content-box; width:15px; height:15px; border:2px solid #666; position:relative; border-radius:0.35em; }
+.mag-glass:before { content:''; display:inline-block; position:absolute; right:-6px; bottom:-3px; border-width:0; background:#666; width:9px; height:2px; transform:rotate(45deg); }
+.notice-tb.bv-table td { padding:10px 20px; }
+.notice-tb.bv-table td p { line-height:1.7; }
+/**/
+.noticebox { position:relative; display:inline-block; padding-top:16px; width: 1005px; }
+.nt-bbs { position:absolute; top:10px; left:50%; transform:translate(-50%,0); }
+.bbs_search .nt-sel { height:42px;padding:0 30px 0 8px; border:#d8ddea solid 1px; border-radius:6px; color:#333; font-size:13px; font-weight:500;
+background:#f3f5fa url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e") no-repeat; background-position: right 4px center; background-size:15px 11px; }
+.bbs_search .nt-ipbox { height:42px; background:#f3f5fa; border:#d8ddea solid 1px; border-radius:6px; color:#333; font-size:13px; }
+.bbs_search a.nt-schbtn { background:#6c7c9b; height:42px; line-height:42px; border-radius:6px; }
+.right .ar-btn.ar-blue { padding:8px 15px; background:#6c7c9b !important;}
+.temp-nullbox { height:70px; }
+</style>
+	<!-- customerMain -->
+	<div id="customerMain">
+	
+		<!-- 도매회원자주묻는질문 -->
+		<div class="info_help">
+			<span>Please leave your inquiry or suggestion to Cheonyu.com anytime. (Hours : Mon-Friday / 10 am - 5 pm (KST))</span>
+			<ul>
+				<li><a href="/customer/dealer.html"><img src="/img/customer/help01.jpg"></a></li>
+				<li><a href="/customer/paymentmethod.html"><img src="/img/customer/help02.jpg"></a></li>
+				<li><a href="/customer/help.html"><img src="/img/customer/help03.jpg"></a></li>
+				<li><a href="/customer/return.html"><img src="/img/customer/help04.jpg"></a></li>
+			</ul>
+		</div>
+
+	
+		<div class="" style="padding:10px;">
+			<div class="noticebox">
+				<b>Notice</b>
+				<?
+				$bid="notice_eng";
+				$WAuthMode = 1;
+				
+				if(strlen($IDX) > 10) exit;
+
+				include $_SERVER["DOCUMENT_ROOT"] . "/_Board/board.php";
+				?>
+			</div>
+		</div>
+
+	</div>
+
+<!-- //고객센터 끝 ---> 
+</div>
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

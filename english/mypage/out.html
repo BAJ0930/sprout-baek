@@ -1,0 +1,178 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+	
+	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/common.html";	
+?>
+
+<link rel="stylesheet" type="text/css" href="/mypage/mypage.css?2211">
+
+<!-- 마이페이지 시작 --->
+<div id="wrap">
+
+	<?
+		include_once $_SERVER['DOCUMENT_ROOT']."/mypage/menu.html";
+	?>
+
+    <!-- mypageMain -->
+    <div id="mypageMain">
+
+		<!-- 마이페이지 배송지정보  -->
+		<? include_once $_SERVER['DOCUMENT_ROOT']."/mypage/top.html"; ?>
+
+		<?
+			if($setPost)
+			{
+				#=============== 회원 정보 체크 ========================
+				
+				$sql = "select * from 2011_memberInfo where MID='" . $MID . "' and MPWD=old_password('" . $inMpw1 . "')";
+				$result = sql_query($sql);
+
+				if($rs = sql_fetch_array($result))
+				{
+					#============= 정보 조합 =============================
+					
+					$dbIDX = $rs["IDX"];
+					
+							
+					$resonStr="";
+					for($k=0;$k<sizeof($outReason);$k++)
+					{
+						if($resonStr)$resonStr.="##";
+						$resonStr.=$outReason[$k];
+					}
+					
+					#== 특문처리
+					$outContent = str_replace("'","",$outContent);
+					$outContent = str_replace('"',"",$outContent);
+					
+					$sql = " update 2011_memberInfo set ";
+					$sql.= " Moutdate='" . date(time()) . "',";		
+					$sql.= " MoutReason ='" . $resonStr . "',";		
+					$sql.= " MoutContent ='" . $outContent . "' ";		
+					$sql.= " where IDX='" . $dbIDX . "'";
+					sql_query($sql);
+					
+					#== 로그인 세션 비우기
+					$_SESSION[__U_ID__] = "";
+					$_SESSION[__U_NAME__] = "";
+					
+					#========= 메일 발송 =======================================
+					/*
+					if($rs["Mleveel"]>=10)$mailLevel = "도매";
+					else $mailLevel = "일반";
+					
+					include $_SERVER["DOCUMENT_ROOT"] . "/_Include/ClassSendmail.inc";
+					$dMail = new Sendmail; 
+					$dMail->setUseSMTPServer(true); 
+					$dMail->setSMTPServer("smtp.cafe24.com"); 
+					$dMail->setSMTPUser("system@cheonyu.com"); 
+					$dMail->setSMTPPasswd("gmlakd609"); 
+					$dMail->setFrom('sales@cheonyu.com', '[천유]'); 
+					$dMail->setSubject('그동안 이용해주셔서 감사드립니다.'); 
+					$dMail->addTo($rs["Memail"], $inMname); 
+					$mailForm = $_SERVER["DOCUMENT_ROOT"] . "/mail/mail_06.html";
+					$dMail->sendMailJoin($mailForm,$inMname,$mailLevel,date("Y-m-d"),$MID,substr($inMpw1,0,3) . "****");
+					*/
+					#========= 메일 발송 =======================================
+					
+					ob_clean();
+					
+					echo "<script>alert('Thank you for using our website.');document.location='/';</script>";
+					exit();
+				}
+				else
+				{
+					echo "<script>alert('ERROR.');document.location.replace('out.html');</script>";
+					exit();
+				}	
+			}
+		?>
+        <form name='formObject' method='post'>
+		<div class="member_info">
+			<h3><img src="/img/mypage/tit_03.gif" alt="탈퇴시 기재사항"></h3>
+			<table border="0" cellspacing="0" cellpadding="0" class="">
+				<col width="160" />
+				<col width="" />
+				<tr>
+					<th scope="row">Name</th>
+					<td><input type="text" name="inMname" id="inMname" /></td>
+				</tr>
+				<tr>
+					<th scope="row">User ID</th>
+					<td><?=$MID?></td>
+				</tr>
+				<tr>
+					<th scope="row">Password</th>
+					<td><input type="password" name="inMpw1" id="inMpw1" onkeyup='fnCheckPW(1);passChecked=0;' maxlength=12 /><span class="style20" id='msgPW1' ></span></td>
+				</tr>
+				<tr>
+					<th scope="row">Confirm Password</th>
+					<td><input type="password" onkeyup='fnCheckPW(2)' name="inMpw2" id="inMpw2"  maxlength=12 /><span class="style20" id='msgPW2' ></span></td>
+				</tr>
+				<tr>
+					<th scope="row">Remark</th>
+					<td><textarea name="outContent" cols="75" rows="7" id="outContent" style="font-size:12px"></textarea></td>
+				</tr>
+			</table>
+			
+			<div class="div_btn"><a href="javascript:void(0)" onclick="fnDropOut()"><img src="/img/mypage/btn_submit.gif" alt="탈퇴신청"></a> <a href="/mypage/out.html"><img src="/img/mypage/btn_cancel.gif" alt="취소"></a></div>
+
+		</div>
+		</form>
+		
+		<!-- //회원탈퇴 -->
+	</div>
+
+</div>
+<!-- //마이페이지 끝 --->
+
+<script type="text/javascript">
+    passChecked = 1;
+
+    function fnCheckPW(n) {
+        obj = jQuery("#inMpw" + n);
+        msgObj = jQuery("#msgPW" + n);
+        v = obj.val();
+
+        if (jQuery("#inMpw1").val() != jQuery("#inMpw2").val() && jQuery("#inMpw2").val() != "") {
+            str = "Password you entered is not correct.";
+            jQuery("#msgPW2").html("<font color=red>" + str + "</font>");
+            passChecked = 0;
+            return;
+        }
+        else if (jQuery("#inMpw2").val() != "") {
+            str = "";
+            jQuery("#msgPW2").html("<font color=blue>" + str + "</font>");
+            passChecked = 1;
+            return;
+        }
+    }
+
+    function fnDropOut() {
+        if (!VCheckjQuery(jQuery("#inMname"), "Name")) {
+            return;
+        }
+        if (!VCheckjQuery(jQuery("#inMpw1"), "Password")) {
+            return;
+        }
+        if (!VCheckjQuery(jQuery("#inMpw2"), "Confirm Password")) {
+            return;
+        }
+
+        if (!passChecked) {
+            alert("Password you entered is not correct.");
+            return;
+        }
+
+        document.formObject.submit();
+
+    }
+
+
+</script>
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

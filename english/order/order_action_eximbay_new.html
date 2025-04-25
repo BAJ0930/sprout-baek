@@ -1,0 +1,46 @@
+<?php
+$secretKey = "749BE048E00275174EEE0029211CC2E0";//가맹점 secretkey
+//$ref = "cheonyucom".date("YmdHis");//가맹점에서 설정 가능한 고유 거래 아이디. 거래별 고유 값으로 설정하는 것을 권장합니다.
+$reqURL = "https://secureapi.eximbay.com/Gateway/BasicProcessor.krp"; //EXIMBAY 서비스용 서버 요청 URL입니다.
+
+$fgkey = "";//fgkey검증키 관련
+$sortingParams = "";//파라미터 정렬 관련
+
+foreach($_POST as $Key=>$value) {
+	$hashMap[$Key]  = $value;
+}
+$size = count($hashMap);
+ksort($hashMap);
+$counter = 0;
+foreach ($hashMap as $key => $val) {
+	if ($counter == $size-1){
+		$sortingParams .= $key."=" .$val;
+	}else{
+		$sortingParams .= $key."=" .$val."&";
+	}
+	++$counter;
+}
+//echo $sortingParams;
+
+$linkBuf = $secretKey. "?".$sortingParams;
+$fgkey = hash("sha256", $linkBuf);
+?>
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+<body leftmargin="0" topmargin="0" align="center" onload="javascript:document.regForm.submit();">
+<form name="regForm" method="post" action="<?php echo $reqURL; ?>">
+<input type="hidden" name="fgkey" value="<?php echo $fgkey; ?>" />	<!--필수 값-->
+
+<?php
+foreach($_POST as $Key=>$value) {
+?>
+<input type="hidden" name="<?php echo $Key;?>" value="<?php echo $value;?>">
+<?php } ?>
+
+<!--<input type="button" value="send" onClick="javascript:document.regForm.submit();">-->
+</form>
+</body>
+</html>

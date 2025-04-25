@@ -1,0 +1,627 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+	ob_clean();
+	
+	$isAdminMode=1;
+		
+	$c = $_GET["ckIDX"];
+	
+	$checkIDX = explode(",",$c);
+	$checkLen = sizeof($checkIDX);
+
+	if($_GET['uid']) $MID = $_GET['uid'];
+?>
+<HTML>
+<HEAD>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<TITLE> 인쇄 </TITLE>
+
+<style>
+.printPage { width:740px; border:0px solid red; left:0px; top:0px; background-image:url('https://www.cheonyu.com/image_1/printForm/orderPrintForm3New.jpg') !important; background-repeat:no-repeat; }
+td { font-size:11px; /*font-face:dotum;*/ font-family:돋움체; /*border:1px solid green;*/ }
+</style>
+<object id="ScriptX" viewastext style="display:none" classid="clsid:1663ed61-23eb-11d2-b92f-008048fdd814" codebase="/_Include/scriptX/smsxNew.cab#Version=7,6,0,10"></object>
+
+<SCRIPT LANGUAGE="JavaScript">
+function printMe(){
+	with (ScriptX) {
+		printing.header = ''; // 머릿말 설정
+		printing.footer = ''; // 꼬릿말 설정
+		printing.portrait = true;  // 출력방향 설정 : false 면 가로인쇄, true 면 세로 인쇄
+		printing.leftMargin = 5;  // 왼쪽 여백 설정
+		printing.topMargin = 8;  // 위 여백 설정
+		printing.rightMargin = 5;  // 오른쪽 여백 설정
+		printing.bottomMargin = 0;  // 아래 여백 설정	
+		printing.Print(true, window); // 출력하기(대화상자 표시여부, 출력할 프레임)
+	}
+}
+</SCRIPT>
+</HEAD>
+
+<BODY id='printBody'>
+<?
+			
+$totPageCnt=1;
+
+for($j=0;$j<$checkLen;$j++) {
+	
+	$qIDX = $checkIDX[$j];
+
+	if($j>0)$pageBraak="style='page-break-before:always;'";
+
+	#======= Print Check =============
+	if($MID=="order" || $MID=="admin2" || $MID=="pack" || $MID=="smile1" || $MID=="smile2") #--- 발주 담당자가 출력했을시 빨간색으로 표시
+	{
+		if($isAdminMode)
+		{
+			$sql = "update 2011_orderDeliveryInfo set ODprint=" . date(time()) . " where OIDX='" . $qIDX . "' and ODuser='" . $masterSeller . "'";		
+		}
+		else
+		{
+			$sql = "update 2011_orderDeliveryInfo set ODprint=" . date(time()) . " where OIDX='" . $qIDX . "' and ODuser='" . $MID . "'";		
+		}
+	}
+	sql_query($sql);
+
+
+	#======== Page Row ===============
+	$pageRow = 23;
+
+	#-- 주문정보 및 결제정보 불러오기 -------------------------------------
+	$sql = "select a.MID as MMMID,Oshop,Ocode,Oregdate,OpayType,OpayState,Odeleted,Ocontent,Odirect,OdirectGet,McomName,Mlevel,MLV,OorderName,Oname,MHP,MTEL,Otel,Ohp,Oaddr1,Oaddr2 from 2011_orderInfo as a  left join 2011_memberInfo as c on a.MID=c.MID where a.IDX='" . $qIDX . "' and a.MID = '" . $MID . "' limit 0,1";
+	$Oresult = sql_query($sql);
+	if($rs = sql_fetch_array($Oresult)) {
+
+		#-- 주문일
+		$Odate = $rs["Oregdate"];
+		
+		#-- 주문번호
+		$Ocode = $rs["Ocode"];
+		
+		#-- 결제수단
+		if($rs["OpayType"]==1)$OpayType = "Wire Transfer";
+		if($rs["OpayType"]==5)$OpayType = "Credit Card";
+		if($rs["OpayType"]==6)$OpayType = "Paypal";
+		if($rs["OpayType"]==7)$OpayType = "Alipay";
+		if($rs["OpayType"]==8)$OpayType = "Tenpay";
+		
+		#-- 업체명
+		$OcomName = $rs["McomName"];	
+		$MMMID = $rs["MMMID"];
+		
+		#-- 직배송
+		$Odirect = $rs["Odirect"];
+		
+		#-- 직접수령
+		$OdirectGet = $rs["OdirectGet"];
+			
+		#-- 주문자명
+		if($rs["OorderName"])$Oorder = $rs["OorderName"];
+		else $Oorder = $rs["Oname"];
+		
+		#-- 연락처1 (
+		if($rs["MHP"])$OorderTel = $rs["MHP"];
+		else $OorderTel = $rs["MTEL"];
+
+		$dbOorderTel = $OorderTel;
+		
+		#-- 수령인
+		$Oname = $rs["Oname"];
+		
+		#-- 수령인 연락처1
+		$Otel = $rs["Otel"];
+		$dbOtel = $rs["Otel"];
+		
+		#-- 수령인 연락처2
+		$Ohp = $rs["Ohp"];
+		$dbOhp = $rs["Ohp"];
+		
+		$Oaddr1 = $rs["Oaddr1"];
+		$Oaddr2 = $rs["Oaddr2"];
+		
+		#-- 주문 상태
+		$Odeleted = $rs["Odeleted"];
+		
+		#-- 요청사항
+		$Ocontent = $rs["Ocontent"];
+		
+		#======= 회원등급 판단하기 ================================
+		if($rs["Oshop"]!=$masterSeller)
+		{
+			$OcomName = "[shop]" . $shopArray[$rs["Oshop"]];
+			//$dbMlevel="";
+			$dbMlevel=getHtmlCode4Level($shopArray[$rs["Oshop"]."LV"],1);									
+		}
+		else if($rs["Mlevel"]==1)
+		{
+			$dbMlevel="일반";
+		}
+		else if($rs["Mlevel"]>=10)
+		{
+			$dbMlevel=getHtmlCode4Level($rs["Mlevel"],1);									
+		}
+		else
+		{
+			$dbMlevel="비회원";
+		}
+
+		$dbMLV = $rs["MLV"];
+		
+		
+		#-- 주문정보 및 결제정보 불러오기 끝 -------------------------------------
+		
+		#== 상품 불러오기
+		if($isAdminMode)
+		{
+			$sql = "select a.*,b.BRkname,b.BRename,c.Pbarcode,c.EVIDX, c.PorderMinus, c.PstockCount ";
+			if($rs["Oshop"]!=$masterSeller)$sql.= ", ceil(ORPprice1-(ORPprice1/100*Pdiscount" . $shopArray[$rs["Oshop"] . "LV"] . ")) as ORPprice4 ";	//-- 다른샵에서 주문시 계산
+			else $sql.= ",0 as ORPprice4 ";
+			$sql.= " from 2011_orderProduct as a left join 2011_brandInfo as b on a.BRIDX = b.IDX left join 2011_productInfo as c on a.PIDX = c.IDX  where a.OIDX='" . $qIDX . "' and a.ORPdeleted=" . $Odeleted . " and (c.Puploader='' or c.Puploader='" . $masterSeller . "' or c.PdeliveryType=1) order by BRkname,ORPname,ORPoptionValue";	
+			
+		}
+		if($isManagerMode)
+		{
+			$sql = "select a.*,b.BRkname,b.BRename,c.Pbarcode, c.PorderMinus, c.PstockCount from 2011_orderProduct as a left join 2011_brandInfo as b on a.BRIDX = b.IDX left join 2011_productInfo as c on a.PIDX = c.IDX  where a.OIDX='" . $qIDX . "' and a.ORPdeleted=" . $Odeleted . " and (c.Puploader='" . $MID . "' and c.PdeliveryType=2) order by BRkname,ORPname,ORPoptionValue";	
+		}
+		$Presult1 = sql_query($sql);
+		$Presult1Box = sql_query($sql);
+		$Pcnt = 0;
+		
+		$pCnt = mysqli_num_rows($Presult1);
+		$pageCnt = ceil($pCnt/$pageRow);
+		
+		/*-- 종합 가격 정보 구하기 ----------------------------------------------
+		본내용은 ajaxOrderState.php 파일의 형식을 그대로 가져옵니다. 수정사항이 있을 경우 서로 업데이트 해주세요.
+		-------------------------------------------------------------------------*/
+		$sql1="select b.IDX,sum(b.ORPdeliveryPay) as ORPdeliveryPay,";
+		if($rs["Oshop"]!=$masterSeller)$sql1.= " sum(ceil(ORPprice1-(ORPprice1/100*Pdiscount" . $shopArray[$rs["Oshop"] . "LV"] . "))*b.ORPcount) as TOT_PRICE, ";	//-- 다른샵에서 주문시 계산
+		else $sql1.=" sum(b.ORPprice2*b.ORPcount) as TOT_PRICE,";
+		
+		$sql1.="sum(b.ORPcount) as TOT_COUNT,sum(Pweight * b.ORPcount) as TOT_WEIGHT from 2011_orderProduct as b left join 2011_orderInfo as a  on a.IDX = b.OIDX left join 2011_productInfo as c on b.PIDX = c.IDX where b.ORPdeleted=" . $Odeleted . " and b.OIDX='" . $qIDX . "'  ";
+		if($isAdminMode)
+		{
+			#-- 최고관리자용
+			$sql2 = $sql1 . " and (b.ORPdeliveryUser='" . $masterSeller . "' or b.ORPdeliveryUser='') group by a.IDX";			
+			$result1 = sql_query($sql2);
+
+			$sql3 = $sql1 . " and (b.ORPdeliveryUser<>'" . $masterSeller. "' and b.ORPdeliveryUser<>'') group by a.IDX";
+			$result2 = sql_query($sql3);
+
+		}
+		else if($isManagerMode)
+		{
+			#-- 일반 판매자용
+			$sql2 = $sql1 . " and (b.ORPdeliveryUser='" . $MID . "') group by a.IDX";
+			$result1 = sql_query($sql2);
+
+			$sql3 = $sql1 . " and (b.ORPdeliveryUser='" . $masterSeller. "' or b.ORPdeliveryUser='') group by a.IDX";
+			$result2 = sql_query($sql3);
+		}
+		else
+		{
+			echo "Error!!!";
+			exit();
+		}
+		
+		$_TOT_PRICE1=0;
+		$_TOT_COUNT1=0;
+		$_TOT_COUNT1END=0;
+		$_DELIVERY_PRICE1=0;
+		$_ADDDELIVERY_PRICE1=0;
+		$_TOT_WEIGHT1=0;
+		
+		$_TOT_PRICE2=0;
+		$_TOT_COUNT2=0;
+		$_TOT_COUNT2END=0;
+		$_DELIVERY_PRICE2=0;
+		$_ADDDELIVERY_PRICE2=0;
+		$_TOT_WEIGHT2=0;
+		
+		
+		if($rs = sql_fetch_array($result1))
+		{
+			foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+			$_TOT_PRICE1=$dbTOT_PRICE;
+			$_TOT_COUNT1=$dbTOT_COUNT;
+			$_TOT_WEIGHT1 = $dbTOT_WEIGHT;
+			
+			$_ADDDELIVERY_PRICE1 = $dbORPdeliveryPay; ##-- 추가 배송비									
+		}
+
+		if($rs = sql_fetch_array($result2))
+		{
+			foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+			$_TOT_PRICE2=$dbTOT_PRICE;
+			$_TOT_COUNT2=$dbTOT_COUNT;
+			$_TOT_WEIGHT2 = $dbTOT_WEIGHT;
+			
+			$_ADDDELIVERY_PRICE2 = $dbORPdeliveryPay; ##-- 추가 배송비
+		}
+
+		
+		$tmpCount2 = 0;
+		while($rs = sql_fetch_array($Presult1Box))
+		{
+			foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+			
+			$dbORPprice3 = 0;
+			if($dbORPBoxCount>0) {
+
+				if($dbORPcount >= $dbORPBoxCount ){
+																							
+					$v3 = ceil($dbORPprice1 / 100 * $dbORPdiscountPer);
+					$v4 = ($dbORPprice1 - $v3) * $dbORPcount;
+
+					$dbORPprice3 = $v4 - ($dbORPprice2 * $dbORPcount);
+					//echo $v3." // " .$v4."<br>";
+				} else {
+					$dbORPprice3 = 0;
+				}
+
+				$tmpCount2+=$dbORPprice3;
+			}								
+																								
+			if($rs["ORPOLDUSER"]){
+				$dbORPcount = $rs["ORPcountOLD"];
+			} else {
+				$dbORPcount = $rs["ORPcount"];
+			}
+			$_TOT_COUNT1END += $dbORPcount;
+		}
+
+		#-- 종합 가격 정보 구하기 ----------------------------------------------
+		
+		
+		#====== 배송비 구하기 ====================================
+		$sql = "select sum(ODpay) as sumODpay from 2011_orderDeliveryInfo where OIDX='" . $qIDX . "' and ODuser='" . $masterSeller . "'";
+		$odRs = sql_fetch($sql);
+		$dbORPdefaultDPAY = $odRs[sumODpay];
+
+		
+		/*============================================
+		결제정보 불러오기
+		============================================*/
+		$sql = "select a.OpayType,a.OpayState, b.*,d.CPname from 2011_orderInfo as a left join 2011_orderPayment as b on a.IDX = b.OIDX left join 2011_couponList as c on a.IDX=c.CPuseOIDX left join 2011_couponGroup as d on c.CPIDX=d.IDX where a.IDX='" . $qIDX . "' order by b.IDX";
+		$payRs = sql_fetch($sql);
+		
+		#-- 포인트
+		$dbOusePoint = $payRs["OusePoint"];
+		$dbOuseGift = $payRs["OuseGift"];
+		$dbOuseCoupon = $payRs["OuseCoupon"];
+		$dbOpayType = $payRs["OpayType"];
+		$dbAMT = $payRs["AMT"];
+		$dbOpayState = $payRs["OpayState"];
+		$oDollar = $payRs["INCOME_EXPECT_YMD"];
+		$dbINCOME_ACC_NM = $payRs["INCOME_ACC_NM"] * 1000;
+		
+		#-- 총 가격에서 쿠폰/포인트/상품권 결제금 빼기
+		$_TOT_DISCOUNT = $dbOusePoint + $dbOuseGift + $dbOuseCoupon;
+		
+		$_USE_COUPON="";
+		if($payRs["CPname"])$_USE_COUPON = " / " . $payRs["CPname"];
+
+		$sql3 = "Select * from 2011_orderProduct where OIDX ='" . $qIDX . "'";
+		$payResult3 = sql_query($sql3);
+		$dbAMTShopORI = 0;
+		while($row = sql_fetch_array($payResult3)){
+			if($row["ORPOLDUSER"]){
+				$dbORPcount = $row["ORPcountOLD"];
+			} else {
+				$dbORPcount = $row["ORPcount"];
+			}
+			if($row["ORPOLDUSER2"]){
+				$dbORPprice2OLD = $row["ORPprice2OLD"];
+			} else {
+				$dbORPprice2OLD = $row["ORPprice2"];
+			}
+			$dbAMTShopORI += ($dbORPcount * $dbORPprice2OLD);	
+		}
+		if($dbAMTShopORI > 0){
+			$dbAMTShopORI = $dbAMTShopORI + $dbODpay;
+		}
+
+	}
+	else
+	{
+		echo "<script>alert('출력할 자료가 존재하지 않습니다.\\n\\n관리자에게 문의해 주세요.');self.close();</script>";
+		exit();
+	}
+	$tmpCount=0;
+		
+
+	$echoCard2=0;
+	$GiftCount2=0;
+
+
+	for($page=1;$page<=$pageCnt;$page++){
+
+		#-- 페이지별로 리셋(갯수로 계산)
+		$echoCard=0;							
+		$echoCard3=0;
+
+
+		$GiftCount1=0;							
+		$GiftCount3=0;
+
+		$_PAGE_TOTAL_PRICE=0;
+		for($k=$pageRow * ($page-1);$k<$pageRow * ($page-1) + $pageRow;$k++)
+		{
+			if($rs = sql_fetch_array($Presult1)) $_PAGE_TOTAL_PRICE+=$rs["ORPprice2"] * $rs["ORPcount"];
+			else break;
+		}
+		
+		mysqli_data_seek($Presult1,$pageRow * ($page-1));
+		
+		if($page>1)$pageBraak="style='page-break-before:always;'";
+?>
+
+<!-------- 인쇄페이지 시작 -------------->
+<table cellspacing=0 cellpadding=0>
+	<tr>
+		<td class='printPage' <?=$pageBraak?>>
+		
+			<table style='border:0px solid red;width:740px;' cellspacing=0 cellpadding=0 border=0 bordercolor=red >
+				<tr>
+					<td style='height:107px;' valign=bottom>
+					
+						<table width='100%'  style='border:0px solid red;'>
+							<tr>
+								<td align=right style='width:50%;padding-right:10px;'><?=date("Y.m.d",$Odate)?></td>
+								<td align=right style='width:50%;padding-right:50px;'><?=$page?> / <?=$pageCnt?> (USD <?=$dbAMT?>)</td>
+							</tr>
+							<tr><td style='height:43px;'>&nbsp;</td></tr>
+						</table>
+						
+					</td>
+				</tr>
+				<tr>
+					<td style='height:579px;' valign='top'>
+				
+						<table style='width:100%' cellspacing=0 cellpadding=0>
+						<?
+							#-------- 변수 확인용 -------------------
+							for($k=0;$k<$pageRow;$k++) {
+								$giftStr="";
+								if($rs = sql_fetch_array($Presult1)){
+									# DB 레코드 결과값 모두 변수로 전환
+									foreach ($rs as $fieldName => $fieldValue){
+										
+										$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;
+										
+										if($rs["ORPOLDUSER"]){
+											$dbORPcount = $rs["ORPcountOLD"];
+										} else {
+											$dbORPcount = $rs["ORPcount"];
+										}
+										
+										if($rs["ORPOLDUSER2"]){
+											$dbORPprice2OLD = $rs["ORPprice2OLD"];
+										} else {
+											$dbORPprice2OLD = $rs["ORPprice2"];
+										}
+									}
+									
+									$Pcnt++;
+									if($Pcnt%2==1)$h = 25;
+									else $h = 25;
+								} else {
+									break;
+								}
+
+								#======== 직접 입력형 줄 따로 만들기 =================
+								$oText="";
+								if($dbORPoptionName=="직접입력"){
+									$oText=$dbORPoptionValue;
+									$dbORPoptionValue="직접입력";
+								}
+								
+								#-- 다른샵 구매 가격이 있을시 해당 가격 할당
+								if($dbORPprice4)$dbORPprice2=$dbORPprice4;
+								
+								if($dbPbarcode){
+									$barcode = $dbPbarcode;
+								} else {
+									$opData = sql_fetch( " SELECT OPbarcode FROM `2011_productOption` WHERE `IDX` = '$dbORPoption' " );
+									$barcode = $opData[OPbarcode];
+								}
+								if($dbORPoptionValue){
+									$opData2 = sql_fetch( " SELECT OPbarcode FROM `2011_productOption` WHERE `IDX` = '$dbORPoption' " );
+									if($dbORPminus == 1){
+										$cxCode = "* ";
+									} else {
+										$cxCode = "";
+									}
+								} else {
+									if($dbORPminus == 1){
+										$cxCode = "* ";
+									} else {
+										$cxCode = "";
+									}
+								}	
+
+								$chkLog = sql_fetch( " SELECT LSstock2 FROM `2011_LogStock` WHERE PIDX = '".$dbPIDX."' AND OPIDX = '".$dbORPoption."' ORDER BY LSregdate DESC LIMIT 0,1 " );
+								$chkLogDcount = 0;
+								$chkLogCount = $chkLog['LSstock2'] - $chkLogDcount;
+								if($chkLogCount == 1) $chkLogStatus = "○";
+								else if($chkLogCount == 2) $chkLogStatus = "◎";
+								else $chkLogStatus = "";
+								
+								$dbORPprice1 = number_format($dbORPprice1 / $oDollar,2,'.','');
+								$dbORPprice2 = number_format($dbORPprice2 / $oDollar,2,'.','');
+								$dbORPprice2OLD = number_format($dbORPprice2OLD / $oDollar,2,'.','');
+						?>
+							<tr>
+								<!-- width 740 -->
+								<td style='width:10px;height:<?=$h?>px;text-align:center;'>&nbsp;</td>
+								<td style='width:30px;text-align:center;'><?=$Pcnt?></td>
+								<td style='width:80px;text-align:center;'><?=$barcode?></td>
+								<td style='width:90px;text-align:center;'><?=$dbBRename?></td>
+								<td style='width:235px;text-align:center;'><?=$cxCode?><?=$dbORPengName?> <?=$chkLogStatus?> <?=$giftStr?></td>
+								<td style='width:80px;text-align:center;'><?=$dbORPoptionValue?></td>
+								<td style='width:70px;text-align:center;'>
+									<?
+										if($rs["ORPOLDUSER2"])	echo $dbORPprice2OLD;
+										else echo $dbORPprice2;
+									?>
+								</td>
+								<td style='width:50px;text-align:center;font-size:15px;font-weight:bold;'>
+									<?
+										if($rs["ORPOLDUSER"]) echo $rs[ORPcountOLD];
+										else echo number_format($dbORPcount);
+									?>
+								</td>
+								<td style='width:90px;text-align:center;'><?= $dbORPprice2OLD*$dbORPcount ?></td>
+								<td style='width:10px;text-align:center;'>&nbsp;</td>
+							</tr>
+							<?if($oText){?>
+							<tr><td  colspan=8 style='height:<?=$h?>px;text-align:center'><?=$oText?></td></tr>
+						<?
+								}
+										
+								$tmpCount+=$dbORPcount;
+							}
+						?>
+						</table>
+					
+					</td>
+				</tr>
+				<tr><td style='height:10px;'></td></tr>
+				<tr>
+					<td style='height:152px;' valign=top>
+						
+						<!--================= 주문자 정보 =========================-->
+						<table style='border:0px solid red;width:100%;height:42px;' cellspacing=0 border=0>
+							<tr>
+								<td align=center width='60'>&nbsp;</td>
+								<td align=center width='193' valign='top'>USD <?=$dbAMT - ($dbORPdefaultDPAY + $_ADDDELIVERY_PRICE1 + $_ADDDELIVERY_PRICE2)?></td>
+								<td align=center width='53'>&nbsp;</td>
+								<td align=center width='83' valign='top'>USD <?=$dbORPdefaultDPAY + $_ADDDELIVERY_PRICE1 + $_ADDDELIVERY_PRICE2?></td>
+								<td align=center width='60'>&nbsp;</td>
+								<td align=center width='75'  valign='top'>
+									<? 
+										if($dbOpayState == 99) {
+											echo "-";
+										} else {
+									?>
+										<? if(($dbOpayType == 1 || $dbOpayType == 3) && $dbAMT > 0){ echo "USD " . $dbAMT; } else { echo "-"; } ?>
+									<? } ?>
+								</td>
+								<td align=center width='80'>&nbsp;</td>
+								<td align=center width='126'  valign='top'><? if($dbOuseGift > 0) { echo number_format($dbOuseGift); } else { echo "-"; } ?></td>
+							</tr>
+						</table>
+						
+						<table style='border:0px solid red;width:100%;height:80px;' cellspacing=0 border=0>
+							<tr>
+								<td align=center width='50'>&nbsp;</td>
+								<td align=center width='93'  valign='top'  style='padding-top:5px;'><? if($dbOusePoint > 0) { echo number_format($dbOusePoint); } else { echo "-"; } ?></td>
+								<td align=center width='80'>&nbsp;</td>
+								<td align=center width='83'  valign='top'  style='padding-top:5px;'><? if($dbOpayType == 5 || $dbOpayType == 6 || $dbOpayType == 7){ echo "USD ".$dbAMT; } else { echo "-"; } ?></td>
+								<td align=center width='43'>&nbsp;</td>
+								<td align=center width='103'  valign='top'  style='padding-top:5px;'>
+								<? 
+									if($dbOpayState == 99) {
+								?>
+									<? if(($dbOpayType == 1 || $dbOpayType == 3) && $dbAMT > 0){ echo number_format($pEndB); } else { echo "-"; } ?>
+								<? 
+									} else {
+										echo "-";
+									}	
+								?>
+								</td>
+								<td align=center width='70'>&nbsp;</td>
+								<td align=center width='70' valign='top' style='padding-top:5px;'><?=number_format($dbINCOME_ACC_NM)?></td>
+								<td align=center width='45' >&nbsp;</td>
+								<td align=center width='103' valign='top' style='padding-top:5px;'><?=number_format($_TOT_COUNT1END)?></td>
+							</tr>
+							<tr>
+								<td colspan=2><? if($tmpCount2 > 0) { ?>(<?=date("y")?><?=$tmpCount2?>)<? } ?></td>
+								<td colspan=8 style='text-align:right;padding-right:60px;font-size:14px;font-weight:bold;padding-top:10px;' valign='top' >
+								<?	
+									echo "USD " . $dbAMT;
+								?>
+								</td>
+							</tr>
+						</table>
+						
+					</td>
+				</tr>
+				<tr>
+					<td style='height:221px;' valign=top>
+						<!--================= 주문자 정보 =========================-->
+						<?php
+							$alpha = "abcdefghijklmn" ;
+						
+							$last_chr = substr($alpha,substr($dbOtel,-1,1),1) ;
+							$Otel     = substr($Otel,0,-1).$last_chr;
+							$last_chr = substr($alpha,substr($dbOhp,-1,1),1) ;
+							$Ohp      = substr($Ohp,0,-1) . $last_chr;
+							$last_chr = substr($alpha,substr($dbOorderTel,-1,1),1) ;
+							$OorderTel      = substr($dbOorderTel,0,-1) . $last_chr;
+							$cLen     = strlen($Oname)-2;
+							$Oname2 = "";
+							$Oname2    = substr($Oname,0,$cLen-1) . "*" ; 
+							
+							$cLen     = strlen($Oorder)-2;
+							$Oorder2 = "";
+							$Oorder2   = substr($Oorder,0,$cLen-1) . "*" ;
+						?>
+						<table style='border:0px solid red;width:100%;height:100px;' cellspacing=0>
+							<tr>
+								<td style='width:229px;border:0px solid green'>&nbsp;</td>
+								<td style='width:249px;border:0px solid green'>
+									<div style='width:100%;padding-left:90px;text-align:left;height:20px;' ><?=$Ocode?></div>
+									<div style='width:100%;padding-left:90px;text-align:left;height:20px;' ><?=$OcomName?><?if($dbMlevel)echo "(" . strip_tags(getMemberLV($dbMLV)) . ")";?></div>
+									<div style='width:100%;padding-left:90px;text-align:left;height:20px;' ><?=$Oorder2?></div>
+									<div style='width:100%;padding-left:90px;text-align:left;height:20px;' ><?=$OpayType?><?=$_USE_COUPON?></div>
+									<div style='width:100%;padding-left:90px;text-align:left;height:20px;' ><?=$OorderTel?></div>
+								</td>
+								<td style='width:50px;border:0px solid green'>&nbsp;</td>
+								<td style='width:219px;border:0px solid green'>
+									<div style='width:100%;padding-left:10px;text-align:left;height:20px;' ><?=$Oname2?></div>
+									<div style='width:100%;padding-left:10px;text-align:left;height:20px;' ><?=$Otel?></div>
+									<div style='width:100%;padding-left:10px;text-align:left;height:20px;' ><?=$Ohp?></div>
+									<div style='width:100%;padding-left:10px;text-align:left;height:20px;' ><?=$Oaddr1?></div>
+									<div style='width:100%;padding-left:10px;text-align:left;height:20px;' ><?=$Oaddr2?></div>
+								</td>
+							</tr>
+							<tr><td height=24></td></tr>
+							<tr>
+								<td style='padding-left:60px;border:0px solid red;height:24px' colspan=5 valign=top>																
+									<?	if($Ocontent){echo $Ocontent . "<br>";} ?>
+									<?
+										$queryMemo = " SELECT * FROM 2011_orderMemo WHERE OIDX = '$ckIDX' AND OMtype = 1 AND OMdeleted = 0 ORDER BY IDX DESC ";
+										$resultMemo = sql_query($queryMemo);
+										$dataMemoTxt = "";
+										while($dataMemo = sql_fetch_array($resultMemo)){
+											echo "<font color=red><b>".$dataMemo["OMmemo"]."</b></font><br>";
+										}
+										
+										$queryFirst = " SELECT count(*) as cnt FROM `2011_orderInfo`  WHERE MID = '$MMMID' AND Odeleted = 0 ";
+										$FirstNo = sql_fetch($queryFirst);
+										//if($FirstNo[cnt] == 1){ echo "첫 구매 대단히 감사드립니다. 천유닷컴이 가진 모든 열정과 힘을 모아 고객 감동 서비스를 실현하겠습니다."; }
+									?>
+								</td>
+							</tr>
+							<tr><td height=20>&nbsp;</td></tr>
+							<tr><td height=40 valign=bottom align=center colspan=5 ><b>- <?=$totPageCnt++?> -</b></td></tr>
+						</table>	
+						<!--================= 주문자 정보 끝 =========================-->
+					</td>
+				</tr>
+			</table>
+
+		</td>
+	</tr>
+</table>
+
+
+<?
+	}
+}	//-- for End
+?>
+
+
+</BODY>
+</HTML>
+<script>printMe()</script>	

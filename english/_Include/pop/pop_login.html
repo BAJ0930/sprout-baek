@@ -1,0 +1,42 @@
+<style>
+    .pop-layer-content {border-radius: 8px; padding: 20px 20px 36px;}
+    .pop-layer-content:first-of-type {border-radius: inherit;}
+    .pop-layer-content::after {display: none;}
+    .pop-layer-content > div {margin: 0;}
+    .product_info .subject {display: flex; flex-direction: column; gap: 32px;}
+    .btn-wrap a {width: 100%;}
+</style>
+
+<table width="500" border="0" cellpadding="0" cellspacing="0"><tr><td>
+<form name="frmLogin" id="frmLogin" method="POST" action="/member/loginResult.html" target="Hiddenframe">
+    <div class="pop-layer-wrap small">
+        <h1 class="pop-tit ntsans">Sign in now and start shopping!</h1>
+        <a href="javascript:disablePopup();" class="btn-pop-close"><img src="/image_1/ico_close.svg"></a>
+        <div class="pop-layer-content">
+            <div class="content-detail">
+                <div class="product_info">
+                    <div class="subject">
+                        <div class="input-container">
+                            <input type="text" id="inMID" name="inMID" placeholder=" " required>
+                            <label for="inMID">Your ID</label>
+                        </div>
+                        <div class="input-container">
+                            <input type="password" id="inMPW" name="inMPW" placeholder=" " required>
+                            <label for="inMPW">Password</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="btn-wrap">
+            <a href="javascript:ajaxLogin();" class="btn-style btn-color-CTA">Sign in</a>
+        </div>
+        <div class="join-comment">
+            New here? <a href="#" onclick="location.href='/member/join.html'">Create account</a>
+            <br>
+            <span>Forgot your account? Find it <a href="/member/lost.html">here</a>.</span>
+        </div>
+    </div>
+</form>
+</div>
+</td></tr></table>

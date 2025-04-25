@@ -1,0 +1,804 @@
+<?php
+include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+
+$stateCode = $tempCode;
+if(!$stateCode) $stateCode=1;
+
+$stateCode = addslashes(trim($stateCode));
+
+$sql = "update 2011_cartInfo set CAorder=0 where MID = '" . $uid . "' and (CAstate<>'" . $stateCode . "' and CAstate <> '111') ";
+sql_query($sql);
+
+//-- 결제할 상품만 가져오기 -----------------------
+/*======================================================
+카트정보 불러오기
+======================================================*/
+$sql = "select a.*,b.Pname,b.PengName,b.Pboxin,b.Pboxin2,b.PboxCount,b.PboxCount2,b.BRIDX,b.PstockCount,b.Pprice1,b.Pprice2,b.EVdiscount,b.Puploader,TRUNCATE(((b.PsizeWidth/10 * b.PsizeLength/10 * b.PsizeHeight/10) / 6000), 2) AS EMSPweight,";
+$sql.= "Pdiscount,Pdiscount10,Pdiscount20,Pdiscount30,Pdiscount40,Pdiscount50,Pdiscount60,Pdiscount70,Pdiscount80,Pdiscount90,Pdiscount100,Pdiscount110,Pdiscount120,EVIDX,EVdiscount,  ";
+$sql.= "PdeliveryType,PdeliveryPriceType,PdeliveryPrice,Pprice3,PsaveFile1,c.OPname,c.OPvalue,c.OPvalueEng,c.OPstock,b.PorderMinus,TRUNCATE((b.Pweight/1000),2) as Pweight, ";
+$sql.= " d.MSdeliveryLimit, d.MSdeliveryPay, d.MScomDeliveryLimit, d.MScomDeliveryPay,ifnull(d.MSID,b.Pshop),e.BRkname,e.BRename ";
+
+$sql.= "from 2011_cartInfo as a left join 2011_productInfo as b on a.PIDX = b.IDX ";
+$sql.= "left join 2011_productOption as c on a.OPIDX = c.IDX left join 2011_brandInfo as e on b.BRIDX = e.IDX ";
+$sql.= " left join 2011_makerSeller as d on e.MKIDX = d.MKIDX ";
+$sql.= " where MID='" . $uid . "' and a.CAorder = '1' and a.CAstate='" . $stateCode . "' ";
+$sql .= " ORDER BY d.MKIDX desc, a.PIDX ASC, c.IDX ASC";
+$orderResult = sql_query($sql);
+
+//-- 회원 정보 불러오기
+$sql = "select * from 2011_memberInfo where MID='" . $MID . "'";
+$m_rs = sql_fetch($sql);
+# DB 레코드 결과값 모두 변수로 전환
+foreach ($m_rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+
+#-- 배송지 정보 가져오기
+$sql = "select * from 2011_memberAddr where MID='" . $MID . "' order by IDX ";
+$addrResult = sql_query($sql);
+$addrResult2 = sql_query($sql);
+
+#-- 포인트 / 상품권 체크
+//$nPoint = fnGetMemberTotalPoint($MID);
+//$nGift = fnGetMemberTotalGift($MID);
+$nPoint = 0;
+$nGift = 0;
+
+//-- 기본 주소지 셋팅
+$addrName = $dbMname;
+$addrAddr1= $dbMaddr1;
+$addrAddr2= $dbMaddr2;
+
+if($dbMemail)$dbEmail = explode("@",$dbMemail);
+$CPcont = 0;	
+?>
+<script>
+
+	var nPoint='<?=$nPoint?>'; //== 현재 포인트
+	var nTicket='<?=$nGift?>';	//== 현재 상품권
+	var chkFormAct = false;
+
+	$(document).ready(function()
+	{
+		fnSelectCountry("<?=$dbMcomAddr1?>", "<?=$dbMcomAddr2?>");
+		fnSetTotalPrice(1);
+	});
+
+	function fnOrderAction(v)
+	{
+
+		if(v==0)
+		{
+			if(confirm("Are you sure to cancel?"))document.location="/";
+			return;
+		}
+
+		if(!VCheckjQuery($("#inOname"),"Name"))return;
+		if(!VCheckjQuery($("#inOtel"),"Phone number"))return;
+		if(!VCheckjQuery($("#inOhp"),"Mobile number"))return;
+		if(!VCheckjQuery($("#inOpost"),"Zipcode"))return;
+		if(!VCheckjQuery($("#inMcomAddr1"),"Country"))return;
+		if(!VCheckjQuery($("#inOaddr1"),"Street Address"))return;
+		if(!VCheckjQuery($("#inOaddr2"),"City"))return;
+		
+		if($("#inMcomAddr2_Sel").val()) $("#inOaddr3").val($("#inMcomAddr2_Sel").val());
+		if(!VCheckjQuery($("#inOaddr3"),"State/Province"))return;
+
+		if($('#inCheckTerms').is(':checked') === false){
+			alert('Please read and check the CHEONYU.COM Delivery Terms.');
+			return;
+		}
+
+		//-- 재고 검사
+		param='mode=totalPrice&uid=<?=$uid?>&Ocode=<?=$Ocode?>&tempCode=<?=$tempCode?>&cartCode=order';
+		$.ajax({
+		url:'ajaxCart.php',
+			type:"POST",
+			data :param,
+			dataType:"text",
+			error:fnErrorAjax,
+			success:function(_response){
+				//alert(_response);
+				v = _response.split("##");
+
+				totPrice = parseFloat(v[2]);
+				totCount = parseFloat(v[3]);
+				//--totWeight = parseFloat(v[4]); 필요없음
+				delivery = parseFloat(v[5]);
+
+				isOver = parseFloat(v[7]);
+
+				if(isOver)
+				{
+					fnChangeStockPop();
+					return false;
+				}
+				else
+				{
+					fnAllTheGateStart(1);
+					return;
+				}
+			}
+		});
+	}	
+</script>
+<link rel="stylesheet" type="text/css" href="/order/order.css?2502062">
+<script type="text/javascript" src="https://api.eximbay.com/v1/javascriptSDK.js"></script>
+
+<!-- 카트 시작 --->    
+<div id="wrap" >
+    
+<!-- 카트 리스트 -->
+<div id="order">
+
+<form name='frmAGS_pay' id='frmAGS_pay' method='POST' style="margin:0; padding:0;">
+<input type='hidden' name='ORDER_NO' id='ORDER_NO' value='SCRIPT처리' alt='주문번호'>
+<input type='hidden' name='inOdeliveryPay' id='inOdeliveryPay' value='0' alt='배송비'>
+<input type='hidden' name='tempCode' id='tempCode' value='<?=$tempCode?>' alt='바로구매플래그'>
+<input type='hidden' name='inZipMoney' id='inZipMoney' value='0' alt='추가배송비'>
+<input type='hidden' name='inOdeposit' id='inOdeposit' value='<?=$Mname?>' />
+<input type='hidden' name='mid' value='24C2E64DE0' />
+<table width="100%" border="0" cellspacing="0" cellpadding="0">
+	<tr>
+		<td valign="top" >
+		
+			<!-- 주문하는 상품 영역 ----------------------->
+			<table width="980" border="0" cellspacing="0" cellpadding="0">
+				<tr><td height="0"></td></tr>
+				<tr><td><img src="/image_2/neworder_01.jpg?20160419" /></td></tr>
+				<tr><td style="padding-top:27px;"><img src="/image_2/neworder_02.gif?20160419"></td></tr>
+				<tr><td height="2" bgcolor="#204e99"></td></tr>
+				<tr>
+					<td height="7">
+
+            			<table width="100%" border="0" bordercolor=red cellspacing="0" cellpadding="0">
+							<tr bgcolor="#eef7fc">
+								<td height="32" colspan="3" class='new_cart' width="608" align="center">Item / Buying Options</td>
+								<td width="115" align="right" class='new_cart'>Discounted Price</td>
+								<td width="23" align="center" class='new_cart'></td>
+								<td width="120" align="center" class='new_cart'>Quantity</td>
+								<td align="right"  width="74" class='new_cart'>Amount</td>
+								<td width="41" align="center" class='new_cart'></td>
+							</tr>
+							<!-- 주문 상품 목록 -->
+							<?
+								#-- 업체별 배송비 담을 변수
+								$DVinfo = array();		//-- 업체별 배송비
+								//-- 첫째자리는 천유 관리자 -- 업로더는 다를 수 있으니 master 로 구분한다.
+								$DVinfo[0]["com"] = $masterSeller;	//-- 기본 판매자 아이디
+								$DVinfo[0]["comName"]=$masterSellerName;
+								$DVinfo[0]["total"] = 0;			//-- 구매 총액
+
+								$DVinfo[0]["noFreeDelivery"] = 0;			//-- 구매 총액(무료배송조건제외)
+
+								$DVinfo[0]["dlimit1"] = 200;		//-- 일반 배송비 조건
+								$DVinfo[0]["dprice1"] = 3;		//-- 일반 배송비
+								$DVinfo[0]["dlimit2"] = 200;		//-- 도매 배송비 조건 A
+								$DVinfo[0]["dprice2"] = 3;		//-- 도매 배송비 A
+								$DVinfo[0]["dlimit3"] = 200;		//-- 도매 배송비 조건 B
+								$DVinfo[0]["dprice3"] = 3;		//-- 도매 배송비 B
+								$DVinfo[0]["dlimit4"] = 200;		//-- 도매 배송비 조건 C
+								$DVinfo[0]["dprice4"] = 3;		//-- 도매 배송비 C
+
+								$DVinfo[0]["rows"] = 0;
+
+								$nMSID="";
+								$nPdeliveryType="";
+
+								$_TOT_PRICE=0;
+								$_TOT_TAX_PRICE=0;
+								$_TOT_FREE_PRICE=0;
+								$_TOT_COUNT=0;
+								$_ADD_DELIVERY_PAY=0;
+								$_TOT_WEIGHT=0;
+
+								#-- 2011.05.17 상품권 사용불가 / 쿠폰 사용불가 체크
+								$_DISABLE_GIFT = 0;
+								$_DISABLE_COUPON = 0;
+							
+								#-- 2011.06.02 무료배송 조건 미포함 제품 체크
+								$_NOFREE_DIRYVERY = 0;
+							
+								$dbPcouponUse1=0;
+								$dbPcouponUse2=0;
+								
+								$items = array();
+
+								while($rs=sql_fetch_array($orderResult)){
+									# DB 레코드 결과값 모두 변수로 전환
+									foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}									
+													
+									$fPosition = explode("/",$dbPsaveFile1);
+									$thumb = $fPosition[0] . "/thumb/" . $fPosition[1];
+									$pImg = "<img src='/_DATA/product/" . $thumb . "' width='60' height='60' vspace='18' border=0 />";
+									$link = "<a href='/product/view.html?qIDX=" . $dbPIDX . "' class='c'>";
+
+									$dbEMSPweight = ($dbEMSPweight > $dbPweight) ? $dbEMSPweight : $dbPweight;
+									
+									if($dbOPstock)$maxStock = $dbOPstock;
+									else $maxStock=$dbPstockCount;
+
+									$dbPready = getProductReady($dbPIDX);
+									$maxStock = $maxStock-$dbPready;
+
+									$update=0;
+									if($dbCAcount > $maxStock) $update=1;
+
+									#-- 할인가 정보가 있을경우 강제 할인가 적용
+									$priceInfo = fnCalPrice($dbPprice3,$rs,1);
+									$_TOT_PRICE+= $priceInfo['dcDollar_txt'] * $dbCAcount;
+
+									if($dbPtaxType==1)$_TOT_TAX_PRICE+=$priceInfo['dcDollar_txt'] * $dbCAcount;
+									else $_TOT_FREE_PRICE+=$priceInfo['dcDollar_txt'] * $dbCAcount;
+
+									$_TOT_COUNT+=$dbCAcount;
+
+									if($dbPcouponUse1)$_DISABLE_GIFT+= $priceInfo['dcDollar_txt'] * $dbCAcount;
+									if($dbPcouponUse2)$_DISABLE_COUPON+= $priceInfo['dcDollar_txt'] * $dbCAcount;
+
+									#==== 배송 방법에 따른 총액 저장
+									if($dbPdeliveryType==1)
+									{
+										#-- 천유 배송 ------------------------------------
+										$DVinfo[0]["total"]+=$priceInfo["dcDollar_txt"] * $dbCAcount;
+										$dbMSID = $masterSeller;
+										if($dbPdeliveryPriceType==4)$DVinfo[0]["noFreeDelivery"] = $priceInfo["dcDollar_txt"] * $dbCAcount;			//-- 구매 총액(무료배송조건제외)
+										$DVinfo[0]["rows"]++;
+									}
+									else
+									{
+										#-- 업체 배송 ------------------------------------
+										#-- 자기 자리 찾기
+										$size = sizeof($DVinfo);
+										$comPoint=-1;
+
+										for($k=0;$k<$size;$k++)
+										{
+											if($DVinfo[$k]["com"]==$dbMSID)
+											{
+												$comPoint = $k;
+												break;
+											}
+										}
+
+										if($comPoint>=0)
+										{
+											#-- 자리 찾았으면 해당 자리에 누적
+											$DVinfo[$comPoint]["total"]+=$priceInfo["dcDollar_txt"] * $dbCAcount;
+											if($dbPdeliveryPriceType==4)$DVinfo[$comPoint]["noFreeDelivery"] = $priceInfo["dcDollar_txt"] * $dbCAcount;			//-- 구매 총액(무료배송조건제외)
+											$DVinfo[$comPoint]["rows"]++;
+										}
+										else
+										{
+											#-- 새로운 배열 자리에 밀어넣기
+											$DVinfo[$size]["com"]=$dbMSID;
+											$DVinfo[$size]["comName"]=$dbMKkname;
+											$DVinfo[$size]["total"]=$priceInfo["dcDollar_txt"] * $dbCAcount;
+											$DVinfo[$size]["dlimit1"] = $dbMSdeliveryLimit;		//-- 일반 배송비 조건
+											$DVinfo[$size]["dprice1"] = $dbMSdeliveryPay;		//-- 일반 배송비
+											$DVinfo[$size]["dlimit2"] = $dbMScomDeliveryLimit;		//-- 도매 배송비 조건 A
+											$DVinfo[$size]["dprice2"] = $dbMScomDeliveryPay;		//-- 도매 배송비 A
+											$DVinfo[$size]["dlimit3"] = $shopConfig["CFcomDeliveryLimit2"];		//-- 도매 배송비 조건 B
+											$DVinfo[$size]["dprice3"] = $shopConfig["CFcomDeliveryPay2"];		//-- 도매 배송비 B
+											$DVinfo[$size]["dlimit4"] = $shopConfig["CFcomDeliveryLimit3"];		//-- 도매 배송비 조건 C
+											$DVinfo[$size]["dprice4"] = $shopConfig["CFcomDeliveryPay3"];		//-- 도매 배송비 C
+											$DVinfo[$size]["rows"] = 1;
+											if($dbPdeliveryPriceType==4)$DVinfo[$size]["noFreeDelivery"] = $priceInfo["dcDollar_txt"] * $dbCAcount;			//-- 구매 총액(무료배송조건제외)
+										}
+									}
+							?>
+							<tr>
+								<td width="94" height="82" align="center" class='cartCss'><?=$link . $pImg?></a></td>
+								<td width="467" class='cartCss'><span class="cart_pblack"><B>[<?=$dbBRename?>]</B><Br><?=$dbPengName?>
+								<?
+									//-- 일반 옵션
+									if($dbOPvalue){
+								?><Br><span class="cart_orange"><b>[<?=$dbOPvalueEng?$dbOPvalueEng:$dbOPvalue?>]
+								<?
+									}
+									//-- 텍스트 입력형 옵션
+									if($dbCAtext){
+								?><br>[ <?=$dbCAtext?> ]<?	}	?>
+								</span></td>
+								<td width="49" align="left" class='cartCss'></td>
+								<td align="right" class='cartCss'>
+									<span class="cart_pblack"><s>USD <?=$priceInfo["dollar_txt"]?></s><br>
+									<span style="color:#FF5D31"><strong>USD <?=$priceInfo["dcDollar_txt"]?></strong></span><br>
+									<span class="cart_pblue">(<?=$priceInfo["dcPer"]?>% OFF)</span>
+								</td>
+								<td align="right" class='cartCss'></td>
+								<td align="center" valign="middle" class='cartCss'><span class="cart_pblack"><b><?=$dbCAcount?></b><br><span style="font-size:9pt; color:#999;">(<?=$dbEMSPweight * $dbCAcount?>kg in total)</span></span></td>
+								<td align="right" id='inListPrice' class='cartCss'><span class="cart_pblack"><b>USD <?=$dbCAcount*$priceInfo["dcDollar_txt"]?></span></b></td>
+								<td align="center" class='cartCss'></td>
+							</tr>
+							<?
+									$items[] = $dbPengName . "@@" . $dbCAcount . "@@" . $priceInfo["dcDollar_txt"] . "@@" . $dbPIDX; 
+									#-- 제품별 추가 배송비 계산
+									if($dbPdeliveryPriceType==3)$_ADD_DELIVERY_PAY+=$dbPdeliveryPrice;
+								
+									#-- 총 무게 계산
+									$_TOT_WEIGHT+=$dbEMSPweight * $dbCAcount;
+								} //-- while End
+								$_TOT_WEIGHT = $_TOT_WEIGHT;
+								//$_TOT_WEIGHT2 = round_up($_TOT_WEIGHT / 1000,1);								
+								$_TOT_WEIGHT2 = $_TOT_WEIGHT;
+
+								#==========================================================================================================
+								$size = sizeof($DVinfo);
+								for($k=0;$k<$size;$k++){
+									$Dprice=0;
+									//echo $DVinfo[$k]["dlimit1"] . "//" . $DVinfo[$k]["total"] . "// " . $DVinfo[$k]["dprice3"] .  "@@";
+								
+									if($MLV == "A" && $DVinfo[$k]["total"] - $DVinfo[$k]["noFreeDelivery"]<$DVinfo[$k]["dlimit2"]) {
+										$Dprice = $DVinfo[$k]["dprice2"]; 
+									} else if($MLV == "B" && $DVinfo[$k]["total"] - $DVinfo[$k]["noFreeDelivery"]<$DVinfo[$k]["dlimit3"]) {
+										$Dprice = $DVinfo[$k]["dprice3"];
+									} else if($MLV == "C" && $DVinfo[$k]["total"] - $DVinfo[$k]["noFreeDelivery"]<$DVinfo[$k]["dlimit4"]) {
+										$Dprice = $DVinfo[$k]["dprice4"];
+									} else if($MLV == "D" && $DVinfo[$k]["total"] - $DVinfo[$k]["noFreeDelivery"]<$DVinfo[$k]["dlimit2"]) {
+										$Dprice = $DVinfo[$k]["dprice2"];
+									} else {
+										if($DVinfo[$k]["total"] - $DVinfo[$k]["noFreeDelivery"] < $DVinfo[$k]["dlimit1"]){
+											$Dprice = $DVinfo[$k]["dprice1"];
+										}
+									}
+									if($Ocode) {
+										#-- 추가 주문일 경우 기존 같은 업체의 배송 정보가 있는지 체크(있다면 무료, 없다면 똑같이 정상 적용)
+										$sql = "select * from 2011_orderDeliveryInfo where ODuser='" . $DVinfo[$k]["com"] . "'";
+										if($Drs = sql_fetch($sql))$Dprice=0;
+									}
+									$_DELIVERY_PRICE+=$Dprice;
+								}
+								#==========================================================================================================
+								//echo $Dprice;
+							?>
+						<!-- 주문 상품 목록 -->
+						</table>
+					
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<!-- 총 금액 영역 -->
+						<table width="980" border="0" cellspacing="0" cellpadding="0">
+							<tr>
+								<td height="54" align="right" bgcolor="#f3f3f3">
+							
+									<table border="0" cellspacing="0" cellpadding="0" height=20>
+										<tr>
+											<!--<td class="cart_pblack">Item Total&nbsp;:&nbsp;</td>
+											<td align="center"><span class="cart_pblack">USD&nbsp;</td>
+											<td align="right" class="cart_pbblack" valign="top" style="padding:2px 0 0 0;"><?=$_TOT_PRICE?></td>
+											<td align="center" valign="top" style="padding:2px 5px 0 5px;" class="cart_pblack">+</td>
+											<td class="cart_pblack">Shpping(Depending on country)&nbsp;:&nbsp;</td>
+											<td align="center" class="cart_pblack">USD&nbsp;</td>
+											<td align="right" class="cart_pbblack" valign="top" style="padding:2px 0 0 0;"><?=$_DELIVERY_PRICE + $_ADD_DELIVERY_PAY?></td>
+											<td align="center" style="padding:2px 5px 0 5px;" class="cart_pblack">=</td>-->
+											<td class="cart_pblack">Item Total&nbsp;:&nbsp;</td>
+											<td align="center" class="cart_porangewon">USD&nbsp;</td>
+											<td align="right" class="cart_porange" valign="top"><? //$_TOT_PRICE + $_DELIVERY_PRICE + $_ADD_DELIVERY_PAY?><?=$_TOT_PRICE?></td>
+											<td width="40" align="center"></td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+							<tr><td height="1" colspan="3" bgcolor="#ffffff"></td></tr>
+							<tr><td height="1" colspan="3" bgcolor="#c7c7c7"></td></tr>
+						</table>
+						<!-- 총 금액 영역 -->
+					</td>
+				</tr>
+				<tr><td height="50"></td></tr>
+			</table>
+
+        	<!--- 마지막 스크립트에서 사용하도록 처리 ----->
+        	<script>
+        		//totalPrice = <?=$_TOT_PRICE + $_DELIVERY_PRICE + $_ADD_DELIVERY_PAY?>;
+				totalPrice = <?=$_TOT_PRICE?>;
+				totalPriceBackup = <?=$_TOT_PRICE?>;
+				deliveryPrice = <?=$_DELIVERY_PRICE + $_ADD_DELIVERY_PAY?>;
+				deliveryPriceBackup = <?=$_DELIVERY_PRICE + $_ADD_DELIVERY_PAY?>;
+			
+				//-- 2011.05.17 상품권 / 쿠폰 사용불가금액 처리
+				couponNoUse1 = <?=$dbPcouponUse1?>;
+				couponNoUse2 = <?=$dbPcouponUse2?>;
+
+				//-- 총 할인금액
+				totalDiscount = 0;
+        	</script>
+
+	        <!-- 주문하는 상품 영역 ----------------------->
+			<!-- 주문하기 영역 ---------------------------->
+			<table width="100%" border="0" bordercolor=red cellspacing="0" cellpadding="0">
+				<tr>
+					<td id='AllTheGateObjectTD'>
+						<!--- 함께 가져갈 기본 정보 ---->
+						<input name="inOorderName" type="hidden" id="inOorderName" value='<?=$dbMname?> <?=$dbMjumin?>' />
+						<input name="inOorderTel" type="hidden" id="inOorderTel" value='<?=$dbMTEL?>'/>
+						<input name="inOorderHP" type="hidden" id="inOorderHP" value='<?=$dbMHP?>'/>
+						<input name='inEmail1' id='inEmail1' type='hidden' value="<?=$dbEmail[0]?>">
+						<input name='inEmail2' id='inEmail2' type='hidden' value="<?=$dbEmail[1]?>">
+						<input type="hidden" name="inObill" value="0">
+						<input type="hidden" name="fnWeight" id="fnWeight" value="<?=$_TOT_WEIGHT2?>">
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<table width="980" border="0" cellspacing="0" cellpadding="0">
+							<tr>
+								<td colspan="2" align="left"><img src="/image_2/neworder_03.gif?20160419" /></td>
+								<td align="right" colspan="2">
+									<table border="0" cellpadding="0" cellspacing="0">
+										<tr>
+											<td class="cart_black">Click the button to edit member information.&nbsp;</td>
+											<td><a href="/mypage/myinfo.html"><img src="/image_2/neworder_btn1.gif?20160419"></a>&nbsp;</td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+							<tr><td height="2" colspan="4" bgcolor="#224e99"></td></tr>
+							<tr>
+								<td width="120" height="40" align="left" class='order_t'>Name</td>
+								<td width="320" align="left" class="order_d"><B><?=$dbMname?> <?=$dbMjumin?></B></td>
+								<td width="120" height="40" align="left" class='order_t'>Email</td>
+								<td class="order_d"><?=$dbMemail?></td>
+							</tr>
+							<tr>
+							</tr>
+							<tr>
+								<td height="40" align="left" class='order_t'>Mobile Number</td>
+								<td align="left" class="order_d"><?=$dbMHP?></td>
+								<td height="40" align="left" class='order_t'>Phone Number</td>
+								<td align="left" class="order_d"><?=$dbMTEL?></td>
+							</tr>
+							<tr>
+								<td height="40" align="left" class='order_t'>Address</td>
+								<td align="left" class="order_d" colspan="3"><?=$addrPost?> <?=$addrAddr1?> <?=$addrAddr2?></td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+				<tr>
+					<td height="130" valign="middle"><p>&nbsp;</p>
+						
+						<!--------------------------------------------------------------------------------
+						배송지 정보 시작
+						---------------------------------------------------------------------------------->
+						<table width="980" border="0" cellspacing="0" cellpadding="0">
+						<input type='hidden' name='inObreakdown2' id='inObreakdown' value='1'  />
+						<input type='hidden' name='inOdirectGet' id='inOdirectGet1' value='1'  >
+						<input type='hidden' name='inOdirect' id='inOdirect'  value='0' >
+						<input type='hidden' name='inObreakdown' value='1'  />
+							<tr>
+								<td colspan="3"><table border="0" cellspacing="0" cellpadding="0"><tr><td width="122"><img src="/image_2/neworder_04.gif?20160419" /></td></tr></table></td>
+							</tr>
+							<tr><td height="2" colspan="3" bgcolor="#224e99"></td></tr>
+							<tr>
+								<td width="120" height="31" class='order_t'>Country</td>
+								<td align="left" class='order_d'>
+									<select name="inMcomAddr1" id="inMcomAddr1" onChange="fnSetTotalPrice(1);fnSelectCountry2();">
+										<option value="">-- Select Country --</option>
+										<?
+											$sql = sql_query(" SELECT EIDX,EName,ESName FROM nEMS ORDER BY EName ASC ");
+											while($data = sql_fetch_array($sql)){
+												if($data['EIDX'] == $dbMcomAddr1) $sel = "selected";
+												else $sel = "";
+										?>
+										<option value="<?=$data['EName'];?>" data-id="<?=$data['EIDX'];?>" data-country="<?=$data['ESName']?>" <?=$sel?>><?=$data['EName'];?></option>
+										<?
+											}
+										?>
+									</select>
+								</td>
+								<td width="400" class='order_t'>Estimated International Shipping Fee</td>
+							</tr>
+							<tr>
+								<td width="120" height="31" class='order_t'>Name<br/>(First and Last)</td>
+								<td align="left" class='order_d'><input name="inOname" type="text" class="cart_input" id="inOname" size="20" value='<?=$dbMname?> <?=$dbMjumin?>' /></td>
+								<td rowspan="15" class='order_d'  style="background-color:#f7f7f7;">
+									
+									<table border="0" cellspacing="0" cellpadding="0">
+										<tr>
+											<td height="30" width="170">Shipping Method</td>
+											<td style="color:#2a74d1; font-weight:bold;" >EMS Premium(UPS)</td>
+										</tr>
+										<tr>
+											<td height="30">Estimated Shipping Fee</td>
+											<td style="color:#283bb1;font-weight:bold;" id="shippingFee">USD 0</td>
+										</tr>
+										<tr>
+											<td height="30">Estimated Weight</td>
+											<td style="color:#525252;font-weight:bold;"><?=$_TOT_WEIGHT2?> kg</td>
+										</tr>
+										<tr>
+											<td colspan="2" style="padding:10px 10px 0px 0px; color:#777777;">
+												<p>* The shipping cost are pre-calculated based on the weight, volume offed on the product page. Please <a href="/customer/help.html" target="_blank"><font color="blue"><u>click here</u></font></a> to learn more about International shipping fee.
+												</p>
+												<p>* Note. Overseas shipments may incur duties, VAT and other taxes. These charges are not included in the shipping charges and be Paid by the buyer.</p>
+												<p style="color:red;">* We set the shipping cost based on EMS Premium(UPS). However, depending on the shipping company, additional charges such as inspection fee and warehousing fee may occur. </p>
+											</td>
+										</tr>
+									</table>
+								
+								</td>
+							</tr>
+							<tr>
+								<td height="31" class='order_t'>Mobile Number</td>
+								<td align="left" class='order_d'><input name="inOhp" type="text" id="inOhp" size="55" class="cart_input" style='ime-mode:disabled;' value='<?=$dbMHP?>'/></td>
+							</tr>
+							<tr>
+								<td height="31" class='order_t'>Phone Number</td>
+								<td align="left" class='order_d'><input name="inOtel" type="text" id="inOtel" size="55" class="cart_input" style='ime-mode:disabled;' value='<?=$dbMTEL?>'/></td>
+							</tr>
+							<tr>
+								<td height="31" class='order_t'>Street Address</td>
+								<td align="left" class='order_d'><input name="inOaddr1" type="text" id="inOaddr1" class="cart_input" size="55" value='<?=$addrAddr2?>'></td>
+							</tr>
+							<tr>
+								<td height="31" class='order_t'>City</td>
+								<td align="left" class='order_d'><input name="inOaddr2" type="text" id="inOaddr2" class="cart_input" size="55" value='<?=$addrAddr1?>' /></td>
+							</tr>
+							<tr>
+								<td height="31" class='order_t'>State/Province</td>
+								<td align="left" class='order_d'>
+									<div id="htmlStateSelect" style="display:none;"><select name="inMcomAddr2_Sel" id="inMcomAddr2_Sel"></select></div>
+									<div id="htmlStateText"><input name="inOaddr3" type="text" id="inOaddr3" class="cart_input" size="55" value='<?=$dbMcomAddr2?>' /></div>
+								</td>
+							</tr>
+							<tr>
+								<td height="31" class='order_t'>Zip/Postal Code</td>
+								<td align="left" class='order_d'><input type="text" name="inOpost" id="inOpost" class="cart_input" value="<?=$dbMpost?>"></td>
+							</tr>
+							<tr>
+								<td height="70" class='order_t'>Memo</td>
+								<td align="left" class='order_d'><textarea name="inOcontent" id="inOcontent" cols="40" rows="3"></textarea></td>
+							</tr>
+						</table>
+						<!--------------------------------------------------------------------------------
+						배송지 정보 끝
+						---------------------------------------------------------------------------------->						
+					</td>
+				</tr>
+				<tr><td></td></tr>
+				<tr><td></td></tr>
+			</table>
+			<!-- 주문하기 영역 ----------------------->
+			<input type="hidden" name="inOusePoint" id="inOusePoint" value='0'/>
+			<input type="hidden" name="inOuseTicket" id="inOuseTicket" value='0'/>
+
+			<!-- 할인정보 영역 ---------------------------->
+			<table width="100%" border="0" cellspacing="0" cellpadding="0">
+				<tr><td style="padding-top:50px;"><img src="/image_2/neworder_05a.gif"></td></tr>
+				<tr><td height="2" bgcolor="#204e99"></td></tr>
+				<tr>
+					<td bgcolor="#f4f4f4" align="center" height="50">
+					
+						<table border="0" cellspacing="0" cellpadding="0" height=20>
+							<tr>
+								<td class='order_black'>Item Total&nbsp;:&nbsp;</td>
+								<td align="center" class='order_black'>USD&nbsp;</td>
+								<td align="right" class="cart_pbblack" id='priceTD1'></td>
+								<td align="center" style="padding:2px 5px 0 5px;"><img src="/image_2/neworder_09.gif"></td>
+								
+								<td class='order_black'>Shipping Fee&nbsp;:&nbsp;</td>
+								<td align="center" class='order_black'>USD&nbsp;</td>
+								<td align="right" class="cart_pbblack" id='priceTD2'></td>
+
+								<td align="center" style="padding:2px 5px 0 5px;"><img src="/image_2/neworder_06.gif"></td>
+								<td class='order_black'><strong>Checkout Total&nbsp;:&nbsp;</strong></td>
+								<td align="center" class="cart_porangewon" style="padding:0px 0 0 0;">USD&nbsp;</td>
+								<td align="right" class="cart_porange" id='priceTD4'></td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+				<tr><td height="1" bgcolor="#dddddd"></td></tr>
+				
+				<!--추가배송비 안내 문구
+				<tr><td style="text-align:center;"><p>The number of packaging boxes may increase depending on the total volume of the products ordered.<br>If more than two packing boxes are exceeded, Additional shipping charges will be incurred.</p></td></tr>-->
+			</table>
+
+			<!--<br/><font color="red">* This is to inform you that due to a special situation(COVID-19), shipping fee has been added.</font><br/>-->
+
+			<!-- 할인정보 영역 ----------------------->
+			<!-- 결제하기 영역 ---------------------------->
+			<table width="100%" border="0" cellspacing="0" cellpadding="0">
+				<tr><td style="padding-top:50px;"><img src="/image_2/neworder_08.gif?20160419"></td></tr>
+				<tr><td height="2" bgcolor="#204e99"></td></tr>
+				<tr>
+					<td height="30" bgcolor="#eef7fc" style="padding-left:30px;">
+					
+						<table border="0" cellspacing="0" cellpadding="0">
+							<tr>
+								<td><input type="radio" name="inOpayType" id="inOpayType1" value="1" checked/></td>
+								<td class="cart_pbblack" width="109"><label for='inOpayType1' style="cursor:pointer;">Wire Transfer</label> </td>
+								<td><input type="radio" name="inOpayType" id="inOpayType5" value="5"/></td>
+								<td class="cart_pbblack" width="340"><label for='inOpayType5' style="cursor:pointer;">Credit Card(Visa, Master, Amex, JCB, Unionpay)</label></td>
+								<td><input type="radio" name="inOpayType" id="inOpayType6" value="6"/></td>
+								<td class="cart_pbblack" width="80"><label for='inOpayType6' style="cursor:pointer;">Paypal</label></td>
+								<!--
+								<td><input type="radio" name="inOpayType" id="inOpayType7" value="7"/></td>
+								<td class="cart_pbblack" width="80"><label for='inOpayType7' style="cursor:pointer;">Alipay</label></td>
+								<td><input type="radio" name="inOpayType" id="inOpayType8" value="8"/></td>
+								<td class="cart_pbblack" width="80"><label for='inOpayType8' style="cursor:pointer;">Tenpay</label></td>
+								-->
+							</tr>
+						</table>
+						
+					</td>
+				</tr>
+				<tr><td height="1" bgcolor="#dddddd"></td></tr>
+				<tr>
+					<td style="padding:15px 0 30px;">
+
+						<table width="100%" border="0" cellspacing="0" cellpadding="0">
+							<tr><td colspan="2" height="1" bgcolor="#dddddd"></td></tr>
+							<tr>
+								<td width="170" height="30" class='order_tg'  style="padding-left:20px;">Payment Type</td>
+								<td class='order_d' style="padding:0 0 0 15px;" id='payTypeTD'>Wire Transfer</td>
+							</tr>
+						</table>
+						<table width="100%" border="0" cellspacing="0" cellpadding="0" id='info1'>
+							<tr>
+								<td width="170" height="30" class='order_tg' style="padding-left:20px;">Bank Information</td>
+								<td class='order_d' style="padding:0 0 0 15px;">
+									<p>Bank NAME :<b>KOOKMIN BANK</b><br/>
+									Bank Address :<b>5th FL. Kookmin Bank Bldg, 84 Namdaemun-Ro, Jung-gu, Seoul, Korea</span></b><br/>
+									SWIFT CODE :<b>CZNBKRSEXXX</b><br/>
+									Bank account :<b>951768-11-001493</b><br/>
+									Beneficiary of Account :<b>Cheonyu.com co., Ltd</b></p>
+									<p style="color:red;">Note: Overseas wire transfer’s bank commission charge incurred in your territory must be borne by buyer.</p>
+								</td>
+							</tr>
+						</table>
+
+						<table width="100%" border="0" cellspacing="0" cellpadding="0" id='info4'>
+							<tr>
+								<td width="170" class='order_tg' style="padding-left:20px;">Information on payment</td>
+								<td class='order_d' style="padding:15px 0 15px 15px;"><span class="cart_black">* If the payment is not completed within 7 business days After odrer is placed , your order  will be cancelled automatically.<br></span> </td>
+							</tr>
+						</table>
+						<table width="100%" border="0" cellspacing="0" cellpadding="0">
+							<tr>
+								<td width="170" height="30" class='order_tg'  style="padding-left:20px;">Payment Type</td>
+								<td class='order_d' style="padding:0 0 0 15px;"><br/>
+									Credit Card
+									<p style="color:red;">Note: You can order up to USD 1,000 by credit-card a month.</p>
+								</td>
+							</tr>
+						</table>
+
+					</td>
+				</tr>
+				<!--추가배송비 동의-->
+				<tr>
+					<td>
+						<style>
+						.end_warning { width:100%; margin-bottom:20px; padding:25px 10px; background:#fff4f4; border:#f3d1d1 solid 1px; }
+						.end_warning, .end_warning * { box-sizing:border-box; }
+						.end_warning p { padding:0; margin:0; color:#d0021b; font-size:15px; line-height:1.5; font-weight:600; text-align:center; }
+						.end_warning p .ckli { display:block; margin-top:12px; font-weight:normal; color:#000; }
+						.ckli { display:inline-block; margin-right:20px; }
+						.ckli label { height:20px; display:inline-block; position:relative; vertical-align:middle; cursor:pointer; }
+						.ckli label span { display:inline-block; vertical-align:middle; font-size:13px; color:#000; }
+						.ckli label .mbradio02 { display:inline-block; position:relative; width:20px; height:20px; background:#fff; margin-right:7px; border:1px solid #aaa; border-radius:3px; vertical-align:middle; }
+						.ckli label input:checked+.mbradio02 { background:#f20220; border:#f20220 solid 1px; }
+						.ckli label input:checked+.mbradio02:after { position:absolute;top:50%;left:50%; width:12px;height:12px;margin:-6px 0 0 -6px;background:url(/img/ckbox-img.svg) no-repeat;content:"";}
+						.ckli label input, .ckli label:disabled input { position:absolute; top:0; left:0; z-index:-1; width:1px; height:1px; opacity:0.01; }
+						.ckli label input:disabled+.mbradio02 { border:1px solid #ccc; background:#f5f5f5; }
+						</style>
+						<div class="ptsans end_warning">
+							<p>CHEONYU.COM calculates the international shipping fee based on the product information provided on the detail page.<br>Based on this, overseas shipping costs will be charged in advance.<br/>
+							<span style="display:block; margin-top:6px;">However, some errors may occur in the process of re-measuring the actual weight before shipping.<br>
+Please understand that shipping charges may be added or deducted during this process.<br>If additional shipping costs are incurred, we will notify you through the registered email.<br><br>Overseas shipments may incur duties, VAT and other taxes.<br>These charges are not included in the shipping charges and be Paid by the buyer.</span><span class="ckli"><label id="check"><input type="radio" name="inCheckTerms" id="inCheckTerms" value="1" onfocus="this.blur()"><em class="mbradio02"></em><em style="text-decoration:underline; font-weight:500;">I have read and agree to the CHEONYU.COM delivery terms.</em></label></span></p>
+						</div>
+					</td>
+				</tr>
+
+				<tr><td height="1" bgcolor="#dddddd"></td></tr>
+				<tr>
+					<td align="center" style="padding:30px 0 40px 0;">
+						<table border="0" cellspacing="0" cellpadding="0">
+							<tr>
+								<td width="126"><img src="/image_2/neworder_btn4.gif?20160419" style='cursor:pointer;' onclick='fnOrderAction(0)' /></td>
+								<td width="10"></td>
+								<td width="105"><img src="/image_2/neworder_btn5.gif?20160419" style='cursor:pointer;' onclick='fnOrderAction(1)' /></td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+				<tr>
+					<td align="left" class="cart_default" style="padding:10px 0 100px 10px;"></td>
+				</tr>
+			</table>
+
+        <!-- 결제하기 영역 ---------------------------->
+		</td> 
+   </tr>
+</table>
+
+<!-- 결제에 필요 한 필수 파라미터 -->
+<input type="hidden" name="ver" value="230" />
+<input type="hidden" name="txntype" value="PAYMENT" />
+<input type="hidden" name="charset" value="UTF-8" />
+<input type="hidden" name="statusurl" value="https://english.cheonyu.com/order/eximStatus.php" />
+<input type="hidden" name="ref" value="cheonyucom<?=date("YmdHis")?>" />
+<!-- 배송지 관련 파라미터(선택) -->
+<input type="hidden" name="shipTo_country" id="shipTo_country" value="" />
+<input type="hidden" name="shipTo_city" id="shipTo_city" value="" />
+<input type="hidden" name="shipTo_state" id="shipTo_state" value="" />
+<input type="hidden" name="shipTo_street1" id="shipTo_street1" value="" />
+<input type="hidden" name="shipTo_postalCode" id="shipTo_postalCode" value="" />
+<input type="hidden" name="shipTo_phoneNumber" id="shipTo_phoneNumber" value="" />
+<input type="hidden" name="shipTo_firstName" id="shipTo_firstName" value="" />
+<input type="hidden" name="shipTo_lastName" id="shipTo_lastName" value="" />
+<!-- 청구지 관련 파라미터 (선택) -->
+<input type="hidden" name="billTo_city" value="" />
+<input type="hidden" name="billTo_country" value="" />
+<input type="hidden" name="billTo_firstName" value="" />
+<input type="hidden" name="billTo_lastName" value="" />
+<input type="hidden" name="billTo_phoneNumber" value="" />
+<input type="hidden" name="billTo_postalCode" value="" />
+<input type="hidden" name="billTo_state" value="" />
+<input type="hidden" name="billTo_street1" value="" />
+<!-- 추가 항목 관련 파라미터 (선택) -->
+<input type="hidden" name="surcharge_0_name" value="Shipping Fee" />
+<input type="hidden" name="surcharge_0_quantity" value="1" />
+<input type="hidden" name="surcharge_0_unitPrice" id="surcharge_0_unitPrice" value="0" />
+<!-- 가맹점 정의 파마리터 (선택) -->
+<input type="hidden" name="param1" value="<?=$MID?>" />
+<input type="hidden" name="param2" value="" />
+<input type="hidden" name="param3" value="<?=$_TOT_WEIGHT2?>" />
+<!-- 그 외 생략 가능 파라미터 (연동 문서 참고)-->
+<input type="hidden" name="returnurl" value="" />
+<input type="hidden" name="displaytype" value="R" />
+<input type="hidden" name="shop" value="CHEONYU.COM" />
+<input type="hidden" name="ostype" value="P" />
+<input type="hidden" name="tel" value="<?=$dbMHP?>" />
+<input type="hidden" name="mobiletype" value="" />
+<input type="hidden" name="appscheme" value="" />
+<input type="hidden" name="autoclose" value="" />
+<input type="hidden" name="siteforeigncur" value="USD" />
+<input type="hidden" name="paymethod" value="" /><!-- 결제 수단코드 -->
+<input type="hidden" name="cur" value="USD"/>
+
+<!-- PAYPAL (선택) -->
+<input type="hidden" name="sender_account_id" value="<?=$MID?>" />
+<input type="hidden" name="sender_first_name" value="" />
+<input type="hidden" name="sender_last_name" value="" />
+<input type="hidden" name="sender_email" value="<?=$dbMemail?>" />
+<input type="hidden" name="sender_phone" value="" />
+<input type="hidden" name="sender_country_code" value="" />
+<input type="hidden" name="sender_create_date" value="<?=date("Y-m-d H:i:s",$dbMregdate)?>" />
+
+<?php
+$kk = 0;
+foreach($items as $key => $value){
+	$vv = explode("@@", $value);
+?>
+<input type="hidden" name="item_<?=$kk?>_product" value="<?=$vv[0]?>" />
+<input type="hidden" name="item_<?=$kk?>_quantity" value="<?=$vv[1]?>" />
+<input type="hidden" name="item_<?=$kk?>_unitPrice" value="<?=$vv[2]?>" />
+<input type="hidden" name="item_<?=$kk?>_link" value="https://english.cheonyu.com/product/view.html?qIDX=<?=$vv[3]?>" />
+<?php $kk ++; }  ?>
+<!-- 결제 응답 값 처리 파라미터 -->
+<input type="hidden" name="rescode" />
+<input type="hidden" name="resmsg" />
+<input type="hidden" name="authcode" />
+<input type="hidden" name="cardco" />
+
+<!-- 결제에 필요한 필수 파라미터 -->
+<input type="hidden" name="buyer" value="<?=$dbMname?> <?=$dbMjumin?>" /><!-- 이름 -->
+<input type="hidden" name="email" value="<?=$dbMemail?>" />
+<input type="hidden" name="amt" id="amt" value="" />
+<input type="hidden" name="_fgkey" id="_fgkey" value="" />
+<input type="hidden" name="lang" value="EN" />
+</form>
+
+</div>
+</div>
+
+<script language=javascript src="/order/order.js?<?=time();?>"></script>
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

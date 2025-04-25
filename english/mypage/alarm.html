@@ -1,0 +1,239 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+	
+	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/common.html";	
+?>
+
+<link rel="stylesheet" type="text/css" href="/mypage/mypage.css?2211">
+
+<!-- 마이페이지 시작 --->
+<div id="wrap">
+
+<?
+include_once $_SERVER['DOCUMENT_ROOT']."/mypage/menu.html";
+?>
+
+	<!-- mypageMain -->
+	<div id="mypageMain">
+
+	<?
+		include_once $_SERVER['DOCUMENT_ROOT']."/mypage/info.html";
+	?>
+	
+	<?
+		$query = "select a.*,b.Pname, b.IDX AS PIDX from 2011_stockAlram as a left join 2011_productInfo as b on a.PIDX = b.IDX where MID='" . $MID . "' and a.ALdeleted = 0 ";
+		$result = sql_query($query);
+		$TotalCount = mysqli_num_rows($result);
+		if (!$page) $page = 1;
+		$CntPerPage = 10;
+		$PagePerList = 5;
+		$StartPos = ($page - 1) * $CntPerPage;
+		$query .= " ORDER BY IDX DESC";
+		$query .= " LIMIT ".($page - 1) * $CntPerPage.",".$CntPerPage;
+		$result = sql_query($query);
+	?>
+	<script>
+		/*=============================================================================
+		입고알람
+		=============================================================================*/
+		
+		function fnDellAlram(idx){
+			if(!confirm('해당 입고알림을 삭제하시겠습니까?')){ return; }
+			var param='mode=Delete&inALIDX=' + idx;
+			
+			$.ajax({
+				url:'/product/ajaxAddAlarmNew.php',
+				type:"POST",
+				data : param,
+				dataType:"text",
+				error:fnErrorAjax,
+				success:function(_response){
+					var v = _response.split("##");
+					if(v[1]=="OK"){
+						alert("삭제되었습니다.");
+						location.href = "alarm.html?page=<?=$page?>";
+						return;
+					} else if(v[1]=="noMember") {
+						alert("로그인 정보가 없습니다.\n\n로그인을 하지 않으셨다면 로그인 후 다시 이용해 주세요.");
+						location.href = "/member/logout.html";
+						return;
+					} else {
+						fnErrorAjax();
+					}				
+				}
+			});
+		}	
+	</script>
+	<style>			
+		.ALhide {display:none;}  
+		.ALshow {display:table-row;} 
+		.ALitem td {} 
+	</style>
+	
+	<div class="qa_list">
+            <h3><img src="/img/mypage/tit_alarm.gif" alt="입고알림신청내역"></h3>
+            <table border="0" cellspacing="0" cellpadding="0">
+              <tr>
+                <th style="width:100px;" scope="col">알림받을번호</th>
+                <th scope="col">품명</th>
+                <th style="width:60px;" scope="col">희망수량</th>
+                <th style="width:50px;" scope="col">대기일</th>
+                <th style="width:55px;" scope="col">구매여부</th>
+                <th style="width:55px;" scope="col">등록일</th>
+                <th style="width:40px;" scope="col">입고일</th>
+                <th style="width:40px;" scope="col">도착일</th>
+                <th style="width:55px;" scope="col" class="none">알림취소</th>
+              </tr>
+			  
+			  <?
+				while($rs=sql_fetch_array($result)){
+					# DB 레코드 결과값 모두 변수로 전환
+					foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+					
+					if($dbALsms1 == "1"){
+						if($dbALstate==1) $stateStr2="<font color=red>X</font>";
+						else $stateStr2="<font class=blue><strong>발신</strong></font>";
+					} else {
+						$stateStr2 = "-";
+					}
+					
+					if($dbALsms2 == "1"){
+						if($dbALstate2==1)$stateStr="<font color=red>X</font>";
+						else $stateStr="<font class=blue><strong>발신</strong></font>";
+					} else {
+						$stateStr = "-";
+					}
+
+					if($dbOPname){
+						$Oname = " / <span style='font-size:9pt; color:#00A99C'>옵션 : ".$dbOPname."</span>";
+					} else {
+						$Oname = "";
+					}
+					
+				?>
+              <tr onmouseover="this.style.backgroundColor='#F7F7F7'" onmouseout="this.style.backgroundColor=''" style="cursor:pointer;" class="ALitem">
+                <td><?=$dbALhp?></td>
+                <td style="line-height:14pt; text-align:left;"><?=$dbPname?><?=$Oname?></td>
+                <td><?=$dbALstockCount?>개</td>
+                <td><?=$dbALday?>일</td>
+				<td>
+					<? 
+						if($dbALopt == 2) echo "확정";
+						else echo "미확정";
+					?>
+				</td>
+                <td><?=date("Y-m-d",$dbALregdate)?></td>
+                <td><?=$stateStr?></td>
+                <td><?=$stateStr2?></td>
+                <td style="cursor:default"><?if($dbALstate==1){?><img src="/img/mypage/btn_del.gif" alt="알림취소" style='cursor:pointer;' onclick='fnDellAlram(<?=$dbIDX?>)'><? } ?></td>
+              </tr>
+			  <tr class="ALhide">
+				<td>&nbsp;</td>
+				<td colspan="8" style="text-align:left; padding:5px;">
+
+						<table style="width:500px;">
+							<tr>
+								<td style="background-color:#f5f5f5;"><b>등록일시</td>
+								<td><?=date("Y-m-d H:i:s",$dbALregdate)?></td>
+								<td style="background-color:#f5f5f5;"><b>상품번호</td>
+								<td><?=$dbPIDX?></td>
+							</tr>
+							<tr>
+								<td style="width:110px;background-color:#f5f5f5;"><b>상품명</td>
+								<td style="width:190px;" colspan="3"><?=$dbPname?></td>
+							</tr>
+							<tr>
+								<td style="width:90px;background-color:#f5f5f5;"><b>옵션</td>
+								<td style="width:110px;" colspan="3">
+									<?=$dbOPname?>
+									<?
+										if($dbOPname) $dbOPname2 = "-".$dbOPname;
+									?>
+								</td>
+							</tr>
+							<tr>
+								<td style="background-color:#f5f5f5;"><b>구매 여부</td>
+								<td>
+									<input type="radio" <? if($dbALopt == "1") echo "checked"; ?> disabled> <? if($dbALopt == "1") echo "<b>"; ?>구매 미확정</b>&nbsp;
+									<input type="radio" <? if($dbALopt == "2") echo "checked"; ?> disabled> <? if($dbALopt == "2") echo "<b>"; ?>구매 확정</b>
+								</td>
+								<td style="background-color:#f5f5f5;"><b>구매 수량</td>
+								<td><?=$dbALstockCount?></td>
+							</tr>
+							<tr>
+								<td style="background-color:#f5f5f5;"><b>상품 <span style="color:blue;">입고일</span> 문자</td>
+								<td>
+									<input type="radio" <? if($dbALsms2 == "1") echo "checked"; ?> disabled> <? if($dbALsms2 == "1") echo "<b>"; ?>신청</b>&nbsp;
+									<input type="radio" <? if($dbALsms2 == "0") echo "checked"; ?> disabled> <? if($dbALsms2 == "0") echo "<b>"; ?>필요없음</b>
+								</td>
+								<td style="background-color:#f5f5f5;"><b>핸드폰 번호</td>
+								<td><?=$dbALhp?></td>
+							</tr>
+							<tr>
+								<td style="background-color:#f5f5f5;"><b>상품 <span style="color:blue;">도착시</span> 문자</td>
+								<td>
+									<input type="radio" <? if($dbALsms1 == "1") echo "checked"; ?> disabled> <? if($dbALsms1 == "1") echo "<b>"; ?>신청</b>&nbsp;
+									<input type="radio" <? if($dbALsms1 == "0") echo "checked"; ?> disabled> <? if($dbALsms1 == "0") echo "<b>"; ?>필요없음</b>
+								</td>
+								<td style="background-color:#f5f5f5;"><b>대기기간</td>
+								<td><?=$dbALday?>일</td>
+							</tr>
+							<tr>
+								<td style="background-color:#f5f5f5;"><b>문의내용</td>
+								<td colspan="3" style="text-align:left;padding-left:10px;"><?=nl2br($dbALcontent1);?></td>
+							</tr>
+							<tr>
+								<td style="background-color:#f5f5f5;"><b>예상입고일</td>
+								<td colspan="3"><?=$dbALpIn?></td>
+							</tr>
+							<? if($dbALcontent2){ ?>
+							<tr>
+								<td style="background-color:#f5f5f5;"><b>천유닷컴 답변</td>
+								<td colspan="3" style="text-align:left;padding-left:10px;"><?=nl2br($dbALcontent2);?></td>
+							</tr>
+							<? } ?>
+						</table>
+						<div style="clear:both"></div>
+						<p>&nbsp;</p>
+				
+				</td>
+			  </tr>
+			  <? } ?>
+            </table>
+
+		<div align="center" id="paging"><br/><? echo page_nav($TotalCount,$CntPerPage,$PagePerList,$page,$option); ?></div>
+                        
+			<div class="add_text_bottom">
+				* 입고알림 신청을 하시면 일시품절, 품절된 상품이 입고되는 경우 구매할 의사가 있을 때 알려드립니다. <br/>
+				* 30일이 지난 신청 내역은 자동 삭제됩니다.
+			</div>
+
+          </div>
+
+	<!-- //입고알림신청내역 -->
+	</div>
+
+</div>   
+<!-- //마이페이지 끝 ---> 
+
+
+<script type="text/javascript">  
+	$(function(){  
+		var article = (".qa_list .ALshow");  
+		$(".qa_list .ALitem td").click(function() {
+			var myArticle = $(this).parents().next("tr");
+			if($(myArticle).hasClass('ALhide')) {  
+				$(article).removeClass('ALshow').addClass('ALhide');  
+				$(myArticle).removeClass('ALhide').addClass('ALshow');  
+			} else {  
+				$(myArticle).addClass('ALhide').removeClass('ALshow');
+			}  
+		});  
+	});  
+</script>  
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

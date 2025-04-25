@@ -1,0 +1,116 @@
+<?php
+include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+ob_clean();
+
+$inFIDemail1 = addslashes(trim($inFIDemail1));
+$inFIDemail2 = addslashes(trim($inFIDemail2));
+$inFPWID = addslashes(trim($inFPWID));
+
+include_once "/home/cheonyu/public_html/_Include/PHPMailer/PHPMailerAutoload.php";
+
+if($mode == "checkID"){
+		
+	if(!$inFIDemail1 || !$inFIDemail2)
+	{
+		echo "<script> alert('We could not find the information.'); </script>";
+		exit();
+	}
+	
+	$sql = "select MID,Memail from 2011_memberInfo where Memail ='" . $inFIDemail1 ."@". $inFIDemail2 . "' and Mbirthday = 1 and Mdeleted=0 and Moutdate=0";
+	$rs = sql_fetch($sql);
+
+	if($rs['MID']){
+
+		$dbEmailAddr = $rs['Memail'];
+				
+		$mailForm = "mail_forgot.html";
+		$handle = fopen($mailForm,"r");	
+		$fContent = @stream_get_contents($handle); 
+
+		$fContent1 = "CHEONYU.COM user id is <b>".$rs['MID']."</b>";
+		$fMemo = "Find User ID";
+		$fContent = str_replace("{{Content}}",$fContent1,$fContent);
+		$fContent = str_replace("{{Title}}",$fMemo,$fContent);
+
+		$mail = new PHPMailer();
+		$mail->isSMTP(); 
+		$mail->SMTPAuth = true; 
+		$mail->SMTPSecure = "tls"; 
+		$mail->Host = "smtp.cafe24.com"; 
+		$mail->Port = 587; 
+		$mail->Username = "system@cheonyu.com"; 
+		$mail->Password = "gmlakd609"; 
+		$mail->CharSet = 'UTF-8';
+		$mail->From = "system@cheonyu.com";
+		$mail->FromName = "CHEONYUCOM";
+		$mail->Subject = "[CHEONYUCOM] Find user id";
+		$mail->msgHTML($fContent);
+		$mail->addAddress($dbEmailAddr);
+		$mail->send();
+		
+		$findStr = "We sent email the user id.";
+
+	} else {
+		$findStr = "We could not find the information!";
+	}
+	echo "<script> alert('".$findStr."'); </script>";
+	exit;
+
+} else if($mode == "checkPASS"){
+
+	if(!$inFPWID || !$inFIDemail11 || !$inFIDemail22)
+	{
+		echo "<script> alert('We couldn't find the information.'); </script>";
+		exit();
+	}
+	$inFPWname = $inFIDname2;
+	$sql = "select MID, MHP, Memail from 2011_memberInfo where MID='" . $inFPWID . "' and Memail ='" . $inFIDemail11 ."@". $inFIDemail22 . "'  and Mdeleted=0 and Moutdate=0";
+	if($rs=sql_fetch($sql))
+	{
+		//== 임시비밀번호 생성
+		$newPWD = randCodeNum(8);
+		
+		//== 비밀번호 업데이트
+		$sql = "update 2011_memberInfo set MPWD=old_password('" . $newPWD . "') where MID='" . $inFPWID . "' and  Memail='" . $inFIDemail11  ."@". $inFIDemail22 . "'";
+		sql_query($sql);
+
+		
+		$dbEmailAddr = $rs['Memail'];
+				
+		$mailForm = "mail_forgot.html";
+		$handle = fopen($mailForm,"r");	
+		$fContent = @stream_get_contents($handle); 
+
+		$fContent1 = $rs['MID'] . " temporary password is [ <b>" . $newPWD . "</b> ]";
+		$fMemo = "Find User password";
+		$fContent = str_replace("{{Content}}",$fContent1,$fContent);
+		$fContent = str_replace("{{Title}}",$fMemo,$fContent);
+
+		$mail = new PHPMailer();
+		$mail->isSMTP(); 
+		$mail->SMTPAuth = true; 
+		$mail->SMTPSecure = "tls"; 
+		$mail->Host = "smtp.cafe24.com"; 
+		$mail->Port = 587; 
+		$mail->Username = "system@cheonyu.com"; 
+		$mail->Password = "gmlakd609"; 
+		$mail->CharSet = 'UTF-8';
+		$mail->From = "system@cheonyu.com";
+		$mail->FromName = "CHEONYUCOM";
+		$mail->Subject = "[CHEONYUCOM] Find user password";
+		$mail->msgHTML($fContent);
+		$mail->addAddress($dbEmailAddr);
+		$mail->send();
+		
+		$findStr = "We sent email the user password.";
+
+	}
+	else
+	{
+		$findStr = "We could not find the information.";
+	}
+	echo "<script> alert('".$findStr."'); </script>";
+	exit;
+
+}
+?>

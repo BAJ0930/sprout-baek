@@ -1,0 +1,126 @@
+<style>
+    #mypageMain {width: 1200px; margin-left: 0;}
+    #mypageMain .info_help {width: 1200px; height: auto; flex-direction: column;}
+    #mypageMain .info_help > div {width: 100%;}
+    #mypageMain .info_help .content-items {text-align: center; flex-direction: column; gap: 8px; position: relative;}
+    #mypageMain .info_help ul {gap: 16px;}
+    #mypageMain .info_help ul li {width: 168px; flex: 1; border: 0; box-shadow: 0 4px 16px rgba(0,0,0,0.15);}
+    #mypageMain .info_help .info-total {width: 208px; font-size: 16px; font-weight: 600;}
+    #mypageMain .info_help .info-total strong {color: #005bf1; font-weight: 700; font-size: 22px;}
+    #mypageMain .info_help .info-basic strong {color: #333333; font-size: 18px; font-family: "PLBold"; display: block; margin-bottom: 8px;}
+    #mypageMain .info_help .info-basic span {font-size: 14px; display: flex; align-items: center; gap: 6px; width: auto;}
+    #mypageMain .info_help .info-basic span img {height: 16px;}
+    #mypageMain .info_help .my-button-list .content-items span {font-size: 16px; font-weight: 600; color: #333333;}
+    #mypageMain .info_help .my-button-list .content-items .count {
+        background: #ff3838; line-height: 14px; padding: 2px 4px 0; border-radius: 8px; color: #ffffff; 
+        font-size: 11px; font-weight: 600; position: absolute; top: -8px; right: 40px;
+    }
+
+    #mypageMain .qa_list table {border: 0;}
+    #mypageMain .qa_list th {background: #f8f8f8; border-bottom: 0; font-weight: 600;}
+    #mypageMain .qa_list th:first-child {border-radius: 8px 0 0 8px;}
+    #mypageMain .qa_list th:last-child {background: #f8f8f8; border-radius: 0 8px 8px 0;}
+    #mypageMain .qa_list td {display: table-cell; text-align: center; font-size: 16px; line-height: 1.5; padding: 12px 0; border-bottom: 1px solid #dedede;}
+    #mypageMain .qa_list td.stock-status {text-align: left;}
+    #mypageMain .qa_list td .btn-style {margin: 4px auto 0; width: fit-content;}
+
+    span.order-number {text-decoration: underline; font-weight: 600;}
+    span.order-price {font-weight: 700; color: #111111; font-size: 18px; display: block;}
+    span.order-items {color: #888888;}
+    span.done {color: #36B636; font-weight: 600;}
+    span.shipped {color: #FF7621; font-weight: 600;}
+    span.pending {color: #333333; font-weight: 600;}
+
+    .inquiry-list .inquiry-item {padding: 12px 0; border-bottom: 1px solid #dedede;}
+    .inquiry-list .inquiry-item .status {display: inline-block; line-height: 1; padding: 4px 10px; border-radius: 50px; font-family: "PLBold"; font-size: 12px;}
+    .inquiry-list .inquiry-item .in-progress {background: #FFF2C6; color: #D3A300;}
+    .inquiry-list .inquiry-item .answered {background: #C6FFD7; color: #00AD34;}
+    .inquiry-list .inquiry-item .title {font-size: 16px; font-weight: 600; margin-left: 4px;}
+    .inquiry-list .inquiry-item .message {
+        color: #888888; font-size: 15px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 840px;
+    }
+    .inquiry-list .inquiry-item .date {color: #888888; font-size: 15px; text-align: right;}
+
+    #mypageMain .qa_list .wishlist-container {margin: auto auto 64px;}
+    #mypageMain .qa_list .wishlist-container table .item-info {display: flex; align-items: center; gap: 16px; text-align: left;}
+    #mypageMain .qa_list .wishlist-container table .item-info > img {width: 72px; height: 72px; border-radius: 8px;}
+    #mypageMain .qa_list .wishlist-container table .item-info .features {margin-bottom: 4px;}
+    #mypageMain .qa_list .wishlist-container table .item-info .features span {
+        padding-right: 8px; border-right: 1px solid #dedede; line-height: 15px; font-size: 15px; color: #888888; margin-right: 4px;
+    }
+    #mypageMain .qa_list .wishlist-container table .item-info .features span:last-child {border: 0;}
+    #mypageMain .qa_list .wishlist-container table .item-info > img .price {font-size: 16px; font-weight: 600; color: #111111;}
+    #mypageMain .qa_list .wishlist-container table .price-wrap .price {font-weight: 600; line-height: 1; color: #111111; margin-bottom: 8px;}
+    #mypageMain .qa_list .wishlist-container table .price-wrap .btn-style {margin: 6px auto 0 auto;}
+    #mypageMain .qa_list .wishlist-container table .price-wrap .discount {display: block; font-size: 14px; color: #888888;}
+
+    #mypageMain .qa_list .wishlist-container table .stock-status {font-size: 13px; color: #888888; text-align: left;}
+    #mypageMain .qa_list .wishlist-container table .stock-status .in-stock {color: #00AD34;}
+    #mypageMain .qa_list .wishlist-container table .stock-status .low-stock {background: #ff3838; color: #ffffff; font-weight: 600; padding: 0px 5px; border-radius: 4px; font-size: 12px; display: block; width: fit-content;}
+    #mypageMain .qa_list .wishlist-container table .stock-status .sold-out {background: #333333; color: #ffffff; font-weight: 600; padding: 0px 5px; border-radius: 4px; font-size: 12px; display: block; width: fit-content;}
+    
+    .subTitle-B .btn-seeMore a {
+        font-size: 14px; color: #555555; font-family: "Satoshi"; font-weight: 400; display: block; position: relative; background: #f4f4f4; 
+        padding: 0px 10px 0 27px; border-radius: 8px; border: 1px solid #f4f4f4; line-height: 26px; height: 28px;
+    }
+    .subTitle-B .btn-seeMore a::after {
+        content: "+"; display: block; position: absolute; top: -2px; left: 9px; font-size: 20px; font-weight: 700; color: #005bf1;
+    }
+</style>
+
+<div class="subTop-A">
+    <div class="subTitle-A">Your Account</div>
+</div>
+<div class="info_help flex-col-spacer">
+	<div class="flex-row-spacer" style="border-bottom: 1px solid #dedede; padding: 0 0 20px 0;">
+        <div class="info-basic">
+            <strong>Welcome, <a href="/mypage/myinfo.html"><?=$MID?></a>!</strong>
+            <div class="flex-row-gap16">
+                <span><img src="/img/mypage/ico-mypage-basic01.svg" alt="User Name"> Mister Tester</span>
+                <span><img src="/img/mypage/ico-mypage-basic02.svg" alt="User Phone"> 000-000-0000</span>
+                <span><img src="/img/mypage/ico-mypage-basic03.svg" alt="User Address"> 4567 Maple Avenue, Los Angeles, CA 90001, United States</span>
+            </div>
+        </div>
+        <button type="button" class="btn-style btn-color-white btn-h32 btn-round">Edit Info</button>
+    </div>
+    <div class="flex-row-spacer" style="margin-top: 20px;">
+        <div class="info-total">
+            <span>This Month's Total</span><br>
+            <span>USD <strong>245.23</strong></span>
+        </div>
+        <ul class="my-button-list">
+            <li onClick="location.href='/mypage/shipping.html'">
+                <div class="content-items">
+                    <img src="/img/mypage/img-my-receipt.svg" alt="Your Orders">
+                    <span>Your Orders</span>
+                </div>
+            </li>
+            <li onClick="location.href='/mypage/shipping.html'">
+                <div class="content-items">
+                    <img src="/img/mypage/img-my-inquiries.svg" alt="1:1 Inquiries">
+                    <span>1:1 Inquiries</span>
+                </div>
+            </li>
+            <li onClick="location.href='/mypage/shipping.html'">
+                <div class="content-items">
+                    <div class="count">77</div>
+                    <img src="/img/mypage/img-my-wishlist.svg" alt="Wishlist">
+                    <span>Wishlist</span>
+                </div>
+            </li>
+            <li onClick="location.href='/mypage/shipping.html'">
+                <div class="content-items">
+                    <div class="count">77</div>
+                    <img src="/img/mypage/img-my-brands.svg" alt="Favorite Brands">
+                    <span>Favorite Brands</span>
+                </div>
+            </li>
+            <li onClick="location.href='/mypage/shipping.html'">
+                <div class="content-items">
+                    <img src="/img/mypage/img-my-restocked.svg" alt="Back in Stock">
+                    <span>Back in Stock</span>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>

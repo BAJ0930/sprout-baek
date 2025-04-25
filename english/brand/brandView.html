@@ -1,0 +1,339 @@
+<?
+include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+
+$s3 = mysqli_real_escape_string($g5['connect_db'], $s3);
+
+if($s3) {
+
+	#-- 브랜드 정보 불러오기
+	$sql = "select * from 2011_brandInfo where IDX='" . $s3 . "'";
+	$BRrs = sql_fetch($sql);
+	# DB 레코드 결과값 모두 변수로 전환
+	foreach ($BRrs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+	
+	if($dbBRsaveFile1)$img1 = "<img src='/_DATA/brand/" . $dbBRsaveFile1 . "'>";
+	if($dbBRsaveFile2)$img2 = "<img src='/_DATA/brand/" . $dbBRsaveFile2 . "'>";
+	if($dbBRsaveFile3)$img3 = "<img src='/_DATA/brand/" . $dbBRsaveFile3 . "'>";
+	if($dbBRsaveFile4)$img4 = "<img src='/_DATA/brand/" . $dbBRsaveFile4 . "'>";
+	if($dbBRsaveFile5)$img5 = "<img src='/_DATA/brand/" . $dbBRsaveFile5 . "'>";
+	
+	$sql = " select count(BRIDX) as BRcount2 from 2011_productInfo where (BRIDX = '" . $s3 . "' or BRIDX2 = '" . $s3 . "') and Pagree = 1 and Pstate < 10 and Pdeleted = 0 and Pshop = '" . $shopID . "' group by BRIDX ";
+	$BRcountData = sql_fetch($sql);
+	if($BRcountData['BRcount2'] < 1){
+		echo "
+			<script>
+				alert('There are no items to show in this page.');
+				history.go(-1);
+			</script>
+		";
+		exit;
+	}
+
+	//누적판매수
+	$yearDate = mktime(0, 0, 0, 1, 1, 2015);
+	$sql = "SELECT sum( PsellCount ) AS sellCount FROM 2011_productInfo WHERE (BRIDX = '" . $s3 . "' or BRIDX2 = '" . $s3 . "') AND Pagree = 1 AND Pregdate > '" . $yearDate . "' ";
+	$BRdata1 = sql_fetch($sql);
+	
+	//구매업체수
+	$sql = "SELECT CNT FROM nBrandRank WHERE BRIDX = '" . $dbIDX . "'";
+	$BRdata2 = sql_fetch($sql);
+	$BRdata2 = $BRdata2['CNT'];
+	
+	//판매상품수
+	$sql = "SELECT IDX FROM 2011_productInfo WHERE (BRIDX = '" . $s3 . "' or BRIDX2 = '" . $s3 . "') AND Pagree = 1 AND Pstate < 10 ";
+	$BRdata3 = mysqli_num_rows(sql_query($sql));
+	
+	//신상품수 60일 이내
+	$wdate = time() - (60 * 86400);
+	$sql = "SELECT count( IDX ) AS newCount FROM 2011_productInfo WHERE (BRIDX = '" . $s3 . "' or BRIDX2 = '" . $s3 . "') AND Pagree = 1 AND Pstate < 10 AND Pregdate > '" . $wdate . "' ";
+	$BRdata4 = sql_fetch($sql);
+	
+	$BRdata1['sellCount'] = ceil($BRdata1['sellCount'] * 1.3);
+	$BRdata2 = ceil($BRdata2 * 1.2);
+}
+else
+{
+	echo "<script>alert('ERROR');</script>";
+	exit();
+}
+
+if($s3 == "476"){
+	echo "<script> location.href = '/brand/sampleView.html?s3=476'; </script>";
+	exit;
+}
+
+?>
+<link rel="stylesheet" type="text/css" href="/brand/brand.css?v=<?= time(); ?>">
+<link rel="stylesheet" type="text/css" href="/product/storage.css?v=<?= time(); ?>">
+<style>
+    div.info_box { position:absolute; top:13px; right:33px; }
+    .info_box svg { fill:#bbb; }
+    .hint--top:after { margin-left:-120px;}
+    #brandAll .brand_main_new .brand_rank {height:auto; display: flex; justify-content: space-between; width: 100%; gap: 15px;}
+    #brandAll .brand_main_new .brand_rank::after {content: ""; width:auto; height:auto; display:block; clear:both;}
+    #brandAll .brand_stats02 { float:left; width:721px; height:85px; }
+    #brandAll .brand_stats02 ul { height:83px; width:100%; overflow:hidden; list-style:none; margin:0; padding:0; border:#ddd solid 1px; border-radius:5px; }
+    .brand_stats02 ul, .brand_stats02 ul * { box-sizing:border-box; }
+    #brandAll .brand_stats02 li { width:calc(100% / 3); height:83px; margin:0; padding:0 10px; float:left; font-weight:bold; text-align:right; }
+    .brand_stats02 li.stats1, .brand_stats02 li.stats2 { border-right:1px solid #d7d7d7; }
+    .brand_stats02 li .ptsans { position:relative; border-bottom:#e0e0e0 solid 1px; }
+    .brand_stats02 li .ptsans:after { position:absolute; content:''; top:12px; width:16px; height:16px; display:block; background-size:16px 16px !important; }
+    .brand_stats02 li.stats1 span.ptsans:after { left:75px; background:url('https://www.cheonyu.com/img/brand/data01.svg') no-repeat; }
+    .brand_stats02 li.stats2 span.ptsans:after { left:37px; background:url('https://www.cheonyu.com/img/brand/data02.svg') no-repeat; }
+    .brand_stats02 li.stats3 span.ptsans:after { right:70px;background:url('https://www.cheonyu.com/img/brand/data03.svg') no-repeat; }
+    #brandAll .brand_main_new .brand_rank .brand_stats02 li span.ptsans { display:block; line-height:42px; font-size:14px; font-weight:500; }
+    #brandAll .brand_main_new .brand_rank .brand_stats02 li span.ltfont { display:block; font-size:16px; padding:10px 5px 0 5px; font-weight:700; }
+
+
+    #brandAll .brand_main_new .zim {width: 435px; text-align: center; padding-top: 56px; box-sizing: border-box;}
+    #brandAll .brand_main_new .zim .brand_img {width: auto; height: auto; line-height: 1;}
+    #brandAll .brand_main_new .zim .brand_img img {width: auto; height: auto;}
+    #brandAll .brand_main_new .zim span {display: block; line-height: 1; height: auto; margin: 0 auto; width: fit-content; padding: 0;}
+    #brandAll .brand_main_new .zim span a {font-size: 15px; display: block; width: fit-content; color: #333333; margin: 8px 0 0;}
+    #brandAll .brand_main_new .rankImg {background: url('/img/brand/brand_preference.png') no-repeat center; width: 437px; height: 83px; border: 1px solid #dddddd; border-radius: 6px; box-sizing: border-box; text-align: center;}
+    #brandAll .brand_main_new .rankImg ul {display: inline-block; margin: 43px auto 0;}
+    div.info_box {display: none;} /* 툴팁 */
+    .sum_box {margin-top: 20px;}
+</style>
+<!-- 브랜드 시작 --->    
+<div id="wrap">
+    <?
+        if($dbBRsaveFile1)
+            $brandIMG = "<img src=\"/_DATA/brand/".$dbBRsaveFile1."\" alt=\"".$BrandRow['BRkname']."\" />";
+        else
+            $brandIMG = "<img src='/img/ico/no.gif' alt=\"".$BrandRow['BRkname']."\" />";
+    ?>
+	<!-- brandAll -->
+	<div id="brandAll">
+		<?if($dbBRbrand == '1'){?>
+			<style>
+			.brand_main_new { display:none; }
+			.brand_sub_main, .brand_sub_main * { box-sizing:border-box; }
+			.brand_sub_main { width:100%; position:relative; overflow:hidden; padding:50px 0 30px 0; border:#eee solid 2px; box-shadow:0 3px 7px rgba(0,0,0,.05); text-align:center; border-radius:6px; }
+			.brand_sub_main .bsm_tit { margin:0; font-size:28px; font-family: 'Montserrat', sans-serif; font-weight:bold; }
+			.brand_sub_main .bsm_tit .bsm_tit_eng { margin-left:3px; font-size:20px; font-weight:normal; color:#666; font-family: 'Montserrat', sans-serif !important; }
+			.brdtxt_zzim { display:block; width:119px; margin:16px auto 0 auto;padding:0; }
+			</style>
+			<div class="brand_sub_main">
+                <p class="bsm_tit"><?=$dbBRename?><a href="#" onClick="javascript:fnInFavorite(2,'<?=$s3?>')" class="brdtxt_zzim"><img src="/img/brd_zzim01.png?2206" alt="Favorite Brand"></a></p>
+			</div>
+		<?}?>
+	
+		<div class="brand_main_new" style="position:relative;">           
+			<div class="zim">
+				<span class="brand_img">
+                    <?php 
+                    // 브랜드 이미지 출력
+                    if ($brandIMG) {
+                        echo $brandIMG;
+                    }
+                
+                    // 브랜드명이 '1'일 경우의 스타일 및 텍스트 처리
+                    if ($BrandRow['BRbrand'] == '1') { 
+                    ?>
+                        <style>
+                            .brand_top { text-align: right; }
+                            .brand_top img { display: none; }
+                            .top_bsm_tit { 
+                                display: inline-block; 
+                                padding: 25px 8px 0 0; 
+                                font-family: 'Montserrat', sans-serif; 
+                                font-size: 22px; 
+                                letter-spacing: -0.05em; 
+                                font-weight: 500; 
+                                color: #666; 
+                            }
+                        </style>
+                        <span class="top_bsm_tit"><?=$BrandRow['BRename']?></span>
+                    <?php 
+                    } 
+                    ?>
+                </span>
+                
+                <span id="favorite-icon-<?=$s3?>">
+                    <a href="#" onClick="javascript:fnInFavorite(2, '<?=$s3?>'); return false;">❤️ Favorite</a>
+                </span>
+			</div>
+			
+			<div class="brand_story_new">
+			<?
+				if($dbBRsaveFile3) echo $img3;
+				else echo "<img src='/img/brand_no_img.jpg' border='0'>";
+			?>
+			</div>
+			
+			<? 
+				if($dbBRshow == "1"){ 
+					if($dbBRrank == "0"){
+						if($dbBRpremium == "1") {
+							$rankImg = 5;
+						} else {
+							
+							if($BRdata2 >= 0 && $BRdata2 < 100) $rankImg = 1;
+							else if($BRdata2 >= 100 && $BRdata2 < 200) $rankImg = 2;
+							else if($BRdata2 >= 200 && $BRdata2 < 250) $rankImg = 3;
+							else $rankImg = 4;
+							
+						}							
+					} else {
+						$rankImg = $dbBRrank;
+					}
+			?>
+			<div style="clear:both;"></div>
+			<div class="brand_rank">
+					
+				<span class="rankImg">
+					<div class="hint hint--top info_box" data-hint="누적판매 수, 구매업체 수, 판매상품 수, 신상품 수 각각의 데이터를 종합하여 선정됩니다. (매월 1일 기준으로 집계)"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" class="eva eva-question-mark-circle eva-animation eva-icon-hover-zoom" fill="inherit"><g data-name="Layer 2"><path d="M12 2a10 10 0 1010 10A10 10 0 0012 2zm0 16a1 1 0 111-1 1 1 0 01-1 1zm1-5.16V14a1 1 0 01-2 0v-2a1 1 0 011-1 1.5 1.5 0 10-1.5-1.5 1 1 0 01-2 0 3.5 3.5 0 114.5 3.34z" data-name="menu-arrow-circle"/></g></svg></div>
+					<ul>
+						<? 
+							for($k = 0; $k < 5; $k ++){
+								if($k < $rankImg) $starImg = "";
+								else $starImg = "_off";
+						?>
+						<li><img src="/img/brand/star<?=$starImg?>.png" border="0"></li>
+						<? } ?>
+					</ul>
+				</span>
+				
+				<div class="brand_stats02">
+					<ul>
+						<li class="stats1"><span class="ptsans">Accumulated Sales</span><span class="ltfont"><?=number_format($BRdata1['sellCount']);?></span></li>
+						<li class="stats2"><span class="ptsans">Vendor Who's Purchased</span><span class="ltfont"><?=number_format($BRdata2);?></span></li>
+						<li class="stats3"><span class="ptsans">Sales Item</span><span class="ltfont"><?=number_format($BRdata3);?></span></li>
+					</ul>
+				</div>
+
+			</div>
+			<div id="brand_status" style="display:none; float:left;margin:26px 0px 0px 0px;">
+				<div class="brand_ic"></div>
+				<div style="display:block; float:left; padding:0px 0px 0px 42px;"><img src="/img/brand/ic_data.gif" border="0"></div>
+				<ul style="float:left; padding:0px 0px 0px 56px; width:720px;">
+					<li style="padding-bottom:13px; color:#666666; font-weight:bold; font-size:9pt;">All data are based on figure of cheonyu.com internal online-ordering records.</li>
+					<li style="padding:1px 0px; color:#848484; font-size:9pt;"><span style="color:#47afc5;">Brand Preference</span> : Each data of number of accumulated sales, vendor purchased, item sales and new item will be put together and ranked. <span style="color:#79a7d6;">(Counting based on 1st of every month)</span></span></li>
+					<li style="padding:1px 0px; color:#848484; font-size:9pt;"><span style="color:#47afc5;">Accumulated sales</span> : Number of accumulated sales of the brand. <span style="color:#79a7d6;">(January. 2015- Count)</span></li>
+					<li style="padding:1px 0px; color:#848484; font-size:9pt;"><span style="color:#47afc5;">Vendor who’s purchased</span> : Number of vendor who’s purchased. <span style="color:#79a7d6;">(January. 2015- Count)</span></li>
+					<li style="padding:1px 0px; color:#848484; font-size:9pt;"><span style="color:#47afc5;">Sales item</span> : The Figure includes the brand on sale and brand product’s option. <span style="color:#79a7d6;">January. 2015- Count)</span></li>
+					<li style="padding:1px 0px; color:#848484; font-size:9pt;"><span style="color:#47afc5;">New items</span> : Number of the brand’s new item which is registered in 60 days.</li>
+				</ul>
+			</div>
+				
+			<div id="brand_story" style="display:none; float: left; 0; margin: 26px 0px 0px 0px;">
+				<div class="brand_ic2"></div>
+				<div style="display:block; float:left; padding:0px 0px 0px 35px;"><img src="/img/brand/ic_bstory.gif" border="0"></div>
+				<ul style="float:left; padding:0px 0px 0px 33px; ">
+					<li style="padding-bottom:13px; color:#666666; font-weight:bold; ">Brand story <?=$dbBRkname?></li>
+					<li style="padding:1px 0px; color:#848484; width:720px; font-size:9pt;"><?=$dbBRmemo?></li>
+				</ul>
+			</div>
+		</div>
+		<script  type='text/javascript'>
+			$(document).ready(function(){
+				$(".bt_bstory").click(function() {
+					$(".bt_bstory").attr("src","/img/brand/bt_bstory_on.gif?2");
+					$(".bt_data").attr("src","/img/brand/bt_data_off.gif?2");
+					$("#brand_status").hide();
+					$("#brand_story").toggle();
+				});
+				$(".bt_data").click(function() {
+					$(".bt_bstory").attr("src","/img/brand/bt_bstory_off.gif?2");
+					$(".bt_data").attr("src","/img/brand/bt_data_on.gif?2");
+					$("#brand_story").hide();
+					$("#brand_status").toggle();
+				});
+					
+				$(".bt_bstory").mouseover( function(){
+					$(this).attr( 'src', '/img/brand/bt_bstory_on.gif' );
+				}).mouseout( function() {
+					if($("#brand_story").css("display") == "block") $(this).attr( 'src', '/img/brand/bt_bstory_on.gif' );
+					else $(this).attr( 'src', '/img/brand/bt_bstory_off.gif' );
+				});
+				$(".bt_data").mouseover( function(){
+					$(this).attr( 'src', '/img/brand/bt_data_on.gif' );
+				}).mouseout( function() {
+					if($("#brand_status").css("display") == "block") $(this).attr( 'src', '/img/brand/bt_data_on.gif' );
+					else $(this).attr( 'src', '/img/brand/bt_data_off.gif' );
+				});
+			});
+		</script>
+		<? } ?>
+	</div>
+    <!-- //brandAll -->
+	<p>&nbsp;</p>
+        
+	<!-- brandProduct -->
+	<div id="brandProduct">
+		<?
+			$row1 = sql_fetch(" select count(IDX) as cnt from 2011_productInfo where Pcategory3 LIKE 'A%' and BRIDX='" . $s3 . "'  and Pagree = 1 and Pstate < 10 and Pdeleted = 0 ");
+			$row2 = sql_fetch(" select count(IDX) as cnt from 2011_productInfo where Pcategory3 LIKE 'B%' and BRIDX='" . $s3 . "'  and Pagree = 1 and Pstate < 10 and Pdeleted = 0 ");
+			$row3 = sql_fetch(" select count(IDX) as cnt from 2011_productInfo where Pcategory3 LIKE 'C%' and BRIDX='" . $s3 . "'  and Pagree = 1 and Pstate < 10 and Pdeleted = 0 ");
+			$row4 = sql_fetch(" select count(IDX) as cnt from 2011_productInfo where Pcategory3 LIKE 'D%' and BRIDX='" . $s3 . "'  and Pagree = 1 and Pstate < 10 and Pdeleted = 0 ");
+			$row5 = sql_fetch(" select count(IDX) as cnt from 2011_productInfo where Pcategory3 LIKE 'E%' and BRIDX='" . $s3 . "'  and Pagree = 1 and Pstate < 10 and Pdeleted = 0 ");
+			$row6 = sql_fetch(" select count(IDX) as cnt from 2011_productInfo where Pcategory3 LIKE 'G%' and BRIDX='" . $s3 . "'  and Pagree = 1 and Pstate < 10 and Pdeleted = 0 ");
+			$row7 = sql_fetch(" select count(IDX) as cnt from 2011_productInfo where Pcategory3 LIKE 'F%' and BRIDX='" . $s3 . "'  and Pagree = 1 and Pstate < 10 and Pdeleted = 0 ");
+			$row8 = sql_fetch(" select count(IDX) as cnt from 2011_productInfo where Pcategory3 LIKE 'I%' and BRIDX='" . $s3 . "'  and Pagree = 1 and Pstate < 10 and Pdeleted = 0 ");
+			$row9 = sql_fetch(" select count(IDX) as cnt from 2011_productInfo where Pcategory3 LIKE 'J%' and BRIDX='" . $s3 . "'  and Pagree = 1 and Pstate < 10 and Pdeleted = 0 ");
+			$row10 = sql_fetch(" select count(IDX) as cnt from 2011_productInfo where Pcategory3 LIKE 'H%' and BRIDX='" . $s3 . "'  and Pagree = 1 and Pstate < 10 and Pdeleted = 0 ");
+		?>
+		<ul class="CategoryList" id="CategoryList">
+		<li><a href='/brand/brandView.html?cateIDX=&s3=<?=$s3?>' <? if(!$cateIDX) echo 'class="select line01"'; ?>>ALL</a></li>
+		<? if($row1['cnt'] > 0) { ?><li><a class="line01" href='/brand/brandView.html?cateIDX=1&s3=<?=$s3?>' <? if($cateIDX == "1") echo 'class="select"'; ?> id="blink1">Stationery</a></li><? } ?>
+		<? if($row2['cnt'] > 0) { ?><li><a href='/brand/brandView.html?cateIDX=14&s3=<?=$s3?>' <? if($cateIDX == "14") echo 'class="select"'; ?> id="blink2">Office<br/>Supplies</a></li><? } ?>
+		<? if($row3['cnt'] > 0) { ?><li><a href='/brand/brandView.html?cateIDX=22&s3=<?=$s3?>' <? if($cateIDX == "22") echo 'class="select"'; ?> id="blink3">Fashion<br/>Accessories</a></li><? } ?>
+		<? if($row4['cnt'] > 0) { ?><li><a href='/brand/brandView.html?cateIDX=27&s3=<?=$s3?>' <? if($cateIDX == "27") echo 'class="select"'; ?> id="blink4">Camping<br/>Travel</a></li><? } ?>
+		<? if($row5['cnt'] > 0) { ?><li><a class="line01" href='/brand/brandView.html?cateIDX=33&s3=<?=$s3?>' <? if($cateIDX == "33") echo 'class="select"'; ?> id="blink5">Home Decor</a></li><? } ?>
+		<? if($row6['cnt'] > 0) { ?><li><a href='/brand/brandView.html?cateIDX=46&s3=<?=$s3?>' <? if($cateIDX == "46") echo 'class="select"'; ?> id="blink7">Call Phones<br/>Tablets Accs.</a></li><? } ?>
+		<? if($row7['cnt'] > 0) { ?><li><a href='/brand/brandView.html?cateIDX=38&s3=<?=$s3?>' <? if($cateIDX == "38") echo 'class="select"'; ?> id="blink6">Pens/School<br/>supplies</a></li><? } ?>
+		<? if($row8['cnt'] > 0) { ?><li><a href='/brand/brandView.html?cateIDX=376&s3=<?=$s3?>' <? if($cateIDX == "376") echo 'class="select"'; ?> id="blink9">Kitchen<br/>Kids Dinnerware</a></li><? } ?>
+		<? if($row10['cnt'] > 0) { ?><li><a href='/brand/brandView.html?cateIDX=375&s3=<?=$s3?>' <? if($cateIDX == "375") echo 'class="select"'; ?> id="blink8">Toys<br/>Dolls</a></li><? } ?>
+		</ul>
+		<!-- 단어별 브랜드 -->
+		<br/>
+		<?
+			if($cateIDX) {
+				echo "<div style='width:920px; left:0px; float:left; background-color:#ecf0fe; padding-top:10px; padding-bottom:10px; padding-left:60px;'>";
+				$cIDX = sql_fetch( " SELECT CTlv1 FROM 2011_categoryInfo WHERE IDX = '$cateIDX' " );
+				$query4 = " SELECT * FROM 2011_categoryInfo WHERE CTlv1 = '$cIDX[CTlv1]' AND CTlv3 = 0 ORDER BY IDX ASC ";
+				$result4 = sql_query($query4);
+				while($data4 = sql_fetch_array($result4)){
+					$wcnt = sql_fetch(" SELECT count(IDX) as cnt from 2011_productInfo where Pcategory3 LIKE '".$data4[CTcode]."%' and BRIDX='" . $s3 . "' and Pshop='" . $shopID . "' AND Pdeleted=0 AND Pprice3>0 AND Pstate<10 AND Pagree=1");
+					if($wcnt['cnt'] == 0) continue;
+		?>
+			<span style='float:left; width:250px;'><a href='/brand/brandView.html?cateIDX=<?=$data4['IDX']?>&s3=<?=$s3?>' style='font:bold 11px/24px Verdana; color:#707070; padding-left:20px;'><?=$data4[CTename]?></a></span>
+		<?
+				}
+				echo "</div>";
+				echo "<script> $('#blink".$cIDX[CTlv1]."').addClass('select'); </script>";
+			}
+		?>
+		<!-- //단어별 브랜드 -->
+
+		<div id="ProductCount" style="display:none;"></div>
+		
+		<div id="sub_list">
+		<?
+			include_once $_SERVER['DOCUMENT_ROOT']."/product/top.html";
+			include_once $_SERVER['DOCUMENT_ROOT']."/product/list_inc.html"; 
+		?>
+		</div>
+
+		<script type="text/javascript">
+			$("#CategoryList li a").each(function () {
+				$(this).click(function () {
+					$(this).addClass("select");
+					$("#CategoryList li a").removeClass("select");
+					$(this).siblings().removeClass("select");
+				});
+			});
+		</script>
+    </div>
+    <!-- //서브리스트 -->
+        
+
+<!-- //브랜드 끝 ---> 
+</div>             
+                    
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

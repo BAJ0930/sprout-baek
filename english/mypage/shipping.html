@@ -1,0 +1,428 @@
+<?php
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+	
+	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/common.html";	
+
+	#======== 날짜 구하기 =======================
+	//-- 오늘
+	$day11 = date("Y-m-d");
+	$day12 = date("Y-m-d");
+
+	//-- 어제
+	$day21 =date("Y-m-d",strtotime("-1 day"));
+	$day22 =date("Y-m-d",strtotime("-1 day"));
+
+	//-- 이번주
+	$day31 =date("Y-m-d",strtotime("last Monday"));
+	$day32 =date("Y-m-d",strtotime("next Sunday"));
+
+	//-- 지난주
+	$day41 =date("Y-m-d",strtotime("-1 week last Monday"));
+	$day42 =date("Y-m-d",strtotime("-1 week next Sunday"));
+
+	//-- 이번달
+	$day51 =date("Y-m-d",mktime(0,0,0,date("m"),1,date("Y")));
+	$day52 =date("Y-m-d",mktime(0,0,0,date("m"),31,date("Y")));
+
+	//-- 최근한주
+	$day61 =date("Y-m-d",strtotime("-6 day"));
+	$day62 =date("Y-m-d");
+
+	//-- 최근한달
+	$day71 =date("Y-m-d",strtotime("-30 day"));
+	$day72 =date("Y-m-d");
+
+	// -- 한달
+	$day81 =date("Y-m-d",strtotime("-90 day"));
+	$day82 =date("Y-m-d");
+
+	//-- 최근한달
+	$day91 =date("Y-m-d",strtotime("-180 day"));
+	$day92 =date("Y-m-d");
+?>
+
+
+<link rel="stylesheet" type="text/css" href="/mypage/mypage.css?v=<?= time(); ?>">
+<link href='/css/button.css' rel='stylesheet' type='text/css'>
+
+<script type="text/javascript">
+function fnCancelOrder(qIDX,qMode) {
+	fnViewPopup("pop_10","qIDX=" + qIDX + "&qMode=" + qMode);
+	return;		
+}
+
+function fnCancelOrderSave() {
+	var idx = $("INPUT[id='qIDX']").val();
+	var v = $("[name='OcancelType']:checked").val();
+	var rs = $("INPUT[id='OcancelReason']");
+	var mode = $("INPUT[id='qMode']").val();
+
+	if(v==5 && rs.val()=="") 	{
+		alert("Please enter ETC.");
+		rs.focus();
+		return;
+	}
+
+	var param="Ctype=" + v + "&Creason=" + rs.val() + "&qIDX=" + idx + "&qMode=" + mode;
+	$.ajax({
+		url:"ajaxCancelOrder.php",
+		type:"POST",
+		cache:false,
+		data : param,
+		dataType:"text",
+		error:fnErrorAjax,
+		success:function(_response)
+		{
+			v = _response.split("##");
+			if(v[1]=="OK") {
+				alert('Your cancellation has been completed.');
+				document.location.reload();
+			} else if(v[1] == "ErrorCard") {
+				alert("CARD ERROR");
+			} else {
+				fnErrorAjax();
+			}
+		}
+	});
+}
+</script>
+
+<!-- 마이페이지 시작 --->    
+<div id="wrap">
+
+	<?	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/menu.html"; ?>
+	
+	<!-- mypageMain -->
+	<div id="mypageMain">
+	
+	<? include_once $_SERVER['DOCUMENT_ROOT']."/mypage/top.html"; ?>      
+	
+	<?			
+		/*=======================================================================================
+		회원 처리
+		=======================================================================================*/
+		if($MID){
+			$StateCount[0]=0;
+			$StateCount[1]=0;
+			$StateCount[2]=0;
+			$StateCount[3]=0;
+			
+			/*=======================================================================================
+			현 주문상태 구하기  1) 결제 관련 (배송준비중 / 배송완료된 건은 제외)
+			=======================================================================================*/
+			$sql = "select min(OpayState) as OpayState from 2011_orderInfo as a left join 2011_orderDeliveryInfo as b on a.IDX = b.OIDX where  MID='" . $uid . "' and a.Odeleted=0 and ODstate=1 and a.OpayState<>88 group by a.IDX";
+			$result = sql_query($sql);
+			while($rs = sql_fetch_array($result)) {
+				if($rs['OpayState']==99)$StateCount[1]++;
+				else $StateCount[$rs['OpayState']-1]++;						
+			}
+			/*=======================================================================================
+			현 주문상태 구하기 2) 배송관련 (입금여부는 상관없이 단지 배송상태를 기준으로 체크)
+			=======================================================================================*/
+			$sql = "select min(ODstate) as ODstate from 2011_orderInfo as a left join 2011_orderDeliveryInfo as b on a.IDX = b.OIDX where  MID='" . $uid . "' and a.Odeleted=0 and ODstate<>1 and a.OpayState<>88  group by a.IDX";
+			$result = sql_query($sql);
+			while($rs = sql_fetch_array($result)) {
+				if($rs['ODstate']==2) $StateCount[2]++;
+				else $StateCount[$rs['ODstate']-1]++;
+				//$StateCount[$rs["ODstate"]-1]++;
+			}
+			
+			for($k=0;$k<4;$k++)if(!$StateCount[$k])$StateCount[$k]=0;
+			
+			//-- 기본 조건문
+			$addWhere = " a.MID='" . $MID . "' ";
+		}//-- if MID End
+		else
+		{
+			/*=======================================================================================
+			비회원 처리
+			=======================================================================================*/
+			$Ocode = substr($Ocode,0,7) . "-" . substr($Ocode,7);
+			$StateCount[0]=0;
+			$StateCount[1]=0;
+			$StateCount[2]=0;
+			$StateCount[3]=0;
+			
+			/*=======================================================================================
+			현 주문상태 구하기 - 주문번호를 기준으로 상태 불러오기
+			=======================================================================================*/
+			$sql = "select OdepositCheck,count(IDX) as cnt from 2011_orderInfo where Ocode='" . $Ocode . "'  and Odeleted=0  and a.OpayState<>88  group by OdepositCheck ";
+			$rs = sql_fetch($sql);
+			$StateCount[$rs['OdepositCheck']-1] = $rs['cnt'];
+			
+			//-- 기본 조건문
+			$addWhere = " a.Ocode='" . $Ocode . "' ";
+		}
+		
+		/*=======================================================================================
+		검색 조건문 만들기
+		=======================================================================================*/
+		
+		if($s9 || $s10) {	
+			if($s9) {
+				$d1 = explode("-",$s9);
+				$date1 = mktime(0,0,0,$d1[1],$d1[2],$d1[0]);
+			}
+			if($s10) {
+				$d2 = explode("-",$s10);
+				$date2 = mktime(0,0,0,$d2[1],($d2[2]+1),$d2[0]);
+			}			
+		} else {
+			$s9 = $day81;
+			$d1 = explode("-",$s9);
+			$date1 = mktime(0,0,0,$d1[1],$d1[2],$d1[0]);
+			
+			$s10 = $day82;
+			$d2 = explode("-",$s10);
+			$date2 = mktime(0,0,0,$d2[1],($d2[2]+1),$d2[0]);
+		}
+		
+		if($s9) {
+			if($addWhere)$addWhere.=" and ";
+			
+			if($s4 == 2){
+				$addWhere.=" ODdate>='" . $date1 . "' ";
+			} else {
+				$addWhere.=" Oregdate>='" . $date1 . "' ";
+			}
+		}
+		
+		if($s10) {
+			if($addWhere)$addWhere.=" and ";
+			
+			if($s4 == 2){
+				$addWhere.=" ODdate<'" . $date2 . "' ";
+			} else {
+				$addWhere.=" Oregdate<'" . $date2 . "' ";
+			}
+		}
+
+		if($s2 == 'ONAME' && $s3) {
+			if($addWhere)$addWhere.=" and ";
+			$addWhere.=" Oname LIKE '%" . urldecode($s3) . "%' ";
+		}
+		if($s2 == 'PNAME' && $s3) {
+			if($addWhere)$addWhere.=" and ";
+			$addWhere.="  ORPengName LIKE '%" . urldecode($s3) . "%' ";
+		}
+		
+		if($addWhere)$addWhere=" and " . $addWhere;
+
+		/*=======================================================================================
+		총 주문금액 구하기
+		=======================================================================================*/
+		/*
+		$sql = " select sum(b.AMT + b.OusePoint + b.OuseGift + b.OuseCoupon) as AMT ";
+		$sql .= " from 2011_orderInfo as a left join 2011_orderPayment as b on a.IDX = b.OIDX left join 2011_memberInfo as c on a.MID = c.MID left join 2011_orderDeliveryInfo as d ON a.IDX = d.OIDX LEFT JOIN 2011_orderProduct AS k ON a.IDX = k.OIDX ";
+		$sql .= " where a.Odeleted=0 " . $addWhere . " and a.OpayState<>88  group by a.IDX ";
+		*/
+		$sql = "SELECT SUM(sub.AMT) AS AMT
+				FROM (
+					SELECT a.IDX, 
+						   SUM(IFNULL(b.AMT, 0) + IFNULL(b.OusePoint, 0) + IFNULL(b.OuseGift, 0) + IFNULL(b.OuseCoupon, 0)) AS AMT
+					FROM 2011_orderInfo AS a
+					LEFT JOIN 2011_orderPayment AS b ON a.IDX = b.OIDX
+					WHERE a.Odeleted = 0
+					{$addWhere}
+					AND a.OpayState <> 88
+					GROUP BY a.IDX
+				) AS sub
+				";
+		$rs = sql_fetch($sql);
+		$totalPrice = $rs['AMT'];
+
+		/*=======================================================================================
+		리스트 구하기 구하기
+		=======================================================================================*/
+		$sql = " SELECT a.* , b.OIDX, sum( AMT + OusePoint + OuseGift + OuseCoupon ) AS AMT, avg( ODstate ) AS ODstate, ODcode, count( ODcode ) AS ODcount, MemoCount, ODdate FROM  ";
+		$sql .= " ( SELECT m.* FROM 2011_orderInfo AS m LEFT JOIN 2011_orderDeliveryInfo AS g ON m.IDX = g.OIDX LEFT JOIN 2011_orderProduct AS k ON m.IDX = k.OIDX WHERE Odeleted =0 AND OpayState <>88 ";
+		$sql .= str_replace("a.MID","m.MID",$addWhere) . " GROUP BY m.IDX ORDER BY m.IDX DESC ) AS a ";
+		$sql .= " LEFT JOIN 2011_orderPayment AS b ON a.IDX = b.OIDX ";
+		$sql .= " LEFT JOIN 2011_orderDeliveryInfo AS d ON a.IDX = d.OIDX ";
+		$sql .= " LEFT JOIN ( SELECT OIDX, count( IDX ) AS MemoCount FROM 2011_orderMemo WHERE OMtype = 1 AND OMdeleted = 0 GROUP BY OIDX ) AS e ON a.IDX = e.OIDX GROUP BY a.IDX ORDER BY a.IDX DESC  ";
+
+		$result = sql_query($sql);
+		$TotalCount = mysqli_num_rows($result);
+		if (!$page) $page = 1;
+		if (!$listSize) $listSize = 10;
+		$CntPerPage = $listSize;
+		$PagePerList = 5;
+		$StartPos = ($page - 1) * $CntPerPage;
+		$sql = str_replace(" ORDER BY m.IDX DESC ", " ORDER BY m.IDX DESC LIMIT ".($page - 1) * $CntPerPage.",".$CntPerPage, $sql);
+		$result = sql_query($sql);
+		
+		$option = "&listSize=".$listSize."&s3=".urlencode($s3)."&s4=".$s4."&s9=".$s9."&s10=".$s10;
+
+		//진행중인 주문
+		$StateCountIng = $StateCount[0] + $StateCount[1] + $StateCount[2];
+?>
+
+<style>
+.ipboxform > div { display:inline-block; vertical-align:middle; }
+.ipboxformWrap { display:block; padding:0; margin:0; text-align:left; line-height:normal; }
+.ipboxformWrap span { display:inline-block; width:68px; padding-top:3px; text-align:center; height:22px; border:#ccc solid 1px; background:#fcfcfc; border-radius:3px; font-size:12px; color:#555; cursor:pointer; }
+.ipboxformWrap span:hover { background:#fff; border:#aaa solid 1px; }
+.ipboxform-schbtn input {height:40px; width:100px; font-size: 15px; font-weight: 600; background:#005BF1; border:none; color:#fff; cursor:pointer; border-radius: 8px; }
+.ipboxform-schbtn input:hover { background:#696c7c; }
+</style>
+
+<div class="qa_list">
+	<h3><img src="/img/mypage/tit_07.gif" alt="나의주문/배송조회"></h3>
+
+	<table cellspacing="0" cellpadding="0" class="my-table-upperMenu">
+	<form name="xform" id="xform">
+		<tr>
+			<td class="ipboxform">
+				<div class="ipboxform01">
+					<select name="s2" id="s2"><option value="ONAME">Recipient</option><option value="PNAME" <? if($s2 == 'PNAME') echo 'selected'; ?>>Product name</option></select>
+					<input type='text' value='<?=$s3?>' id='s3' name='s3' size='15'>
+				</div>
+				<div>
+					<span class="ipboxformWrap" style=" margin-bottom:3px;">
+						<span class="ptsans" onClick="fnSelectDay('1month');">1 month</span><span class="ptsans" onClick="fnSelectDay('3months');">3 months</span><span class="ptsans" onClick="fnSelectDay('6months');">6 months</span>
+					</span>
+					<span class="ipboxformWrap">
+						<select name="s4" id="s4">
+							<option value="1" <? if($s4 == 1) echo "selected"; ?>>Placed in</option>
+						</select>
+						<input type='text' value='<?=$s9?>' id='s9' name='s9' readonly tabindex='-1' size=7 style='cursor:pointer; width: 112px;' class='dateform'>~
+						<input type='text' value='<?=$s10?>' id='s10' name='s10' readonly tabindex='-1' size=7 style='cursor:pointer; width: 112px;' class='dateform'>
+					</span>
+				</div>
+				<div>
+					<span class='ipboxform-schbtn'><input type='button' value='Search' onclick='document.getElementById("xform").submit();' /></span>
+				</div>
+                <div style="margin-left: 94px; display: none;"><button class="btn-style btn-color-white btn-h40">Download as Excel</button></div>	
+			</td>
+		</tr>
+	</table>
+	</form>
+
+	<table cellspacing="0" cellpadding="0" class="my-table">
+        <colgroup>
+            <col width="20">
+            <col width="120">
+            <col width="100">
+            <col width="100">
+            <col width="150">
+            <col width="80">
+            <col width="80">
+            <col width="45">
+        </colgroup>
+	<tr>
+		<th scope="col"><input type='checkbox' onclick='allCheck(this.checked)'></th>
+		<th scope="col">Order No.</th>
+		<th scope="col" style="line-height:16px;">Date of<br/>Order</th>
+		<th scope="col" style="line-height:16px;">Date of<br/>Delivery</th>
+		<th scope="col" width="90">Recipient</th>
+		<th scope="col">Total Amount</th>
+		<th scope="col" width="80" style="line-height:16px;">Status<br/>Payment</th>
+		<th scope="col" width="80" style="line-height:16px;">Status<br/>Shipping</th>
+		<th scope="col" class="none" width="45">Cancel</th>
+	</tr>
+	<?
+		while($rs=sql_fetch_array($result)){
+			# DB 레코드 결과값 모두 변수로 전환
+			foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+			
+			if($dbOpayState==1 && $dbODstate==1)$StateStr = "Before<br/>Payment";
+			else if($dbOpayState==2 && $dbODstate==1)$StateStr = "<font class=blue>Paid</font>";
+			else if($dbODstate==2)$StateStr = "<font class=blue>Before<br/>Delivery</font>";
+			else if($dbODstate>2 && $dbODstate<3)$StateStr = "On Delivery";
+			else if($dbODstate==3)$StateStr = "<font class=blue>On Delivery</font>";
+			else if($dbODstate>3 && $dbODstate<4)$StateStr = "On Delivery";
+			else if($dbODstate==4)$StateStr = "Delivery Over";
+			
+			if($dbODdate && $dbODstate==4) $ODdate=date("y/m/d",$dbODdate);
+			else $ODdate="-";
+			
+			if($dbOpayState==1)$PayState = "<font color=green>Before<br/>Payment</font>";
+			if($dbOpayState==2)$PayState = "Paid";
+			if($dbOpayState==99)$PayState = "<font color=blue>Paid";
+			
+			if($dbMemoCount)$Mcnt = "<a href='javascript:fnOpenMemo(" . $dbIDX . ",1,1)'><img src='/image_1/note.gif' align='absmiddle' border=0 alt='[" . $dbMemoCount . "] Memo.'></a>";
+			else $Mcnt="";
+			
+			if($dbOpayState==1 && $dbODstate==1){
+				$payMode = "cash";
+			} else if($dbOpayState == 2 && $dbODstate==1){
+				$payMode = "card";
+			} else {
+				$payMode = "";
+			}
+			
+	?>
+	<tr id='orderRow<?=$dbIDX?>'>
+		<td><input type='checkbox' name='delCheck[]' value='<?=$dbIDX?>'></td>
+		<td style="padding:0 4px;"><?=$Mcnt?><a href='shippingDetail.html?Ocode=<?=$dbOcode?>&page=<?=$page?><?=$option?>'><font color="blue"><?=$dbOcode?></font></a></td>
+		<td><?=date("y/m/d H:i",$dbOregdate)?></td>
+		<td><?=$ODdate?></td>
+		<td style="line-height:130%;"><?=$dbOname?></td>
+		<td>USD <?=$dbAMT?></td>
+		<td style="line-height:130%;"><?=$PayState?></td>
+		<td style="line-height:130%;"><?=$StateStr?></td>
+		<td><? if($payMode){ ?><a href='javascript:fnCancelOrder("<?=$dbIDX?>","<?=$payMode?>")'><img src="/img/ico/ico_x.gif" alt="취소"></a><? } ?></td>
+	</tr>
+	<? } ?>
+	</table>
+
+	<!-- //마이페이지 주문확인/배송조회 -->
+	</div>        
+
+	<div align="center" id="paging"><? echo page_nav($TotalCount,$CntPerPage,$PagePerList,$page,$option); ?></div>
+
+	<div class="total_ship">
+		<span class="tit">Total Order / Amout</span>
+		<span><strong><?=$TotalCount?></strong> / <strong>USD <?=number_format($totalPrice,2)?></strong></span>
+	</div>
+
+	<div class="add_text">
+		<br/>
+		* Click to "Order No." → You can check the shipping and payment information.<br>
+		<strong>* In case of shipping standby or shipping complete order can not be canceled.</strong>
+	</div>
+
+	</div>
+	<p>&nbsp;</p>
+	<p>&nbsp;</p>
+</div>
+<!-- //마이페이지 끝 ---> 
+
+<script>
+$(function() {
+	$( "#s9, #s10" ).datepicker({
+		dateFormat: 'yy-mm-dd',
+		prevText: '이전 달',
+		nextText: '다음 달',
+		monthNames: ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
+		monthNamesShort: ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
+		dayNames: ['일','월','화','수','목','금','토'],
+		dayNamesShort: ['일','월','화','수','목','금','토'],
+		dayNamesMin: ['일','월','화','수','목','금','토'],
+		showMonthAfterYear: true,
+		changeMonth: true,
+		changeYear: true,
+		yearRange: 'c-2:c+2',
+		yearSuffix: '년'
+	});
+});
+
+function fnSelectDay(s){
+	if(s == '1month'){
+		$("#s9").val("<?=$day71?>");
+		$("#s10").val("<?=$day72?>");
+	} else if(s == '3months'){
+		$("#s9").val("<?=$day81?>");
+		$("#s10").val("<?=$day82?>");
+	} else if(s == '6months'){
+		$("#s9").val("<?=$day91?>");
+		$("#s10").val("<?=$day92?>");
+	}
+}
+</script>
+ 
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

@@ -1,0 +1,120 @@
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/_common.php";
+
+	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
+	
+	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/common.html";	
+	
+	if(!$page) $page = 1;
+?>
+<script type="text/javascript">
+	/*===================================================================
+	브랜드 즐겨찾기 영역 
+	=================================================================*/
+	function fnFavoriteDelete(FAtype,obj) {	
+		var ckBox = $("[id='inBRcheck']:checked");
+		var IDX="";
+		for(k=0;k<ckBox.length;k++)
+		{
+			if(IDX)IDX+=",";
+			IDX+=ckBox.eq(k).val();
+		}
+		
+		var param='qIDX=' + IDX + '&mode=delete&inFAtype=' + FAtype;
+		
+		$.ajax({
+			url:"/product/ajaxAddFavorite.php",
+			type:"POST",
+			cache:false,
+			data : param,
+			dataType:"text",
+			error:fnErrorAjax,
+			success:function(_response)
+			{
+				v = _response.split("##");
+				if(v[1]=="OK2")
+				{
+					location.href = "zzim.html?page=<?=$page?>";
+				} else {
+					alert("ERROR.");
+				}
+			}
+		});
+	}
+	
+	function selectAll(obj) {
+		if($("#" + obj + "_all").is(":checked") == true) {
+			$("input[name=" + obj + "]").each(function(){ $(this).attr("checked", true); });
+		} else {
+			$("input[name=" + obj + "]").each(function(){ $(this).attr("checked", false); });
+		}
+	}
+</script>
+
+<link rel="stylesheet" type="text/css" href="/mypage/mypage.css?2502142">
+
+<!-- 마이페이지 시작 --->
+<div id="wrap">
+
+<?
+include_once $_SERVER['DOCUMENT_ROOT']."/mypage/menu.html";
+?>
+
+<!-- mypageMain -->
+<div id="mypageMain">
+
+	<? include_once $_SERVER['DOCUMENT_ROOT']."/mypage/top.html"; ?>
+
+	<div class="shipping2">
+		<h3><img src="/img/mypage/tit_06.gif" alt="나의 찜한 브랜드"></h3>
+	</div>
+	
+	<!-- 리스트 -->
+	<div class="sum_box">
+		<div class="list_option">
+			<span><input type="checkbox" class="check" name="inBRcheck_all" id="inBRcheck_all" onClick="selectAll('inBRcheck');" /> Select All</span>
+			<span class="list_btn"><a href="javascript:fnFavoriteDelete(2);"><img src="/img/mypage/btn_del_select.gif" alt="선택삭제"></a></span>
+		</div>
+		<?
+			//-- 브랜드 불러오기
+			$sql = "select a.IDX as FIDX,b.* from 2011_favoriteInfo as a left join 2011_brandInfo as b on a.FAIDX = b.IDX where a.MID='" . $uid . "' and a.FAtype=2 ";
+			$result = sql_query($sql);
+			$TotalCount = mysqli_num_rows($result);
+			$PagePerList = 5;
+			if(!$page) $page = 1;
+			if(!$listSize) $listSize = 12;
+			$StartPos = ($page - 1) * $listSize;
+			$sql .= " ORDER BY a.IDX DESC ";
+			$sql .= " LIMIT ".($page - 1) * $listSize.",".$listSize;
+			$result = sql_query($sql);
+			
+			$cnt=0;
+			while($rs = sql_fetch_array($result)) {
+				$cnt ++;
+				# DB 레코드 결과값 모두 변수로 전환
+				foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}
+						
+				if($dbBRsaveFile1)$img1 = "<img src='/_DATA/brand/" . $dbBRsaveFile1 . "' style='max-width:134px;max-height:60px' >";
+				$link = "<a href='/brand/brandView.html?s3=" . $dbIDX . "'>";
+		?>
+		<div class="brand_box">
+			<input type="checkbox" name="inBRcheck" id="inBRcheck" value='<?=$dbFIDX?>' class="check" value='<?=$dbFIDX?>'  />
+			<?=$link.$img1?></a>
+			<span class="tit"><b><?=$dbBRkname?></b></span>
+			<span class="text">[<?=$dbBRename?>]</span>
+		</div>
+		<? if($cnt % 3 == 0){ ?><hr style="width:100%;"></hr><? } ?>
+		<? } ?>
+		
+		<div align="center" id="paging"><? echo page_nav($TotalCount,$listSize,$PagePerList,$page,$option); ?></div>
+	</div>
+	<!-- //위시리스트 -->
+
+</div>
+
+</div>   
+<!-- //마이페이지 끝 ---> 
+
+<?
+	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
+?>

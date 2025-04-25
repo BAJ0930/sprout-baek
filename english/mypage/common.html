@@ -1,0 +1,62 @@
+<?
+	if(!$MID || $Mlevel<1)
+	{
+		echo "<script>document.location='/member/login.html'</script>";
+		exit();
+	}
+
+	/*=======================================================================================
+	 현 주문상태 구하기  1) 결제 관련 (배송준비중 / 배송완료된 건은 제외)
+	 =======================================================================================*/
+	//$sql = "select OpayState,count(IDX) as cnt from 2011_orderInfo where MID='" . $uid . "' and OdeliveryState=1 and Odeleted=0  group by OpayState ";
+	$sql = "select min(OpayState) as OpayState from 2011_orderInfo as a left join 2011_orderDeliveryInfo as b on a.IDX = b.OIDX where  MID='" . $uid . "' and a.Odeleted=0 and ODstate=1 group by a.IDX";
+	$result = sql_query($sql);
+	while($rs = sql_fetch_array($result))$StateCount[$rs['OpayState']-1]++;
+
+	/*=======================================================================================
+	 현 주문상태 구하기 2) 배송관련 (입금여부는 상관없이 단지 배송상태를 기준으로 체크)
+	=======================================================================================*/
+
+	$sql = "select min(ODstate) as ODstate from 2011_orderInfo as a left join 2011_orderDeliveryInfo as b on a.IDX = b.OIDX where  MID='" . $uid . "' and a.Odeleted=0 and ODstate<>1 group by a.IDX";
+	$result = sql_query($sql);	
+	while($rs = sql_fetch_array($result))$StateCount[$rs['ODstate']-1]++;
+	for($k=0;$k<4;$k++)if(!$StateCount[$k])$StateCount[$k]=0;
+
+	/*=======================================================================================
+	 알림신청건수 구하기
+	=======================================================================================*/
+	$sql = "select count(IDX) as ALcount from 2011_stockAlram where MID='" . $MID . "' and ALdeleted = 0";
+	$ALrs = sql_fetch($sql);
+	
+	/*=======================================================================================
+	 상품/브랜드 즐겨찾기 -보류-
+	=======================================================================================*/
+
+
+	/*=======================================================================================
+	 상품권 구하기
+	=======================================================================================*/
+	$totalGift = fnGetMemberTotalGift($MID);
+
+	/*=======================================================================================
+	 포인트 구하기
+	=======================================================================================*/
+	$totalPoint = fnGetMemberTotalPoint($MID);
+	
+
+	//찜하기&위시리스트 구하기
+	$sqlwish = " select a.IDX as FIDX,b.* from 2011_favoriteInfo as a left join 2011_productInfo as b on a.FAIDX = b.IDX where a.MID='" . $uid . "' and a.FAtype=1  ";
+	$resultwish = sql_query($sqlwish);
+	$WishCount = mysqli_num_rows($resultwish);
+
+	//브랜드 찜하기 구하기
+	$sqlbrand = "select a.IDX as FIDX,b.* from 2011_favoriteInfo as a left join 2011_brandInfo as b on a.FAIDX = b.IDX where a.MID='" . $uid . "' and a.FAtype=2 ";
+	$resultbrand = sql_query($sqlbrand);
+	$BrandCount = mysqli_num_rows($resultbrand);
+
+#-- 쿠폰 사용가능한 쿠폰을 구합니다.
+/*== 사용가능 쿠폰 가져오기 ==== */
+	$sql = "select count(a.IDX) as cnt from 2011_couponList as a left join 2011_couponGroup as b on a.CPIDX = b.IDX ";
+	$sql.= " where CPtakeMID='" . $MID . "' and CPuseDate=0 and CPdate1<='" . date(time()) . "' and CPdate2>='" . date(time()) . "' and CPdeleted=0 and CPdeleted2=0 order by a.IDX desc";
+	$CPrs = sql_fetch($sql);
+?>
