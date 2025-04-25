@@ -8,10 +8,16 @@
 	if(!$s2) $s2 = 1;
 
 	#-- 카테고리 검색은 전체검색시 none 으로 전달한다
-	if($cateIDX=="none") $cateIDX="";
-	else $cateIDXdb = getCategoryNew($cateIDX);
-	
-	$option = "&cateIDX=" . $cateIDX . "&viewType=" . $viewType. "&listSize=" . $listSize . "&s1=" . urlencode($s1) . "&s2=" . $s2 . "&s3=" . $s3 . "&searchKind=" . $searchKind;
+$isAll = false;
+if($cateIDX=="none") {
+    $isAll = true;
+    $cateIDXdb = ""; // 조건 없음
+} else {
+    $cateIDXdb = getCategoryNew($cateIDX);
+}
+
+$option = "&cateIDX=" . ($isAll ? "none" : $cateIDX) . "&viewType=" . $viewType. "&listSize=" . $listSize . "&s1=" . urlencode($s1) . "&s2=" . $s2 . "&s3=" . $s3 . "&searchKind=" . $searchKind;
+
 	$optionLink = "";
 	if($s1){ $optionLink .= "&s1=" . urlencode($s1); }
 	if($searchKind){ $optionLink .= "&searchKind=" . $searchKind; }
