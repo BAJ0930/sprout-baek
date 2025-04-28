@@ -14,6 +14,7 @@
     <style>
         body {margin: 0;}
         * {box-sizing: border-box;}
+        .matinTopSlide {position: relative;}
         .slick-slider {width: 100%;}
         .slick-slide {height: 320px; border-radius: 20px; overflow: hidden; width: 896px !important; max-width: 90vw; margin: 0 12px; position: relative;}
         .slick-slide img {width: 100%; height: 100%; object-fit: cover;}
@@ -27,7 +28,7 @@
         .slick-prev {left: calc((100% - 856px) / 2); transform: translateY(-50%);}
         .slick-next {right: calc((100% - 856px) / 2); transform: translateY(-50%);}
         .slick-prev:before, .slick-next:before {display: block; content: ""; width: 10px; height: 10px; border-color: rgba(60, 60, 60, 0.7); border-width: 2px 2px 0 0; border-style: solid; position: absolute; top: 50%;}
-        .slick-prev:before {transform: translate(15px, -50%) rotate(-135deg);}
+        .slick-prev:before {transform: translate(16px, -50%) rotate(-135deg);}
         .slick-next:before {transform: translate(11px, -50%) rotate(45deg);}
         .slick-prev:hover,
         .slick-prev:focus,
@@ -42,7 +43,7 @@
         .stats-slide {background: #ffdddd; padding: 20px; display: flex; justify-content: center; align-items: center; height: 100%; background: url('/image/main/202504_slide_scalingUp.png') no-repeat center center;}
         .num-item-wrap {display: flex; gap: 20px; max-width: 896px; height: 280px;}
         .num-item-wrap > div {display: flex; flex-wrap: wrap; flex: 1; align-items: flex-start; gap: 24px; padding: 172px 0 0 60px;}
-        .num-item {display: flex; align-items: center; width: auto; line-height: 1;}
+        .num-item {display: flex; align-items: center; line-height: 1;}
         .num-item img {width: 40px; height: 40px;}
         .num-item .nums {font-size: 28px; font-weight: 400; color: #fff; font-family: 'montserrat', sans-serif;}
         .num-item .in-title {font-size: 18px; color: rgba(255, 255, 255, 0.7); margin: 0 0 10px 0; font-family: 'montserrat', sans-serif; font-weight: 400;}
@@ -52,7 +53,7 @@
     <style>
         .top-deals { padding: 40px 0; background: #fff; }
         .container { width: 90%; max-width: 1200px; margin: 0 auto; }
-        .section-title { font-size: 24px; font-weight: bold; margin-bottom: 4px; }
+        .title { font-size: 28px; font-family: PLBold; margin-bottom: 4px; }
         .section-subtitle { font-size: 14px; color: #555; margin-bottom: 20px; }
         .deal-tabs { display: flex; gap: 12px; margin-bottom: 30px; flex-wrap: wrap; }
         .tab { padding: 10px 16px; border: none; border-radius: 999px; background: #f3f3f3; cursor: pointer; font-size: 14px; }
@@ -78,6 +79,10 @@
 <body>
     <?php
     $nData_brand = sql_fetch(" Select count(a.IDX) as CNT from 2011_brandInfo as a left join 2011_makerInfo as b on a.MKIDX = b.IDX left join (select BRIDX,count(BRIDX) as BRcount from 2011_productInfo where Pdeleted = 0 group by BRIDX) as c on a.IDX=c.BRIDX left join (select BRIDX,count(BRIDX) as BRcount2 from 2011_productInfo where Pagree = 1 and Pstate = 1 and Pdeleted = 0 group by BRIDX) as d on a.IDX=d.BRIDX where BRdeleted=0 and BRshop='1000u'  ");
+	
+    $nData_product2 = sql_query(" SELECT a.IDX FROM 2011_productInfo AS a LEFT JOIN 2011_productOption AS b ON a.IDX = b.PIDX WHERE a.Pagree = '1' and a.Pstate < 10 ");
+    $nData_product_total = mysqli_num_rows($nData_product2);
+	$nData_product_total = $nData_product_total * 1.1; //10% 업 240311
     ?>
     <div class="matinTopSlide">
         <div class="main_slider slider">
@@ -89,13 +94,13 @@
             <div class="stats-slide">
                 <div class="num-item-wrap">
                     <div>
-                        <div class="num-item" style="width: 90px;">
+                        <div class="num-item" style="width: 106px;">
                             <div>
                                 <h4 class="in-title">Products</h4>
-                                <span class="nums" data-count="35000">0</span><span class="num-unit">+</span><br>
+                                <span class="nums" data-count="<?=round($nData_product_total)?>">0</span><span class="num-unit">+</span><br>
                             </div>
                         </div>
-                        <div class="num-item" style="width: 96px;">
+                        <div class="num-item" style="width: 102px;">
                             <div>
                                 <h4 class="in-title">Categories</h4>
                                 <span class="nums" data-count="275">0</span><br>
@@ -107,7 +112,7 @@
                                 <span class="nums" data-count="<?=$nData_brand[CNT]?>">0</span><br>
                             </div>                                                                                                
                         </div>
-                        <div class="num-item" style="width: 132px;">
+                        <div class="num-item" style="width: 136px;">
                             <div>
                                 <h4 class="in-title" style="font-size: 15px;">Warehouse (sq ft)</h4>
                                 <span class="nums" data-count="78284">0</span><br>
@@ -122,9 +127,7 @@
 
     <section class="top-deals">
         <div class="container">
-            <h2 class="section-title">
-                <span class="emoji">💖</span> Top Deals You’ll Love
-            </h2>
+            <h2 class="title">Top Deals You’ll Love</h2>
             <p class="section-subtitle">Curated deals just for you!</p>
         
             <!-- Filter Tabs -->
@@ -200,7 +203,7 @@
             $('.main_slider').slick({
                 slidesToShow: 1,
                 autoplay: true,
-                autoplaySpeed: 3500,
+                autoplaySpeed: 2500,
                 dots: true,
                 centerMode: true,
                 variableWidth: true,
