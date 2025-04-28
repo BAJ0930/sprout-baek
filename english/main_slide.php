@@ -125,7 +125,15 @@
         <button class="ms-pause"></button>
     </div>
 
-    <!-- <section class="top-deals">
+    <?php
+    // 준비 중인 기능은 false로 걸어둡니다
+    $show_new_feature = false;
+
+    if ($show_new_feature) {
+    ?>
+    <!-- 
+    // 아래는 기능 준비 중 ============================================================================
+    <section class="top-deals">
         <div class="container">
             <h2 class="title">Top Deals You’ll Love</h2>
             <p class="section-subtitle">Curated deals just for you!</p>
@@ -193,7 +201,10 @@
                 </div>
             </div>
         </div>
-    </section> -->
+    </section> 
+    -->
+    <?php } ?>
+    
     
     <script>
         $(function(){

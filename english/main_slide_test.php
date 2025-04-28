@@ -30,12 +30,7 @@
         .slick-prev:before, .slick-next:before {display: block; content: ""; width: 10px; height: 10px; border-color: rgba(60, 60, 60, 0.7); border-width: 2px 2px 0 0; border-style: solid; position: absolute; top: 50%;}
         .slick-prev:before {transform: translate(16px, -50%) rotate(-135deg);}
         .slick-next:before {transform: translate(11px, -50%) rotate(45deg);}
-        .slick-prev:hover,
-        .slick-prev:focus,
-        .slick-next:hover,
-        .slick-next:focus {
-            background: rgba(240,240,240,0.7);
-        }
+        .slick-prev:hover, .slick-prev:focus, .slick-next:hover, .slick-next:focus {background: rgba(240,240,240,0.7);}
         .ms-pause {position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); background: rgba(46,46,46,0.4); color: white; border: none; padding: 12px 10px 12px 14px; border-radius: 8px; cursor: pointer; z-index: 3; margin-left: 32px;}
         .ms-pause::before {content: ''; position: absolute; top: 50%; left: 43%; transform: translate(-70%, -50%); width: 2px; height: 10px; background: #fff; border: none; box-shadow: 5px 0 0 #fff; transition: all 0.3s;}
         .ms-pause.on::before {width: 0; height: 0; background: transparent; box-shadow: none; border-left: 8px solid #fff; border-top: 5px solid transparent; border-bottom: 5px solid transparent; transform: translate(-10%, -50%); transition: all 0.3s;}
