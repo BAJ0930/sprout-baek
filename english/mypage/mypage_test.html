@@ -3,12 +3,72 @@
 
 	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
 	
-	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/common.html";	
+	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/common.html";
+
+    // 사용자 ID 보정
+    $MID = addslashes(trim($MID));
+
+    // 필요한 컬럼만 조회
+    $sql = "SELECT Mname, Mtel, Maddr1, Maddr2 FROM 2011_memberInfo WHERE MID='" . $MID . "'";
+    $m_rs = sql_fetch($sql);
+
+    // 결과를 변수로 저장
+    $dbMname = $m_rs['Mname'];
+    $dbMtel = $m_rs['Mtel'];
+    $dbMaddr1 = $m_rs['Maddr1'];
+    $dbMaddr2 = $m_rs['Maddr2'];
+
+    #======== 날짜 구하기 =======================
+	//-- 오늘
+	$day11 = date("Y-m-d");
+	$day12 = date("Y-m-d");
+
+	//-- 어제
+	$day21 =date("Y-m-d",strtotime("-1 day"));
+	$day22 =date("Y-m-d",strtotime("-1 day"));
+
+	//-- 이번주
+	$day31 =date("Y-m-d",strtotime("last Monday"));
+	$day32 =date("Y-m-d",strtotime("next Sunday"));
+
+	//-- 지난주
+	$day41 =date("Y-m-d",strtotime("-1 week last Monday"));
+	$day42 =date("Y-m-d",strtotime("-1 week next Sunday"));
+
+	//-- 이번달
+	$day51 =date("Y-m-d",mktime(0,0,0,date("m"),1,date("Y")));
+	$day52 =date("Y-m-d",mktime(0,0,0,date("m"),31,date("Y")));
+
+	//-- 최근한주
+	$day61 =date("Y-m-d",strtotime("-6 day"));
+	$day62 =date("Y-m-d");
+
+	//-- 최근한달
+	$day71 =date("Y-m-d",strtotime("-30 day"));
+	$day72 =date("Y-m-d");
+
+	// -- 한달
+	$day81 =date("Y-m-d",strtotime("-90 day"));
+	$day82 =date("Y-m-d");
+
+	//-- 최근한달
+	$day91 =date("Y-m-d",strtotime("-180 day"));
+	$day92 =date("Y-m-d");
+
+    // 브랜드명 로드
+    $fnbrand = fnLoadBrandName();
 ?>
 
 <link rel="stylesheet" type="text/css" href="/mypage/mypage.css?<?php echo filemtime('mypage/mypage.css'); ?>">
 
 <style>
+    .process {display: flex; flex-direction: row; gap: 32px; margin-top: 20px;}
+    .process .step {display: flex; flex-direction: column; font-size: 13px; width: 80px; position: relative; align-items: center; line-height: 1.3; gap: 8px;}
+    .process div.step::after {
+        content:''; display: block; width:12px; height: 12px; background: transparent; border: 1px solid #888888; border-width: 2px 2px 0 0; 
+        position: absolute; transform: rotate(45deg) translate(-50%, -50%); right: -20px; top: 31%;
+    }
+    .process div.step:last-child::after {display: none;}
 </style>
 <!-- 마이페이지 시작 --->
 <div id="wrap">
@@ -17,11 +77,37 @@
     <div id="mypageMain">
 
 		<? include_once $_SERVER['DOCUMENT_ROOT']."/mypage/top_test.html"; ?>
-        
-        
+    
         <div class="qa_list">
             <div>
-                <div class="subTitle-B"><span>Order-Tracking</span><span class="btn-seeMore"><a href="/mypage/qna.html">See more</a></span></div>
+                <div class="subTitle-B"><span>Recent Orders</span><span class="btn-seeMore"><a href="/mypage/shipping.html">See more</a></span></div>
+                <?php
+                // 최근 주문 3건 쿼리
+                $addWhere = " m.MID='" . $MID . "' ";
+                $sql = "SELECT a.*, b.OIDX, SUM(AMT + OusePoint + OuseGift + OuseCoupon) AS AMT, AVG(ODstate) AS ODstate, ODcode, COUNT(ODcode) AS ODcount, MemoCount, ODdate 
+                        FROM (
+                            SELECT m.* 
+                            FROM 2011_orderInfo AS m 
+                            LEFT JOIN 2011_orderDeliveryInfo AS g ON m.IDX = g.OIDX 
+                            LEFT JOIN 2011_orderProduct AS k ON m.IDX = k.OIDX 
+                            WHERE m.Odeleted = 0 AND m.OpayState <> 88 AND " . $addWhere . " 
+                            GROUP BY m.IDX 
+                            ORDER BY m.IDX DESC 
+                            LIMIT 3
+                        ) AS a 
+                        LEFT JOIN 2011_orderPayment AS b ON a.IDX = b.OIDX 
+                        LEFT JOIN 2011_orderDeliveryInfo AS d ON a.IDX = d.OIDX 
+                        LEFT JOIN (
+                            SELECT OIDX, COUNT(IDX) AS MemoCount 
+                            FROM 2011_orderMemo 
+                            WHERE OMtype = 1 AND OMdeleted = 0 
+                            GROUP BY OIDX
+                        ) AS e ON a.IDX = e.OIDX 
+                        GROUP BY a.IDX 
+                        ORDER BY a.IDX DESC";
+
+                $result = sql_query($sql);
+                ?>
                 <table>
                     <thead>
                         <tr>
@@ -34,96 +120,79 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>
-                                <span class="order-number">P250103-576735</span>
-                                <button type="button" class="btn-style btn-color-CTA btn-h32 btn-round">View Details</button>
-                            </td>
-                            <td>
-                                Oct. 10, 2025
-                            </td>
-                            <td>Victoria Genevieve Winchester</td>
-                            <td>
-                                <span class="order-price">
-                                    <span style="font-size: 16px; font-weight: 400;">USD</span> 
-                                    323.00
-                                </span>
-                                <span class="order-items">14 Items</span>
-                            </td>
-                            <td><span class="done">Paid</span></td>
-                            <td><span class="pending">Preparing or Shipment</span></td>
-                            <!--
-                                <td>
-                                    Cancellable
-                                    <button type="button" class="btn-style btn-color-white btn-h32 btn-round">Cancel</button>
-                                </td>
-                            -->
-                        </tr>
-                        <tr>
-                            <td>
-                                <span class="order-number">P250103-576735</span>
-                                <button type="button" class="btn-style btn-color-CTA btn-h32 btn-round">View Details</button>
-                            </td>
-                            <td>
-                                Oct. 10, 2025
-                            </td>
-                            <td>DIANE HAN</td>
-                            <td>
-                                <span class="order-price">
-                                    <span style="font-size: 16px; font-weight: 400;">USD</span> 
-                                    323.00
-                                </span>
-                                <span class="order-items">14 Items</span>
-                            </td>
-                            <td><span class="pending">Pending Payment</span></td>
-                            <td>-</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <span class="order-number">P250103-576735</span>
-                                <button type="button" class="btn-style btn-color-CTA btn-h32 btn-round">View Details</button>
-                            </td>
-                            <td>
-                                Oct. 10, 2025
-                            </td>
-                            <td>Sebastian Leopold Whitmore</td>
-                            <td>
-                                <span class="order-price">
-                                    <span style="font-size: 16px; font-weight: 400;">USD</span> 
-                                    323.00
-                                </span>
-                                <span class="order-items">14 Items</span>
-                            </td>
-                            <td><span class="done">Paid</span></td>
-                            <td><span class="shipped">🚚 Shipped</span></td>
-                            <!--
-                                <td>
-                                    Non-Cancellable
-                                </td>
-                            -->
-                        </tr>
-                        <tr>
-                            <td>
-                                <span class="order-number">P250103-576735</span>
-                                <button type="button" class="btn-style btn-color-CTA btn-h32 btn-round">View Details</button>
-                            </td>
-                            <td>
-                                Oct. 10, 2025
-                            </td>
-                            <td>DIANE HAN</td>
-                            <td>
-                                <span class="order-price">
-                                    <span style="font-size: 16px; font-weight: 400;">USD</span> 
-                                    323.00
-                                </span>
-                                <span class="order-items">14 Items</span>
-                            </td>
-                            <td><span class="done">Paid</span></td>
-                            <td><span class="done">✅ Delivered</span></td>
-                        </tr>
+                        <?php
+                        if (mysqli_num_rows($result) == 0) {
+                            echo "<tr><td colspan='6' style='text-align: center; padding: 20px;'>No recent orders found.</td></tr>";
+                        } else {
+                            while ($rs = sql_fetch_array($result)) {
+                                // DB 레코드 변수화
+                                foreach ($rs as $fieldName => $fieldValue) {
+                                    $fieldName = "db" . $fieldName;
+                                    $$fieldName = $fieldValue;
+                                }
+
+                                // 배송일자
+                                $shippingDate = ($dbODdate && $dbODstate == 4) ? date("M. d, Y", $dbODdate) : "-";
+
+                                // 결제 상태
+                                $paymentStatus = "";
+                                $paymentClass = "";
+                                if ($dbOpayState == 1) {
+                                    $paymentStatus = "Pending Payment";
+                                    $paymentClass = "pending";
+                                } else if ($dbOpayState == 2 || $dbOpayState == 99) {
+                                    $paymentStatus = "Paid";
+                                    $paymentClass = "done";
+                                }
+
+                                // 배송 상태
+                                $shippingStatus = "";
+                                $shippingClass = "";
+                                if ($dbOpayState == 1 && $dbODstate == 1) {
+                                    $shippingStatus = "-";
+                                    $shippingClass = "";
+                                } else if ($dbOpayState == 2 && $dbODstate == 1) {
+                                    $shippingStatus = "Preparing or Shipment";
+                                    $shippingClass = "pending";
+                                } else if ($dbODstate == 2 || ($dbODstate > 2 && $dbODstate < 3)) {
+                                    $shippingStatus = "🚚 Shipped";
+                                    $shippingClass = "shipped";
+                                } else if ($dbODstate == 3 || ($dbODstate > 3 && $dbODstate < 4)) {
+                                    $shippingStatus = "🚚 Shipped";
+                                    $shippingClass = "shipped";
+                                } else if ($dbODstate == 4) {
+                                    $shippingStatus = "✅ Delivered";
+                                    $shippingClass = "done";
+                                }
+
+                                // 품목 수 조회
+                                $itemSql = "SELECT COUNT(*) AS item_count FROM 2011_orderProduct WHERE OIDX = " . $dbIDX;
+                                $itemRs = sql_fetch($itemSql);
+                                $itemCount = $itemRs['item_count'] ?? 0;
+                                ?>
+                                <tr>
+                                    <td>
+                                        <span class="order-number"><?=$dbOcode?></span>
+                                        <button type="button" class="btn-style btn-color-CTA btn-h32 btn-round" onclick="location.href='shippingDetail.html?Ocode=<?=$dbOcode?>'">View Details</button>
+                                    </td>
+                                    <td><?=$shippingDate?></td>
+                                    <td><?=$dbOname?></td>
+                                    <td>
+                                        <span class="order-price">
+                                            <span style="font-size: 16px; font-weight: 400;">USD</span> 
+                                            <?=number_format($dbAMT, 2)?>
+                                        </span>
+                                        <span class="order-items"><?=$itemCount?> Items</span>
+                                    </td>
+                                    <td><span class="<?=$paymentClass?>"><?=$paymentStatus?></span></td>
+                                    <td><span class="<?=$shippingClass?>"><?=$shippingStatus?></span></td>
+                                </tr>
+                                <?php
+                            }
+                        }
+                        ?>
                     </tbody>
                 </table>
-                
                 <div class="tooltip-container">
                     <button type="button" class="btn-style btn-color-grey btn-h32" style="margin: 16px 0 0 auto;">
                         <img src="/img/mypage/ico-my-ship.svg" alt="Details About Shipping">About Shipping
@@ -131,20 +200,21 @@
                     <div class="tooltip-box">
                         <strong>This is how our shipping process works.</strong>
                         <div class="process">
-                            <div class="step"><img src="/img/mypage/img-my-tooltip01.svg" alt="Browse"> Browse Products</div>
-                            <div class="step"><img src="/img/mypage/img-my-tooltip02.svg" alt="Cart"> Add to Cart</div>
-                            <div class="step"><img src="/img/mypage/img-my-tooltip03.svg" alt="Payment"> Payment Complete</div>
-                            <div class="step"><img src="/img/mypage/img-my-tooltip04.svg" alt="Packing"> Packing</div>
-                            <div class="step"><img src="/img/mypage/img-my-tooltip05.svg" alt="Shipping"> International Shipping Preparation</div>
-                            <div class="step"><img src="/img/mypage/img-my-tooltip06.svg" alt="Transit"> In Transit</div>
-                            <div class="step"><img src="/img/mypage/img-my-tooltip07.svg" alt="Delivered"> Delivered!</div>
+                            <div class="step"><img src="/img/mypage/img-my-tooltip01.svg" alt=""><span>Browse<br>Products</span></div>
+                            <div class="step"><img src="/img/mypage/img-my-tooltip02.svg" alt=""><span>Add to Cart</span></div>
+                            <div class="step"><img src="/img/mypage/img-my-tooltip03.svg" alt=""><span>Payment<br>Complete</span></div>
+                            <div class="step"><img src="/img/mypage/img-my-tooltip04.svg" alt=""><span>Packing</span></div>
+                            <div class="step"><img src="/img/mypage/img-my-tooltip05.svg" alt=""><span>International<br>Shipping<br>Preparation</span></div>
+                            <div class="step"><img src="/img/mypage/img-my-tooltip06.svg" alt=""><span>In Transit</span></div>
+                            <div class="step"><img src="/img/mypage/img-my-tooltip07.svg" alt=""><span>Delivered!</span></div>
                         </div>
                     </div>
                 </div>
             </div>
-            
+
+
             <div>
-                <div class="subTitle-B"><span>Sent to Cheonyu</span><span class="btn-seeMore"><a href="/mypage/return_exchange.html">See more</a></span></div>
+                <div class="subTitle-B"><span>Sent to Cheonyu</span><span class="btn-seeMore"><a href="/mypage/qna.html">See more</a></span></div>
                 <div class="inquiry-list">
                     <div class="inquiry-item flex-row-spacer">
                         <div>
@@ -175,86 +245,130 @@
                     </div>
                 </div>
             </div>
+
+
             
-            <div class="subTitle-B"><span>Wishlist</span><span class="btn-seeMore"><a href="/mypage/return_exchange.html">See more</a></span></div>
-            <div class="wishlist-container">
-                <table>
-                    <colgroup>
-                        <col style="width: 112px;">
-                        <col>
-                        <col style="width: 256px;">
-                        <col style="width: 144px;">
-                        <col style="width: 144px;">
-                    </colgroup>
-                    <thead>
-                        <tr>
-                            <th>Group</th>
-                            <th>Item Info.</th>
-                            <th style="text-align: left;">Options & Stock Left</th>
-                            <th>Price</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Stationary</td>
-                            <td>
-                                <div class="item-info">
-                                    <img src="/_DATA/product/79100/79140_1739345233.jpg" alt="Notepad">
-                                    <div>
-                                        <div class="features">
-                                            <span>78469</span>
-                                            <span style="font-weight: 600;">Sanrio</span>
-                                            <span><img src="/image_3/boxinBG.svg" alt="Outer carton"></span>
-                                            <span><img src="/image_3/boxinBG2.svg" alt="Inner carton"></span>
+
+
+            <div>
+                <div class="subTitle-B"><span>Wishlist</span><span class="btn-seeMore"><a href="/mypage/wish.html">See more</a></span></div>
+                <div class="wishlist-container">
+                    <table class="wishlist-table">
+                        <colgroup>
+                            <col style="width: 112px;">
+                            <col>
+                            <col style="width: 256px;">
+                            <col style="width: 144px;">
+                            <col style="width: 144px;">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th>Group</th>
+                                <th>Item Info.</th>
+                                <th style="text-align: left;">Options & Stock Left</th>
+                                <th>Price</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?
+                                // 최신 3개 위시리스트 항목 조회
+                                $sql = "SELECT a.IDX AS FIDX, b.*, c.CTename AS categoryName 
+                                        FROM 2011_favoriteInfo AS a 
+                                        LEFT JOIN 2011_productInfo AS b ON a.FAIDX = b.IDX 
+                                        LEFT JOIN 2011_categoryInfo AS c ON b.Pcategory1 = c.IDX 
+                                        WHERE a.MID='" . $uid . "' AND a.FAtype=1 
+                                        ORDER BY a.IDX DESC 
+                                        LIMIT 3";
+                                $result = sql_query($sql);
+    
+                                while ($rs = sql_fetch_array($result)) {
+                                    # DB 필드를 변수로 변환
+                                    foreach ($rs as $fieldName => $fieldValue) {
+                                        $fieldName = "db" . $fieldName;
+                                        $$fieldName = $fieldValue;
+                                    }
+    
+                                    # 썸네일 이미지 경로 생성
+                                    $imgUrl = getImgUrl($dbPsaveFile1);
+                                    $pImg = "<img src='" . $imgUrl . "' alt='" . htmlspecialchars($dbPname) . "'>";
+    
+                                    # 가격 정보 계산
+                                    $priceInfo = fnCalPrice($dbPprice3, $rs);
+    
+                                    # 브랜드명
+                                    $brandName = isset($fnbrand[$dbBRIDX]) ? $fnbrand[$dbBRIDX] : 'Unknown Brand';
+    
+                                    # 아이콘 정보
+                                    $getInfo = getListInfo($rs, $dbPstockCount);
+                                    $icon = $getInfo['icon'] ?: '<img src="/image_3/boxinBG.svg" alt="Outer carton">';
+                                    $icon2 = $getInfo['icon2'] ?: '<img src="/image_3/boxinBG2.svg" alt="Inner carton">';
+    
+                                    # 옵션 및 옵션별 재고 정보
+                                    $optionStocks = [];
+                                    if ($dbPoptionUse == 2) {
+                                        $optionSql = "SELECT IDX, OPvalue, OPvalueEng, OPstock 
+                                                    FROM 2011_productOption 
+                                                    WHERE PIDX = '$dbIDX' AND OPhidden = 0";
+                                        $optionResult = sql_query($optionSql);
+                                        while ($opt = sql_fetch_array($optionResult)) {
+                                            # 예약 수량 계산
+                                            $readySql = "SELECT SUM(ORPcount) AS Pready 
+                                                        FROM 2011_orderProduct 
+                                                        WHERE ORPoption = '" . $opt['IDX'] . "' 
+                                                        AND ORPcountCheck = 1 AND ORPdeleted = 0 
+                                                        GROUP BY ORPoption";
+                                            $readyResult = sql_fetch_array(sql_query($readySql));
+                                            $stock = max(0, (int)($opt['OPstock'] - ($readyResult['Pready'] ?? 0)));
+    
+                                            # 영문 옵션명 선택
+                                            $optionName = $opt['OPvalueEng'] ?: $opt['OPvalue'];
+    
+                                            # 재고 상태 포맷팅
+                                            if ($stock > 5) {
+                                                $status = '<span class="in-stock">In stock</span>';
+                                            } elseif ($stock > 0) {
+                                                $status = $stock . '<span class="low-stock">Almost sold out</span>';
+                                            } else {
+                                                $status = '0<span class="sold-out">Sold out</span>';
+                                            }
+                                            $optionStocks[] = htmlspecialchars($optionName) . ': ' . $status;
+                                        }
+                                    }
+                                    $optionText = !empty($optionStocks) ? implode('<br>', $optionStocks) : 'No options available';
+                            ?>
+                                <tr>
+                                    <td style="padding: 12px;"><?=$dbcategoryName ?: 'Unknown'?></td>
+                                    <td>
+                                        <div class="item-info">
+                                            <?=$pImg?>
+                                            <div>
+                                                <div class="features">
+                                                    <span><?=$dbIDX?></span>
+                                                    <span style="font-weight: 600;"><?=$brandName?></span>
+                                                    <span><?=$icon?></span>
+                                                    <span><?=$icon2?></span>
+                                                </div>
+                                                <div class="name"><?=htmlspecialchars($dbPengName)?></div>
+                                            </div>
                                         </div>
-                                        <div class="name">Brawl Stars Meta Brawler Notepad, Sets of 24pcs</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="stock-status">
-                                Kuromi: In stock<br>
-                                My melody: In stock<span class="low-stock">Almost sold out</span>
-                                Cinnamoroll: 0<span class="sold-out">Sold out</span>
-                            </td>
-                            <td class="price-wrap">
-                                <del style="font-size: 14px;">USD 9.43</del>
-                                <div class="price">USD 6.23</div>
-                                <span class="discount">Buy 2 or more<br><span style="color: #ff3838; font-weight: 600;">40% Off</span></span>
-                            </td>
-                            <td><a href="#" class="btn-style btn-color-CTA btn-h32 btn-round">Add to Cart</a></td>
-                        </tr>
-                        <tr>
-                            <td>Home decoration</td>
-                            <td>
-                                <div class="item-info">
-                                    <img src="/_DATA/product/79000/79006_1738653555.jpg" alt="Notepad">
-                                    <div>
-                                        <div class="features">
-                                            <span>78469</span>
-                                            <span style="font-weight: 600;">Sanrio</span>
-                                            <span><img src="/image_3/boxinBG.svg" alt="Outer carton"></span>
-                                            <span><img src="/image_3/boxinBG2.svg" alt="Outer carton"></span>
-                                        </div>
-                                        <div class="name">Brawl Stars Meta Brawler Notepad, Sets of 24pcs</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="stock-status">
-                                Brawls: In stock<br>
-                                Stars: <span class="colorRed">Only 5 left</span>
-                                <span class="low-stock">Almost sold out</span>
-                                Brawl Stars: In stock
-                            </td>
-                            <td class="price-wrap">
-                                <del style="font-size: 14px;">USD 9.43</del>
-                                <div class="price">USD 6.23</div>
-                                <span class="discount">Buy 2 or more<br><span style="color: #ff3838; font-weight: 600;">40% Off</span></span>
-                            </td>
-                            <td><a href="#" class="btn-style btn-color-CTA btn-h32 btn-round">Add to Cart</a></td>
-                        </tr>
-                    </tbody>
-                </table>
+                                    </td>
+                                    <td class="stock-status">
+                                        <?=$optionText?>
+                                    </td>
+                                    <td class="price-wrap">
+                                        <del style="font-size: 14px;">USD <?=$dbPprice3?></del>
+                                        <div class="price">USD <?=$priceInfo["dcDollar_txt"]?></div>
+                                        <span class="discount">Buy 2 or more<br><span style="color: #ff3838; font-weight: 600;"><?=$priceInfo["dcPer"]?>% Off</span></span>
+                                    </td>
+                                    <td>
+                                        <a href="javascript:fnCheckCartIn('<?=$dbIDX?>')" class="btn-style btn-color-CTA btn-h32 btn-round">Add to Cart</a>
+                                    </td>
+                                </tr>
+                            <? } ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
         </div>

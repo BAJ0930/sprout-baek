@@ -10,9 +10,10 @@
     #mypageMain .info_help .info-basic strong {color: #333333; font-size: 18px; font-family: "PLBold"; display: block; margin-bottom: 8px;}
     #mypageMain .info_help .info-basic span {font-size: 14px; display: flex; align-items: center; gap: 6px; width: auto;}
     #mypageMain .info_help .info-basic span img {height: 16px;}
+    #mypageMain .info_help .my-button-list li {cursor: pointer;}
     #mypageMain .info_help .my-button-list .content-items span {font-size: 16px; font-weight: 600; color: #333333;}
     #mypageMain .info_help .my-button-list .content-items .count {
-        background: #ff3838; line-height: 14px; padding: 2px 4px 0; border-radius: 8px; color: #ffffff; 
+        background: #ff3838; line-height: 14px; padding: 2px 4px 0; border-radius: 8px; color: #ffffff; min-width: 16px;
         font-size: 11px; font-weight: 600; position: absolute; top: -8px; right: 40px;
     }
 
@@ -56,8 +57,8 @@
 
     #mypageMain .qa_list .wishlist-container table .stock-status {font-size: 13px; color: #888888; text-align: left;}
     #mypageMain .qa_list .wishlist-container table .stock-status .in-stock {color: #00AD34;}
-    #mypageMain .qa_list .wishlist-container table .stock-status .low-stock {background: #ff3838; color: #ffffff; font-weight: 600; padding: 0px 5px; border-radius: 4px; font-size: 12px; display: block; width: fit-content;}
-    #mypageMain .qa_list .wishlist-container table .stock-status .sold-out {background: #333333; color: #ffffff; font-weight: 600; padding: 0px 5px; border-radius: 4px; font-size: 12px; display: block; width: fit-content;}
+    #mypageMain .qa_list .wishlist-container table .stock-status .low-stock {background: #ff3838; color: #ffffff; font-weight: 600; padding: 1px 4px 0; border-radius: 4px; font-size: 12px; display: inline-block; width: fit-content;margin-left: 4px; vertical-align: middle;}
+    #mypageMain .qa_list .wishlist-container table .stock-status .sold-out {background: #333333; color: #ffffff; font-weight: 600; padding: 1px 4px 0; border-radius: 4px; font-size: 12px; display: inline-block; width: fit-content;margin-left: 4px; vertical-align: middle;}
     
     .subTitle-B .btn-seeMore a {
         font-size: 14px; color: #555555; font-family: "Satoshi"; font-weight: 400; display: block; position: relative; background: #f4f4f4; 
@@ -74,14 +75,14 @@
 <div class="info_help flex-col-spacer">
 	<div class="flex-row-spacer" style="border-bottom: 1px solid #dedede; padding: 0 0 20px 0;">
         <div class="info-basic">
-            <strong>Welcome, <a href="/mypage/myinfo.html"><?=$MID?></a>!</strong>
+            <strong>Welcome, <?=$MID?>!</strong>
             <div class="flex-row-gap16">
-                <span><img src="/img/mypage/ico-mypage-basic01.svg" alt="User Name"> Mister Tester</span>
-                <span><img src="/img/mypage/ico-mypage-basic02.svg" alt="User Phone"> 000-000-0000</span>
-                <span><img src="/img/mypage/ico-mypage-basic03.svg" alt="User Address"> 4567 Maple Avenue, Los Angeles, CA 90001, United States</span>
+                <span><img src="/img/mypage/ico-mypage-basic01.svg" alt="User Name"> <?= htmlspecialchars($dbMname) ?></span>
+                <span><img src="/img/mypage/ico-mypage-basic02.svg" alt="User Phone"> <?= htmlspecialchars($dbMtel) ?></span>
+                <span><img src="/img/mypage/ico-mypage-basic03.svg" alt="User Address"> <?= htmlspecialchars($dbMaddr1 . " " . $dbMaddr2) ?></span>
             </div>
         </div>
-        <button type="button" class="btn-style btn-color-white btn-h32 btn-round">Edit Info</button>
+        <button type="button" class="btn-style btn-color-white btn-h32 btn-round" onclick="location.href='/mypage/myinfo.html'">Edit Info</button>
     </div>
     <div class="flex-row-spacer" style="margin-top: 20px;">
         <div class="info-total">
@@ -95,27 +96,27 @@
                     <span>Your Orders</span>
                 </div>
             </li>
-            <li onClick="location.href='/mypage/shipping.html'">
+            <li onClick="location.href='/mypage/qna.html'">
                 <div class="content-items">
                     <img src="/img/mypage/img-my-inquiries.svg" alt="1:1 Inquiries">
                     <span>1:1 Inquiries</span>
                 </div>
             </li>
-            <li onClick="location.href='/mypage/shipping.html'">
+            <li onClick="location.href='/mypage/wish.html'">
                 <div class="content-items">
-                    <div class="count">77</div>
+                    <div class="count"><?=number_format($WishCount);?></div>
                     <img src="/img/mypage/img-my-wishlist.svg" alt="Wishlist">
                     <span>Wishlist</span>
                 </div>
             </li>
-            <li onClick="location.href='/mypage/shipping.html'">
+            <li onClick="location.href='/mypage/zzim.html'">
                 <div class="content-items">
-                    <div class="count">77</div>
+                    <div class="count"><?=number_format($BrandCount);?></div>
                     <img src="/img/mypage/img-my-brands.svg" alt="Favorite Brands">
                     <span>Favorite Brands</span>
                 </div>
             </li>
-            <li onClick="location.href='/mypage/shipping.html'">
+            <li onClick="alert('Service under preparation. We apologize for the inconvenience.'); return false;">
                 <div class="content-items">
                     <img src="/img/mypage/img-my-restocked.svg" alt="Back in Stock">
                     <span>Back in Stock</span>

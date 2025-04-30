@@ -321,7 +321,6 @@ word-break:break-all; white-space:nowrap; text-overflow:ellipsis; overflow:hidde
 .member_info th { background-color:#f8f8f8; }
 .member_info td span { font-size:11px; color:#4d4d4d; }
 .member_info td input[type="text"] {vertical-align:middle; border:#bbbbbb solid 1px;}
-.member_info td input[type="password"] { vertical-align:middle; border:#bbbbbb solid 1px; margin:1px 0; padding:1px; }
 .member_info td a { color:#fff; font-size:11px; padding:3px 8px; text-decoration:none; background-color:#666}
 .member_info .ico_star { float:left;margin-top:-2px; padding-right:5px; }
 

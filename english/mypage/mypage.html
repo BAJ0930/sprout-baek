@@ -21,7 +21,7 @@
 		<? include_once $_SERVER['DOCUMENT_ROOT']."/mypage/top.html"; ?>
 
         <div class="qa_list">
-            <h3><img src="/img/mypage/tit_02.gif" alt="나의문의내역"><span><a href="/mypage/qna.html">more ></a></span></h3>
+            <h3 style="font-size: 24px;">My Inquiry<span><a style="font-size: 16px;" href="/mypage/qna.html">more ></a></span></h3>
             <table border="0" cellspacing="0" cellpadding="0" class="table-inquiry">
                 <tr>
                     <th width="10%" scope="col">No.</th>
@@ -39,8 +39,8 @@
 					$result = sql_query($sql);
 					$cnt1 = mysqli_num_rows($result);
 					while($rs = sql_fetch_array($result))
-   					{
-  						# DB 레코드 결과값 모두 변수로 전환
+                    {
+                        # DB 레코드 결과값 모두 변수로 전환
 						foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}		
 						
 						

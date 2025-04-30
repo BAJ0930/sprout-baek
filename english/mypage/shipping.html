@@ -48,45 +48,45 @@
 <link href='/css/button.css' rel='stylesheet' type='text/css'>
 
 <script type="text/javascript">
-function fnCancelOrder(qIDX,qMode) {
-	fnViewPopup("pop_10","qIDX=" + qIDX + "&qMode=" + qMode);
-	return;		
-}
+    function fnCancelOrder(qIDX,qMode) {
+        fnViewPopup("pop_10","qIDX=" + qIDX + "&qMode=" + qMode);
+        return;		
+    }
 
-function fnCancelOrderSave() {
-	var idx = $("INPUT[id='qIDX']").val();
-	var v = $("[name='OcancelType']:checked").val();
-	var rs = $("INPUT[id='OcancelReason']");
-	var mode = $("INPUT[id='qMode']").val();
+    function fnCancelOrderSave() {
+        var idx = $("INPUT[id='qIDX']").val();
+        var v = $("[name='OcancelType']:checked").val();
+        var rs = $("INPUT[id='OcancelReason']");
+        var mode = $("INPUT[id='qMode']").val();
 
-	if(v==5 && rs.val()=="") 	{
-		alert("Please enter ETC.");
-		rs.focus();
-		return;
-	}
+        if(v==5 && rs.val()=="") 	{
+            alert("Please enter ETC.");
+            rs.focus();
+            return;
+        }
 
-	var param="Ctype=" + v + "&Creason=" + rs.val() + "&qIDX=" + idx + "&qMode=" + mode;
-	$.ajax({
-		url:"ajaxCancelOrder.php",
-		type:"POST",
-		cache:false,
-		data : param,
-		dataType:"text",
-		error:fnErrorAjax,
-		success:function(_response)
-		{
-			v = _response.split("##");
-			if(v[1]=="OK") {
-				alert('Your cancellation has been completed.');
-				document.location.reload();
-			} else if(v[1] == "ErrorCard") {
-				alert("CARD ERROR");
-			} else {
-				fnErrorAjax();
-			}
-		}
-	});
-}
+        var param="Ctype=" + v + "&Creason=" + rs.val() + "&qIDX=" + idx + "&qMode=" + mode;
+        $.ajax({
+            url:"ajaxCancelOrder.php",
+            type:"POST",
+            cache:false,
+            data : param,
+            dataType:"text",
+            error:fnErrorAjax,
+            success:function(_response)
+            {
+                v = _response.split("##");
+                if(v[1]=="OK") {
+                    alert('Your cancellation has been completed.');
+                    document.location.reload();
+                } else if(v[1] == "ErrorCard") {
+                    alert("CARD ERROR");
+                } else {
+                    fnErrorAjax();
+                }
+            }
+        });
+    }
 </script>
 
 <!-- 마이페이지 시작 --->    
@@ -97,8 +97,7 @@ function fnCancelOrderSave() {
 	<!-- mypageMain -->
 	<div id="mypageMain">
 	
-	<? include_once $_SERVER['DOCUMENT_ROOT']."/mypage/top.html"; ?>      
-	
+	<? include_once $_SERVER['DOCUMENT_ROOT']."/mypage/top.html"; ?>
 	<?			
 		/*=======================================================================================
 		회원 처리
@@ -221,7 +220,7 @@ function fnCancelOrderSave() {
 		$sql = "SELECT SUM(sub.AMT) AS AMT
 				FROM (
 					SELECT a.IDX, 
-						   SUM(IFNULL(b.AMT, 0) + IFNULL(b.OusePoint, 0) + IFNULL(b.OuseGift, 0) + IFNULL(b.OuseCoupon, 0)) AS AMT
+                    SUM(IFNULL(b.AMT, 0) + IFNULL(b.OusePoint, 0) + IFNULL(b.OuseGift, 0) + IFNULL(b.OuseCoupon, 0)) AS AMT
 					FROM 2011_orderInfo AS a
 					LEFT JOIN 2011_orderPayment AS b ON a.IDX = b.OIDX
 					WHERE a.Odeleted = 0
@@ -269,7 +268,7 @@ function fnCancelOrderSave() {
 </style>
 
 <div class="qa_list">
-	<h3><img src="/img/mypage/tit_07.gif" alt="나의주문/배송조회"></h3>
+	<h3 style="font-size: 24px;">Order-Tracking</h3>
 
 	<table cellspacing="0" cellpadding="0" class="my-table-upperMenu">
 	<form name="xform" id="xform">
@@ -422,7 +421,7 @@ function fnSelectDay(s){
 	}
 }
 </script>
- 
+
 <?
 	include_once $_SERVER['DOCUMENT_ROOT']."/footer.html";
 ?>
