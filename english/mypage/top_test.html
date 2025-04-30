@@ -1,3 +1,8 @@
+
+<?
+    
+?>
+
 <style>
     #mypageMain {width: 1200px; margin-left: 0;}
     #mypageMain .info_help {width: 1200px; height: auto; flex-direction: column;}
@@ -25,7 +30,7 @@
     #mypageMain .qa_list td.stock-status {text-align: left;}
     #mypageMain .qa_list td .btn-style {margin: 4px auto 0; width: fit-content;}
 
-    span.order-number {text-decoration: underline; font-weight: 600;}
+    span.order-number {font-weight: 600;}
     span.order-price {font-weight: 700; color: #111111; font-size: 18px; display: block;}
     span.order-items {color: #888888;}
     span.done {color: #36B636; font-weight: 600;}
@@ -44,21 +49,24 @@
 
     #mypageMain .qa_list .wishlist-container {margin: auto auto 64px;}
     #mypageMain .qa_list .wishlist-container table .item-info {display: flex; align-items: center; gap: 16px; text-align: left;}
-    #mypageMain .qa_list .wishlist-container table .item-info > img {width: 72px; height: 72px; border-radius: 8px;}
+    #mypageMain .qa_list .wishlist-container table .item-info > a {display: block; width: 72px; height: 72px; border-radius: 8px; overflow: hidden;}
+    #mypageMain .qa_list .wishlist-container table .item-info > a > img {width: 100%; height: auto;}
+    #mypageMain .qa_list .wishlist-container table .item-info > a > img .price {font-size: 16px; font-weight: 600; color: #111111;}
     #mypageMain .qa_list .wishlist-container table .item-info .features {margin-bottom: 4px;}
     #mypageMain .qa_list .wishlist-container table .item-info .features span {
         padding-right: 8px; border-right: 1px solid #dedede; line-height: 15px; font-size: 15px; color: #888888; margin-right: 4px;
     }
     #mypageMain .qa_list .wishlist-container table .item-info .features span:last-child {border: 0;}
-    #mypageMain .qa_list .wishlist-container table .item-info > img .price {font-size: 16px; font-weight: 600; color: #111111;}
     #mypageMain .qa_list .wishlist-container table .price-wrap .price {font-weight: 600; line-height: 1; color: #111111; margin-bottom: 8px;}
     #mypageMain .qa_list .wishlist-container table .price-wrap .btn-style {margin: 6px auto 0 auto;}
     #mypageMain .qa_list .wishlist-container table .price-wrap .discount {display: block; font-size: 14px; color: #888888;}
 
     #mypageMain .qa_list .wishlist-container table .stock-status {font-size: 13px; color: #888888; text-align: left;}
     #mypageMain .qa_list .wishlist-container table .stock-status .in-stock {color: #00AD34;}
-    #mypageMain .qa_list .wishlist-container table .stock-status .low-stock {background: #ff3838; color: #ffffff; font-weight: 600; padding: 1px 4px 0; border-radius: 4px; font-size: 12px; display: inline-block; width: fit-content;margin-left: 4px; vertical-align: middle;}
-    #mypageMain .qa_list .wishlist-container table .stock-status .sold-out {background: #333333; color: #ffffff; font-weight: 600; padding: 1px 4px 0; border-radius: 4px; font-size: 12px; display: inline-block; width: fit-content;margin-left: 4px; vertical-align: middle;}
+    #mypageMain .qa_list .wishlist-container table .stock-status .low-stock,
+    #mypageMain .qa_list .wishlist-container table .stock-status .sold-out {color: #ffffff; font-weight: 600; padding: 2px 2px 0px; border-radius: 2px; font-size: 12px; display: inline-block; width: fit-content; margin-left: 4px; height: 15px; line-height: 1;}
+    #mypageMain .qa_list .wishlist-container table .stock-status .low-stock {background: #ff3838;}
+    #mypageMain .qa_list .wishlist-container table .stock-status .sold-out {background: #333333;}
     
     .subTitle-B .btn-seeMore a {
         font-size: 14px; color: #555555; font-family: "Satoshi"; font-weight: 400; display: block; position: relative; background: #f4f4f4; 
@@ -87,7 +95,7 @@
     <div class="flex-row-spacer" style="margin-top: 20px;">
         <div class="info-total">
             <span>This Month's Total</span><br>
-            <span>USD <strong>245.23</strong></span>
+            <span>USD <strong><span id="counter1"></span></strong></span>
         </div>
         <ul class="my-button-list">
             <li onClick="location.href='/mypage/shipping.html'">
@@ -125,3 +133,4 @@
         </ul>
     </div>
 </div>
+
