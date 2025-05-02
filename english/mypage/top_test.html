@@ -77,11 +77,45 @@
     }
 </style>
 
+<?
+    // 이달의 구매금액 계산
+    $day51 = date("Y-m-d", mktime(0, 0, 0, date("m"), 1, date("Y"))); // 이번 달 첫 날
+    $day52 = date("Y-m-d", mktime(0, 0, 0, date("m") + 1, 0, date("Y"))); // 이번 달 마지막 날
+
+    $d1 = explode("-", $day51);
+    $date1 = mktime(0, 0, 0, $d1[1], $d1[2], $d1[0]);
+    $d2 = explode("-", $day52);
+    $date2 = mktime(0, 0, 0, $d2[1], $d2[2] + 1, $d2[0]);
+
+    $addWhere = " a.MID = '" . $MID . "' AND a.Oregdate >= '" . $date1 . "' AND a.Oregdate < '" . $date2 . "'";
+
+    $sql = "SELECT SUM(sub.AMT) AS AMT
+            FROM (
+                SELECT a.IDX, 
+                SUM(IFNULL(b.AMT, 0) + IFNULL(b.OusePoint, 0) + IFNULL(b.OuseGift, 0) + IFNULL(b.OuseCoupon, 0)) AS AMT
+                FROM 2011_orderInfo AS a
+                LEFT JOIN 2011_orderPayment AS b ON a.IDX = b.OIDX
+                WHERE a.Odeleted = 0
+                AND {$addWhere}
+                AND a.OpayState <> 88
+                GROUP BY a.IDX
+            ) AS sub";
+    $rs = sql_fetch($sql);
+    $thisMonthTotal = $rs['AMT'] ? number_format($rs['AMT'], 2, '.', '') : '0.00';
+?>
 <div class="subTop-A">
     <div class="subTitle-A">Your Account</div>
+    <div class="dropdown-menu">
+        <div class="dropdown-button">Account Options</div>
+        <div class="dropdown-list" style="width: 184px;">
+            <a href="/mypage/shippingReturn.html">Return & Refund Detail</a>
+            <a href="/mypage/shippingCancel.html">Cancel Detail</a>
+            <a href="/mypage/out.html">Delete Account</a>
+        </div>
+    </div>
 </div>
 <div class="info_help flex-col-spacer">
-	<div class="flex-row-spacer" style="border-bottom: 1px solid #dedede; padding: 0 0 20px 0;">
+    <div class="flex-row-spacer" style="border-bottom: 1px solid #dedede; padding: 0 0 20px 0;">
         <div class="info-basic">
             <strong>Welcome, <?=$MID?>!</strong>
             <div class="flex-row-gap16">
@@ -134,3 +168,69 @@
     </div>
 </div>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 드롭다운 메뉴 토글
+        const dropdownButton = document.querySelector('.dropdown-button');
+        const dropdownList = document.querySelector('.dropdown-list');
+
+        dropdownButton.addEventListener('click', function() {
+            dropdownList.classList.toggle('active');
+            dropdownButton.classList.toggle('active');
+        });
+
+        // 외부 클릭 시 드롭다운 닫기
+        document.addEventListener('click', function(event) {
+            if (!dropdownButton.contains(event.target) && !dropdownList.contains(event.target)) {
+                dropdownList.classList.remove('active');
+                dropdownButton.classList.remove('active');
+            }
+        });
+
+        // 이달의 총 구매금액 numberCounter
+        function numberCounter(target_frame, target_number) {
+            this.count = 0;
+            this.diff = 0;
+            this.target_count = parseFloat(target_number) || 0;
+            this.target_frame = document.getElementById(target_frame);
+            this.timer = null;
+            this.start_time = Date.now();
+            this.max_duration = 500; // 최대 애니메이션 시간 500ms
+            this.counter();
+        }
+        numberCounter.prototype.counter = function() {
+            var self = this;
+            this.diff = this.target_count - this.count;
+            
+            if (this.diff > 0) {
+                // 동적 단계 수: 금액 크기에 비례 (최소 10, 최대 50)
+                var steps = Math.min(Math.max(Math.floor(this.target_count / 10), 10), 50);
+                self.count += this.diff / steps;
+                if (self.count > this.target_count) {
+                    self.count = this.target_count; // 초과 시 목표값으로 고정
+                }
+            }
+            
+            if (this.target_frame) {
+                this.target_frame.innerHTML = this.count.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            } else {
+                console.error('Target frame not found: ' + target_frame);
+            }
+            
+            // 최대 시간 초과 또는 목표값 도달 시 종료
+            if (Date.now() - this.start_time < this.max_duration && Math.abs(this.count - this.target_count) > 0.01) {
+                this.timer = setTimeout(function() { self.counter(); }, 20); // 20ms 간격
+            } else {
+                this.target_frame.innerHTML = this.target_count.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                clearTimeout(this.timer);
+            }
+        };
+        
+        // 디버깅 로그
+        console.log('Counter1 element:', document.getElementById('counter1'));
+        console.log('This month total:', '<?=$thisMonthTotal?>');
+        
+        // 이달의 구매금액 초기화
+        new numberCounter("counter1", '<?=$thisMonthTotal?>');
+    });
+</script>

@@ -122,7 +122,7 @@
                     <tbody>
                         <?php
                         if (mysqli_num_rows($result) == 0) {
-                            echo "<tr><td colspan='6' style='text-align: center; padding: 20px;'>No recent orders found.</td></tr>";
+                            echo "<tr><td colspan='6' style='text-align: center; padding: 20px; color: #888888;'>No recent orders found.</td></tr>";
                         } else {
                             while ($rs = sql_fetch_array($result)) {
                                 // DB 레코드 변수화
@@ -213,41 +213,54 @@
             </div>
 
 
-            <div>
-                <div class="subTitle-B"><span>Sent to Cheonyu</span><span class="btn-seeMore"><a href="/mypage/qna.html">See more</a></span></div>
-                <div class="inquiry-list">
-                    <div class="inquiry-item flex-row-spacer">
-                        <div>
-                            <span class="status in-progress">In Progress</span>
-                            <span class="title">Shipping Delay Issue Inquiry</span>
-                            <div class="message">My order from three days ago is still being prepared for shipment. Can I get a refund?</div>
-                        </div>
-                        <div class="date">2 hours ago</div>
-                    </div>
-                    <div class="inquiry-item flex-row-spacer">
-                        <div>
-                            <span class="status answered">Answered</span>
-                            <span class="title">Inquiry About Product Details</span>
-                            <div class="message">
-                                I am interested in one of your products and would like to ask for more details before making a purchase. Could you provide information on the following?
-                                I am interested in one of your products and would like to ask for more details before making a purchase. Could you provide information on the following?
-                            </div>
-                        </div>
-                        <div class="date">October 10, 2025</div>
-                    </div>
-                    <div class="inquiry-item flex-row-spacer">
-                        <div>
-                            <span class="status answered">Answered</span>
-                            <span class="title">Shipping Delay Issue Inquiry</span>
-                            <div class="message">My order from three days ago is still being prepared for shipment. Can I get a refund?</div>
-                        </div>
-                        <div class="date">September 9, 2025</div>
-                    </div>
-                </div>
-            </div>
 
-
+            <div class="subTitle-B"><span>Sent to Cheonyu</span><span class="btn-seeMore"><a href="/mypage/qna.html">See more</a></span></div>
+            <div class="inquiry-list">
+                <?
+                    // 쿼리 (이전 코드와 동일, 문의 내용 필드 포함)
+                    $query = " SELECT IDX, IRgroup, IRkind, IRtitle, IRreply, IRregdate, IRcontent AS content FROM 2011_inquireInfo WHERE IRMID = '" . $MID . "' AND IRdeleted = 0 ";
+                    $query .= " UNION ALL SELECT IDX, 3 AS IRgroup, 1 AS IRkind, '체인문의' AS IRtitle, FCreply AS IRreply, FCregdate AS IRregdate, FCetc AS content FROM 2011_franchiseQNA WHERE FCMID = '" . $MID . "' AND FCdeleted = 0 ";
+                    $query .= " UNION ALL SELECT IDX, 4 AS IRgroup, 1 AS IRkind, '대량구매 문의' AS IRtitle, HBreply AS IRreply, HBregdate AS IRregdate, HBmemo AS content FROM 2011_heavyBuying WHERE HBMID = '" . $MID . "' AND HBdeleted = 0 ";
+                    $query .= " UNION ALL SELECT IDX, 5 AS IRgroup, 1 AS IRkind, '입점 문의' AS IRtitle, OQreply AS IRreply, OQregdate AS IRregdate, OQintroduce AS content FROM 2011_openingQNA WHERE MID = '" . $MID . "' AND OQdeleted = 0 ";
+                    $query .= " ORDER BY IRregdate DESC LIMIT 3";
+                    $result = sql_query($query);
             
+                    // 쿼리 오류 확인
+                    if (!$result) {
+                        echo '<div style="width: 100%; text-align: center;">Error retrieving inquiries.</div>';
+                    } else {
+                        if (mysqli_num_rows($result) == 0) {
+                            echo '<div class="inquiry-item flex-row-spacer"><div style="width: 100%; text-align: center; color: #888888; font-size: 16px;">No inquiries found.</div></div>';
+                        } else {
+                            while ($rs = sql_fetch_array($result)) {
+                                foreach ($rs as $fieldName => $fieldValue) {
+                                    $fieldName = "db" . $fieldName;
+                                    $$fieldName = $fieldValue;
+                                }
+                                
+                                // 상태 처리
+                                $reState = $dbIRreply ? "<span class='status answered'>Answered</span>" : "<span class='status in-progress'>In Progress</span>";
+                                
+                                // 제목과 내용 처리
+                                $dbIRtitle = strcut_utf8($dbIRtitle, 55);
+                                $dbContent = strcut_utf8(strip_tags($dbcontent ?? ""), 100); // 내용 자르기, 없으면 빈 문자열
+                ?>
+                <div class="inquiry-item flex-row-spacer">
+                    <div class="inquiry-content">
+                        <div class="status-title">
+                            <?=$reState?>
+                            <a class="title" href="qnaView.html?idx=<?=$dbIDX?>&IRgroup=<?=$dbIRgroup?>"><?=$dbIRtitle?></a>
+                        </div>
+                        <? if ($dbContent) { ?>
+                            <div class="message"><?=$dbContent?></div>
+                        <? } ?>
+                    </div>
+                    <div class="date"><?=date("F j, Y", $dbIRregdate)?></div>
+                </div>
+                <? } ?>
+                <? } ?>
+                <? } ?>
+            </div>
 
 
             <div>
@@ -281,35 +294,37 @@
                                         ORDER BY a.IDX DESC 
                                         LIMIT 3";
                                 $result = sql_query($sql);
-    
+            
                                 while ($rs = sql_fetch_array($result)) {
                                     # DB 필드를 변수로 변환
                                     foreach ($rs as $fieldName => $fieldValue) {
                                         $fieldName = "db" . $fieldName;
                                         $$fieldName = $fieldValue;
                                     }
-    
+            
                                     # 썸네일 이미지 경로 생성
                                     $imgUrl = getImgUrl($dbPsaveFile1);
                                     $pImg = "<img src='" . $imgUrl . "' alt='" . htmlspecialchars($dbPname) . "'>";
-    
+            
                                     # 가격 정보 계산
                                     $priceInfo = fnCalPrice($dbPprice3, $rs);
-    
+            
                                     # 브랜드명
                                     $brandName = isset($fnbrand[$dbBRIDX]) ? $fnbrand[$dbBRIDX] : 'Unknown Brand';
-    
+            
                                     # 아이콘 정보
                                     $getInfo = getListInfo($rs, $dbPstockCount);
                                     $icon = $getInfo['icon'] ?: '<img src="/image_3/boxinBG.svg" alt="Outer carton">';
                                     $icon2 = $getInfo['icon2'] ?: '<img src="/image_3/boxinBG2.svg" alt="Inner carton">';
-    
+            
                                     # 옵션 및 옵션별 재고 정보
                                     $optionStocks = [];
+                                    $firstOptionId = null; // 첫 번째 유효 옵션 ID 저장
                                     if ($dbPoptionUse == 2) {
                                         $optionSql = "SELECT IDX, OPvalue, OPvalueEng, OPstock 
                                                     FROM 2011_productOption 
-                                                    WHERE PIDX = '$dbIDX' AND OPhidden = 0";
+                                                    WHERE PIDX = '$dbIDX' AND OPhidden = 0 
+                                                    ORDER BY IDX ASC";
                                         $optionResult = sql_query($optionSql);
                                         while ($opt = sql_fetch_array($optionResult)) {
                                             # 예약 수량 계산
@@ -320,10 +335,15 @@
                                                         GROUP BY ORPoption";
                                             $readyResult = sql_fetch_array(sql_query($readySql));
                                             $stock = max(0, (int)($opt['OPstock'] - ($readyResult['Pready'] ?? 0)));
-    
+            
+                                            # 첫 번째 유효 옵션(재고 > 0) 저장
+                                            if ($stock > 0 && $firstOptionId === null) {
+                                                $firstOptionId = $opt['IDX'];
+                                            }
+            
                                             # 영문 옵션명 선택
                                             $optionName = $opt['OPvalueEng'] ?: $opt['OPvalue'];
-    
+            
                                             # 재고 상태 포맷팅
                                             if ($stock > 5) {
                                                 $status = '<span class="in-stock">In stock</span>';
@@ -341,13 +361,17 @@
                                     <td style="padding: 12px;"><?=$dbcategoryName ?: 'Unknown'?></td>
                                     <td>
                                         <div class="item-info">
-                                            <?=$pImg?>
+                                            <a href="/product/view.html?qIDX=<?=$dbIDX?>"><?=$pImg?></a>
                                             <div>
                                                 <div class="features">
                                                     <span><?=$dbIDX?></span>
                                                     <span style="font-weight: 600;"><?=$brandName?></span>
-                                                    <span><?=$icon?></span>
-                                                    <span><?=$icon2?></span>
+                                                    <? if ($dbPboxin2) { ?>
+                                                        <span><span class="tit"><span><?=$icon2?> <?=$dbPboxin2?> EA</span></span></span>
+                                                    <? } ?>
+                                                    <? if ($dbPboxin) { ?>
+                                                        <span><span class="tit"><span><?=$icon?> <?=$dbPboxin?> EA</span></span></span>
+                                                    <? } ?>
                                                 </div>
                                                 <div class="name"><?=htmlspecialchars($dbPengName)?></div>
                                             </div>
@@ -357,12 +381,15 @@
                                         <?=$optionText?>
                                     </td>
                                     <td class="price-wrap">
-                                        <del style="font-size: 14px;">USD <?=$dbPprice3?></del>
+                                        <del style="font-size: 14px;">USD <?=$priceInfo["dollar_txt"]?></del>
                                         <div class="price">USD <?=$priceInfo["dcDollar_txt"]?></div>
                                         <span class="discount">Buy 2 or more<br><span style="color: #ff3838; font-weight: 600;"><?=$priceInfo["dcPer"]?>% Off</span></span>
                                     </td>
                                     <td>
-                                        <a href="javascript:fnCheckCartIn('<?=$dbIDX?>')" class="btn-style btn-color-CTA btn-h32 btn-round">Add to Cart</a>
+                                        <a href="javascript:void(0)" 
+                                            class="btn-style btn-color-CTA btn-h32 btn-round add-to-cart" 
+                                            data-pidx="<?=$dbIDX?>" 
+                                            data-opidx="<?=$firstOptionId ?: ''?>">Add to Cart</a>
                                     </td>
                                 </tr>
                             <? } ?>
@@ -370,6 +397,46 @@
                     </table>
                 </div>
             </div>
+            
+            <!-- JavaScript for Add to Cart -->
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // 모든 Add to Cart 버튼에 클릭 이벤트 추가
+                document.querySelectorAll('.add-to-cart').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const pidx = this.getAttribute('data-pidx');
+                        const opidx = this.getAttribute('data-opidx');
+            
+                        // 옵션 여부 및 재고 확인
+                        if (opidx === '' || opidx === 'null') {
+                            // 옵션 있는 상품인데 재고 없음
+                            if (this.closest('tr').querySelector('.stock-status').textContent.includes('Sold out')) {
+                                alert('This item is out of stock.');
+                                return;
+                            }
+                            // 옵션 없는 상품
+                            addToCart(pidx, null);
+                        } else {
+                            // 옵션 있는 상품, 유효한 opidx
+                            addToCart(pidx, opidx);
+                        }
+                    });
+                });
+            
+                // 장바구니 추가 함수
+                function addToCart(pidx, opidx) {
+                    // fnCheckCartIn에 전달할 qStr 생성
+                    let inIDX = pidx;
+                    if (opidx) {
+                        inIDX += ',' + opidx; // 옵션 있는 경우 PIDX,OPIDX 형식
+                    }
+                    const qStr = 'inIDX=' + encodeURIComponent(inIDX) + '&inCount=1';
+            
+                    // 기존 fnCheckCartIn 호출
+                    fnCheckCartIn('', '', '', qStr);
+                }
+            });
+            </script>
 
         </div>
 

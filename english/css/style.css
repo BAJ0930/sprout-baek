@@ -141,7 +141,7 @@ select {background: url(/image_1/ico_arrow_dropdown_bk.svg) no-repeat right 12px
 textarea {border: 1px solid #dedede; border-radius: 8px; padding: 10px 12px; outline: none;}
 
 /* variation */
-.numCss input[type="checkbox"].check {width: 24px; height: 20px; margin: 0; background-size: 24px 24px;}
+.numCss input[type="checkbox"].check {width: 24px; height: 24px; margin: 0; background-size: 24px 24px;}
 .price-notice { 
     background: #f4f4f4; color: #888888; border-radius: 4px; padding: 4px; text-align: center; margin: 10px 0 6px; font-size: 14px; font-weight: 400;
 }
@@ -163,8 +163,17 @@ textarea {border: 1px solid #dedede; border-radius: 8px; padding: 10px 12px; out
 .main-tit > div.btn-list img {vertical-align: middle;}
 
 /* 서브 섹션 타이틀 */
-.subTop-A {display: flex; margin: -4px 0 40px; justify-content: space-between;}
-.subTop-A .subTitle-A {font-size: 22px;line-height: 1;color: #111111;font-family: "PLBold";}
+.subTop-A {display: flex; margin: -4px 0 40px; justify-content: space-between; align-items: center; font-family: "PLBold";}
+.subTop-A .subTitle-A {font-size: 22px;line-height: 1;color: #111111;}
+.subTop-A .dropdown-menu {position: relative; display: block; top: 0; background-color: transparent; box-shadow: unset; width: auto;}
+.subTop-A .dropdown-button {display: flex; align-items: center; gap: 8px; font-size: 16px; color: #555555; cursor: pointer; transition: background 0.2s;}
+.subTop-A .dropdown-button:hover {color: #333333;}
+.subTop-A .dropdown-button::after {content: ''; display: inline-block; width: 0; height: 0; border-left: 4.5px solid transparent; border-right: 4.5px solid transparent; border-top: 6px solid #888; transition: transform 0.3s; margin-top: 2px;}
+.subTop-A .dropdown-button.active::after {transform: rotate(180deg);}
+.subTop-A .dropdown-list {display: none; position: absolute; top: 100%; right: 0; margin-top: 12px; background: #ffffff; border: 1px solid #dedede; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); min-width: 160px; z-index: 1000;}
+.subTop-A .dropdown-list.active {display: block;}
+.subTop-A .dropdown-list a {display: block; padding: 9px 16px 10px; font-size: 14px; color: #555555; text-decoration: none; transition: background 0.2s; font-family: 'Satoshi';}
+.subTop-A .dropdown-list a:hover {background: #f8f8f8;}
 .subTop-A .indicator {display: flex; font-size: 16px; font-family: "PLBold"; color: #aaaaaa;}
 .subTop-A .indicator > div {position: relative; margin-right: 36px;}
 .subTop-A .indicator > div.active-page {color: #555555;}
