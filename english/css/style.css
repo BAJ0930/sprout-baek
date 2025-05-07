@@ -126,7 +126,7 @@ input[type="checkbox"]:checked.check {background: url('/img/btn-check.svg?250423
 
 input[type="checkbox"].check-box {
     appearance: none; -webkit-appearance: none; -moz-appearance: none; width: 24px; height: 24px; margin: 0 4px 0 0; outline: none;
-    background: url('/img/btn-check-unchecked.svg?250423') no-repeat center center; background-size: auto auto;
+    background: url('/img/btn-check-unchecked.svg?250423') no-repeat center center; background-size: auto auto; border-radius: 4px;
 }
 input[type="checkbox"]:checked.check-box {background: url('/img/btn-check.svg?250423') no-repeat center center; background-size: auto auto;}
 input[type="checkbox"] + span {font-size: 15px; color: #333333; line-height: 1;}

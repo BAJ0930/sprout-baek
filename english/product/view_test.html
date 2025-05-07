@@ -87,11 +87,6 @@
 	/*--- 가격계산 함수화 --*/
 	$priceInfo = fnCalPrice($dbPprice3,$rs);
 
-	//-- 자바스크립트에서 계산에 사용될 변수
-	//$jsPrice=$priceInfo['dcPrice'];
-	//$jsPrice2=$priceInfo['dcPrice2'];
-	//$jsPriceBox=$priceInfo['dcPriceBox'];
-	//$jsPriceBox2=$priceInfo['dcPriceBox2'];
 	$jsPrice=$priceInfo['dcDollar'];
 	$jsPrice2 = 0;
 	$jsPriceBox=$priceInfo['dcDollarBox_txt'];
@@ -846,7 +841,7 @@
     .sub_menu .dropdown-menu {display:none;position:absolute;top:32px;right:0; left: auto; background:#fff;border-radius: 8px; list-style:none;padding:6px 0;margin:0;width:184px;z-index:1000;}
     .sub_menu .dropdown-menu li {width: 100%;}
     .sub_menu .dropdown-menu li a {display:block;padding:5px 12px 6px;color:#333;}
-    .sub_menu .dropdown-menu li a:hover {background:#e9f5ff;}
+    .sub_menu .dropdown-menu li a:hover {background:#E9ECF4;}
     .sub_menu .on:hover .dropdown-menu {display:block;/* 활성 항목에 hover 시 드롭다운 표시 */}
 
 
@@ -1204,29 +1199,37 @@
                         ?>
                         <div>Pricing</div>
                         <ul class="price-wrap">
-                            <li>
-                                <span>Retail Price</span>
-                                <span><span class="txt-USD">USD</span> <?= $priceInfo["dollar_txt"] ?></span>
-                            </li>
-                            <li>
-                                <span class="tit">Price for <span style="color:#005bf1;font-weight:600;">1 <?= $PboxCountTxt ?> item</span></span>
-                                <div>
-                                    <div class="dc-badge"><?= $priceInfo["dcPer"] ?>%</span></div>
-                                    <span class="txt-USD">USD</span> <strong class="font-semiB"><?= number_format($priceInfo["dcDollar_txt"]) ?></strong>
-                                </div>
-                            </li>
-                            <?php if ($dbPboxCount > 0 && ${'dbPdiscount' . $boxPer} != $priceInfo["dcPer"]): ?>
-                                <li>
-                                    <span class="tit">Price for <span style="color:#005bf1;font-weight:600;"><?= $dbPboxCount ?> or more items</span></span>
-                                    <div>
-                                        <div class="dc-badge2"><?= ${'dbPdiscount' . $boxPer} ?>%</span></div>
-                                        <strong>
-                                            <span><span class="txt-USD">USD</span> <?= number_format($priceInfo["dcDollarBox2_txt"]) ?></span>
-                                        </strong>
-                                    </div>
-                                </li>
-                            <?php endif; ?>
-                        </ul>
+    <li>
+        <span>Retail Price</span>
+        <span><span class="txt-USD">USD</span> <?= $priceInfo["dollar_txt"] ?></span>
+    </li>
+    <li>
+        <span class="tit">Price for <span style="color:#005bf1;font-weight:600;">1 <?= $PboxCountTxt ?> item</span></span>
+        <div>
+            <div class="dc-badge"><?= $priceInfo["dcPer"] ?>%</div>
+            <span class="txt-USD">USD</span> <strong class="font-semiB"><?= number_format($priceInfo["dcDollar_txt"]) ?></strong>
+        </div>
+    </li>
+    <?php if ($dbPboxCount > 0 && isset(${'dbPdiscount' . $boxPer}) && ${'dbPdiscount' . $boxPer} != $priceInfo["dcPer"]): ?>
+        <li>
+            <span class="tit">Price for <span style="color:#005bf1;font-weight:600;"><?= $dbPboxCount ?> or more items</span></span>
+            <div>
+                <div class="dc-badge2"><?= ${'dbPdiscount' . $boxPer} ?>%</div>
+                <strong>
+                    <span><span class="txt-USD">USD</span> <?= number_format($priceInfo["dcDollarBox_txt"] * $dbPboxCount) ?></span>
+                </strong>
+            </div>
+        </li>
+    <?php endif; ?>
+</ul>
+
+<?php
+// 디버깅: priceInfo와 변수 값 확인
+echo "<!-- Debug: priceInfo=" . print_r($priceInfo, true) . " -->\n";
+echo "<!-- Debug: boxPer=$boxPer, boxPer2=$boxPer2 -->\n";
+echo "<!-- Debug: dbPdiscount boxPer=" . (${'dbPdiscount' . $boxPer} ?? 'undefined') . ", dbPdiscount boxPer2=" . (${'dbPdiscount' . $boxPer2} ?? 'undefined') . " -->\n";
+echo "<!-- Debug: shopConfig=" . print_r($shopConfig, true) . " -->\n";
+?>
                     </li>
                     <?php endif; ?>
 

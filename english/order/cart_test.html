@@ -15,7 +15,6 @@
 	$sql.= "left join 2011_productOption as c on a.OPIDX = c.IDX left join 2011_brandInfo as e on b.BRIDX = e.IDX ";
 	$sql.= " left join 2011_makerSeller as d on e.MKIDX = d.MKIDX ";
 	$sql.= " where MID='" . addslashes($uid) . "' and a.CAstate=1 ";
-	//$sql .= " ORDER BY b.PdeliveryType ASC, d.MKIDX desc, a.IDX ASC";
 	$sql .= " ORDER BY d.MKIDX desc, a.PIDX ASC, c.IDX ASC";
 	$result = sql_query($sql);
 	$listStyle = ($listStyle) ? $listStyle : 1;
@@ -28,10 +27,6 @@
 	$priceInfo = fnCalPrice($dbPprice3,$rs);
 
 	//-- 자바스크립트에서 계산에 사용될 변수
-	//$jsPrice=$priceInfo['dcPrice'];
-	//$jsPrice2=$priceInfo['dcPrice2'];
-	//$jsPriceBox=$priceInfo['dcPriceBox'];
-	//$jsPriceBox2=$priceInfo['dcPriceBox2'];
 	$jsPrice=$priceInfo['dcDollar'];
 	$jsPrice2 = 0;
 	$jsPriceBox=$priceInfo['dcDollarBox_txt'];
@@ -140,20 +135,62 @@
 	//===================================================
 	//-- 체크한 카트의 주문내역 불러오기
 	//===================================================
-	function fnGetCheckCart()
-	{
-		obj=$("INPUT[id='cartCheck']:checked");
+	function fnGetCheckCart() {
+		obj = $("INPUT[id='cartCheck']:checked");
 		len = obj.length;
-		
-		chkObj="";
-		for(k=0;k<len;k++)
-		{
-			if(chkObj!="")chkObj+=",";
-			chkObj+=obj.eq(k).val();
-		}		
-		//alert(chkObj);		
-		if(chkObj=="")chkObj="none";		
-		fnGetTotalInfo(chkObj);
+		var totPrice = 0, totCount = 0, totWeight = 0, taxTotal = 0, freeTotal = 0, originalTotal = 0, isOver = 0;
+
+		for (k = 0; k < len; k++) {
+			var nNum = $("INPUT[id='cartCheck']").index(obj.eq(k));
+			var count = parseInt($("input[id='inPcount']").eq(nNum).val()) || 1;
+			var maxStock = parseInt($("input[id='inMaxStock']").eq(nNum).val()) || 0;
+			var onePrice = parseFloat($("input[id='inOnePrice']").eq(nNum).val()) || 0;
+			var origPrice = parseFloat($("input[id='inOPrice']").eq(nNum).val()) || 0;
+			var weight = parseFloat($("input[id='inOneWeight']").eq(nNum).val()) || 0;
+			var deliveryType = parseInt($("input[id='inPdeliveryPriceType']").eq(nNum).val()) || 0;
+
+			// 디버깅 로그
+			console.log("Item " + k + ": count=" + count + ", onePrice=" + onePrice + ", origPrice=" + origPrice + ", weight=" + weight + ", deliveryType=" + deliveryType);
+
+			if (count < 1) count = 1;
+			if (count > maxStock) {
+				count = maxStock;
+				isOver = 1;
+			}
+			$("input[id='inPcount']").eq(nNum).val(count);
+
+			totCount += count;
+			totPrice += onePrice * count;
+			originalTotal += origPrice * count;
+			totWeight += weight * count;
+			if (deliveryType == 4) {
+				freeTotal += onePrice * count;
+			} else {
+				taxTotal += onePrice * count;
+			}
+		}
+
+		var discountedTotal = totPrice;
+		var youSaved = originalTotal - totPrice;
+		var ret = totPrice; // 배송비 미구현
+
+		$("#inTot1").html(taxTotal.toFixed(2));
+		$("#inTot3").html(freeTotal.toFixed(2));
+		$("#inTot5").html(totWeight.toFixed(2));
+		$("#inTot6").html(totCount);
+		$("#inTot7").html(originalTotal.toFixed(2));
+		$("#inTotDiscounted").html(discountedTotal.toFixed(2));
+		$("#inTotSaved").html(youSaved.toFixed(2));
+		$("#inTot8").html("0.00");
+		$("#inTot9").html("0.00");
+		$("#inTot10").html(ret.toFixed(2));
+
+		GetInfoComplete = 1;
+		if (isOver) fnChangeStockPop();
+	}
+
+	function fnGetTotalInfo(cartCode) {
+		fnGetCheckCart();
 	}
 
 	//===================================================
@@ -340,7 +377,7 @@
 	.cart-row {display: flex; align-items: center; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid #dedede; gap: 12px;}
 	.cart-row .cart-cell {font-size: 14px; color: #333333;}
     .cart-row .cart-cell > a {text-align: left;}
-	.cart-row .cart-cell.numCss {align-self: flex-start; width: 20px; height: 100%;}
+	.cart-row .cart-cell.numCss {align-self: flex-start; width: 24px; height: 100%;}
 	.cart-row .cart-cell.thumbCss {align-self: flex-start; flex-shrink: 0; height: 100%; border-radius: 8px; overflow: hidden; border: 1px solid #ededed; border-width: 0 1px 1px 1px;}
 	.cart-row .cart-cell.thumbCss .item-num {background: #162A4A; color: #ffffff; font-size: 14px; font-weight: 500; line-height: 20px;}
     .cart-row .cart-cell.priceCss {display: flex; flex-direction: column; align-items: flex-end; gap: 4px; text-align: right; width: 112px;}
@@ -379,8 +416,6 @@
 	}
 	.cart-row .cart-cell .quantity-controls {display: flex; justify-content: center;}
 	.cart_input {text-align: center; color: #555555; font-size: 14px; width: 32px; border: 1px solid #dedede; border-width: 1px 0; border-radius: 0; line-height: 22px; padding: 0; height: 24px;}
-
-    
 </style>
 
 <!-- 카트 시작 --->    
@@ -619,7 +654,11 @@
                                                 </div>
                                                 <!-- Hidcart-rowden Inputs -->
                                                 <input type="hidden" value="<?=$dbIDX?>" name="inPIDX" id="inPIDX">
-                                                <input type="hidden" value="<?=$maxStock?>" name="inMaxStock" id="inMaxStock">
+												<input type="hidden" value="<?=$maxStock?>" name="inMaxStock" id="inMaxStock">
+												<input type="hidden" value="<?=$priceInfo['dcDollar_txt']?>" name="inOnePrice" id="inOnePrice">
+												<input type="hidden" value="<?=$priceInfo['dollar_txt']?>" name="inOPrice" id="inOPrice">
+												<input type="hidden" value="<?=$dbPweight?>" name="inOneWeight" id="inOneWeight">
+												<input type="hidden" value="<?=(int)$dbPdeliveryPriceType?>" name="inPdeliveryPriceType" id="inPdeliveryPriceType">
                                                 <!-- Other hidden inputs -->
                                             </div>
                                             <div class="cart-cell priceCss">
@@ -632,31 +671,6 @@
                                             </div>
                                         </div>
                                     </li>
-                                    <!--
-                                    <li>
-                                        <ul class="price-list">
-                                            <li>
-                                                <span>Item Price</span><br>
-                                                <span>USD 99.99</span>
-                                            </li>
-                                            <li class="character">-</li>
-                                            <li>
-                                                <span>Savings</span><br>
-                                                <span class="colorMain">USD 22.22</span>
-                                            </li>
-                                            <li class="character">+</li>
-                                            <li>
-                                                <span>Shipping Fee</span><br>
-                                                <span>USD 33.33</span>
-                                            </li>
-                                            <li class="character">=</li>
-                                            <li>
-                                                <span>Subtotal</span><br>
-                                                <span>USD 111.10</span>
-                                            </li>
-                                        </ul>
-                                    </li>
-                                    -->
                                 </ul>
                             </td>
                         </tr>
@@ -665,12 +679,9 @@
                                 
                             </td>
                         </tr>
-                        <?
-                            } else {
-                                if($cnt % 5 == 1) echo "<tr>";
-                        ?>
+                        <?} else {?>
+							<!-- listStyle == 2 -->
                             <td width="162" style="padding-top:5px;padding-bottom:5px;" valign="top">
-                            
                                 <table align="center" border="0" style="width:145px;" cellpadding="0" cellspacing="0">
                                     <tr><td colspan="2"><span style="color:#cccccc;font-size:1.4em;font-weight:bold;"><?=$cnt?></span></td></tr>
                                     <tr><td align="center" colspan="2" style="padding-bottom:10px;"><?=$link . $pImg?></a></td></tr>
@@ -710,8 +721,11 @@
                                             
                                             <!-- 재고 총합 -->
                                             <input type='hidden' value='<?=$dbIDX?>' name='inPIDX' id='inPIDX'>
-                                            <input type='hidden' value='<?=$maxStock?>' name='inMaxStock' id='inMaxStock'>
-                                            <input type='hidden' name='inPorderMinus' id='inPorderMinus' value='<?=$dbPorderMinus?>'>
+											<input type='hidden' value='<?=$maxStock?>' name='inMaxStock' id='inMaxStock'>
+											<input type='hidden' value='<?=$priceInfo["dcDollar_txt"]?>' name='inOnePrice' id='inOnePrice'>
+											<input type='hidden' value='<?=$priceInfo["dollar_txt"]?>' name='inOPrice' id='inOPrice'>
+											<input type='hidden' value='<?=$dbPweight?>' name='inOneWeight' id='inOneWeight'>
+											<input type='hidden' value='<?=(int)$dbPdeliveryPriceType?>' name='inPdeliveryPriceType' id='inPdeliveryPriceType'>
                                             <!-- 단가 정보 -->
                                             <input type='hidden' value='<?=$priceInfo["dcDollar_txt"]?>' id='inOnePrice'>
                                             <input type='hidden' value='<?=$priceInfo2["dcDollarBox_txt"]?>' id='inBoxPrice'>
