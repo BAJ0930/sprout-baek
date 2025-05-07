@@ -3,69 +3,441 @@
 
 	include_once $_SERVER['DOCUMENT_ROOT']."/top.html";
 	
-	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/common.html";	
+	include_once $_SERVER['DOCUMENT_ROOT']."/mypage/common.html";
+
+    // 사용자 ID 보정
+    $MID = addslashes(trim($MID));
+
+    // 필요한 컬럼만 조회
+    $sql = "SELECT Mname, Mtel, Maddr1, Maddr2 FROM 2011_memberInfo WHERE MID='" . $MID . "'";
+    $m_rs = sql_fetch($sql);
+
+    // 결과를 변수로 저장
+    $dbMname = $m_rs['Mname'];
+    $dbMtel = $m_rs['Mtel'];
+    $dbMaddr1 = $m_rs['Maddr1'];
+    $dbMaddr2 = $m_rs['Maddr2'];
+
+    #======== 날짜 구하기 =======================
+	//-- 오늘
+	$day11 = date("Y-m-d");
+	$day12 = date("Y-m-d");
+
+	//-- 어제
+	$day21 =date("Y-m-d",strtotime("-1 day"));
+	$day22 =date("Y-m-d",strtotime("-1 day"));
+
+	//-- 이번주
+	$day31 =date("Y-m-d",strtotime("last Monday"));
+	$day32 =date("Y-m-d",strtotime("next Sunday"));
+
+	//-- 지난주
+	$day41 =date("Y-m-d",strtotime("-1 week last Monday"));
+	$day42 =date("Y-m-d",strtotime("-1 week next Sunday"));
+
+	//-- 이번달
+	$day51 =date("Y-m-d",mktime(0,0,0,date("m"),1,date("Y")));
+	$day52 =date("Y-m-d",mktime(0,0,0,date("m"),31,date("Y")));
+
+	//-- 최근한주
+	$day61 =date("Y-m-d",strtotime("-6 day"));
+	$day62 =date("Y-m-d");
+
+	//-- 최근한달
+	$day71 =date("Y-m-d",strtotime("-30 day"));
+	$day72 =date("Y-m-d");
+
+	// -- 한달
+	$day81 =date("Y-m-d",strtotime("-90 day"));
+	$day82 =date("Y-m-d");
+
+	//-- 최근한달
+	$day91 =date("Y-m-d",strtotime("-180 day"));
+	$day92 =date("Y-m-d");
+
+    // 브랜드명 로드
+    $fnbrand = fnLoadBrandName();
 ?>
 
-<link rel="stylesheet" type="text/css" href="/mypage/mypage.css?250221">
+<link rel="stylesheet" type="text/css" href="/mypage/mypage.css?<?php echo filemtime('mypage/mypage.css'); ?>">
 
+<style>
+    .process {display: flex; flex-direction: row; gap: 32px; margin-top: 20px;}
+    .process .step {display: flex; flex-direction: column; font-size: 13px; width: 80px; position: relative; align-items: center; line-height: 1.3; gap: 8px;}
+    .process div.step::after {
+        content:''; display: block; width:12px; height: 12px; background: transparent; border: 1px solid #888888; border-width: 2px 2px 0 0; 
+        position: absolute; transform: rotate(45deg) translate(-50%, -50%); right: -20px; top: 31%;
+    }
+    .process div.step:last-child::after {display: none;}
+</style>
 <!-- 마이페이지 시작 --->
 <div id="wrap">
-
-	<?php
-		include_once $_SERVER['DOCUMENT_ROOT']."/mypage/menu.html";
-	?>
 
     <!-- mypageMain -->
     <div id="mypageMain">
 
-		<? include_once $_SERVER['DOCUMENT_ROOT']."/mypage/top.html"; ?>
-
+		<? include_once $_SERVER['DOCUMENT_ROOT']."/mypage/top_test.html"; ?>
+    
         <div class="qa_list">
-            <h3 style="font-size: 24px;">My Inquiry<span><a style="font-size: 16px;" href="/mypage/qna.html">more ></a></span></h3>
-            <table border="0" cellspacing="0" cellpadding="0" class="table-inquiry">
-                <tr>
-                    <th width="10%" scope="col">No.</th>
-                    <th width="50%" scope="col">Content</th>
-                    <th width="20%" scope="col">Date</th>
-                    <th width="20%" scope="col" class="none">Status</th>
-                </tr>
-				<?
-					$sql = " SELECT IDX,IRgroup,IRkind,IRtitle,IRreply,IRregdate FROM 2011_inquireInfo WHERE IRMID = '" . $MID . "' AND IRdeleted = 0 ";
-					$sql .= " UNION ALL SELECT IDX,3 AS IRgroup,1 AS IRkind,'체인문의' AS IRtitle,FCreply AS IRreply,FCregdate AS IRregdate FROM 2011_franchiseQNA WHERE FCMID = '" . $MID . "' AND FCdeleted = 0 ";
-					$sql .= " UNION ALL SELECT IDX,4 AS IRgroup,1 AS IRkind,'대량구매 문의' AS IRtitle,HBreply AS IRreply,HBregdate AS IRregdate FROM 2011_heavyBuying WHERE HBMID = '" . $MID . "' AND HBdeleted = 0 ";
-					$sql .= " UNION ALL SELECT IDX,5 AS IRgroup,1 AS IRkind,'입점 문의' AS IRtitle,OQreply AS IRreply,OQregdate AS IRregdate FROM 2011_openingQNA WHERE MID = '" . $MID . "' AND OQdeleted = 0 ";
-					$sql .= " UNION ALL SELECT IDX,6 AS IRgroup,1 AS IRkind,RTtitle AS IRtitle,RTreply AS IRreply,RTregdate AS IRregdate FROM 2011_returnInfo WHERE RTMID = '" . $MID . "' AND RTdeleted = 0 ";
-					$sql .= " ORDER BY IRregdate DESC LIMIT 0,5 ";
-					$result = sql_query($sql);
-					$cnt1 = mysqli_num_rows($result);
-					while($rs = sql_fetch_array($result))
-                    {
-                        # DB 레코드 결과값 모두 변수로 전환
-						foreach ($rs as $fieldName => $fieldValue){$fieldName = "db" . $fieldName;$$fieldName = $fieldValue;}		
-						
-						
-						if($dbIRreply)$reState = "<font color=green>Completed</font>";
-						else $reState = "Waiting";
-						
-
-						$dbIRtitle = strcut_utf8($dbIRtitle,50);
-				?>					
-                    <tr>
-                        <td width="10%"><?php echo $cnt1 ?></td>
-						<? if($dbIRgroup == 6){ ?>
-                        <td width="50%" class="qa_titie" style="text-align:left;">&nbsp;<a href="returnView.html?idx=<?=$dbIDX?>&page=<?=$page?>"><?=$dbIRtitle?></a></td>
-						<? } else { ?>
-                        <td width="50%" class="qa_titie" style="text-align:left;">&nbsp;<a href="qnaView.html?idx=<?=$dbIDX?>&page=<?=$page?>&IRgroup=<?=$dbIRgroup?>"><?=$dbIRtitle?></a></td>
-						<? } ?>
-                        <td width="20%" class="qa_time"><?=date("Y-m-d H:i",$dbIRregdate)?></td>
-                        <td width="20%"><?=$reState?></td>
-                    </tr>
+            <div>
+                <div class="subTitle-B"><span>Recent Orders</span><span class="btn-seeMore"><a href="/mypage/shipping.html">See more</a></span></div>
                 <?php
-						$cnt1 --;
-					} 
-				?>
-                </tr>
-            </table>
+                // 최근 주문 3건 쿼리
+                $addWhere = " m.MID='" . $MID . "' ";
+                $sql = "SELECT a.*, b.OIDX, SUM(AMT + OusePoint + OuseGift + OuseCoupon) AS AMT, AVG(ODstate) AS ODstate, ODcode, COUNT(ODcode) AS ODcount, MemoCount, ODdate 
+                        FROM (
+                            SELECT m.* 
+                            FROM 2011_orderInfo AS m 
+                            LEFT JOIN 2011_orderDeliveryInfo AS g ON m.IDX = g.OIDX 
+                            LEFT JOIN 2011_orderProduct AS k ON m.IDX = k.OIDX 
+                            WHERE m.Odeleted = 0 AND m.OpayState <> 88 AND " . $addWhere . " 
+                            GROUP BY m.IDX 
+                            ORDER BY m.IDX DESC 
+                            LIMIT 3
+                        ) AS a 
+                        LEFT JOIN 2011_orderPayment AS b ON a.IDX = b.OIDX 
+                        LEFT JOIN 2011_orderDeliveryInfo AS d ON a.IDX = d.OIDX 
+                        LEFT JOIN (
+                            SELECT OIDX, COUNT(IDX) AS MemoCount 
+                            FROM 2011_orderMemo 
+                            WHERE OMtype = 1 AND OMdeleted = 0 
+                            GROUP BY OIDX
+                        ) AS e ON a.IDX = e.OIDX 
+                        GROUP BY a.IDX 
+                        ORDER BY a.IDX DESC";
+
+                $result = sql_query($sql);
+                ?>
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="12%">Order No.</th>
+                            <th width="11%">Shipping Date</th>
+                            <th width="18%">Recipient</th>
+                            <th width="10%">Total</th>
+                            <th width="18%">Payment Status</th>
+                            <th width="18%">Shipping Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        if (mysqli_num_rows($result) == 0) {
+                            echo "<tr><td colspan='6' style='text-align: center; padding: 20px; color: #888888;'>No recent orders found.</td></tr>";
+                        } else {
+                            while ($rs = sql_fetch_array($result)) {
+                                // DB 레코드 변수화
+                                foreach ($rs as $fieldName => $fieldValue) {
+                                    $fieldName = "db" . $fieldName;
+                                    $$fieldName = $fieldValue;
+                                }
+
+                                // 배송일자
+                                $shippingDate = ($dbODdate && $dbODstate == 4) ? date("M. d, Y", $dbODdate) : "-";
+
+                                // 결제 상태
+                                $paymentStatus = "";
+                                $paymentClass = "";
+                                if ($dbOpayState == 1) {
+                                    $paymentStatus = "Pending Payment";
+                                    $paymentClass = "pending";
+                                } else if ($dbOpayState == 2 || $dbOpayState == 99) {
+                                    $paymentStatus = "Paid";
+                                    $paymentClass = "done";
+                                }
+
+                                // 배송 상태
+                                $shippingStatus = "";
+                                $shippingClass = "";
+                                if ($dbOpayState == 1 && $dbODstate == 1) {
+                                    $shippingStatus = "-";
+                                    $shippingClass = "";
+                                } else if ($dbOpayState == 2 && $dbODstate == 1) {
+                                    $shippingStatus = "Preparing or Shipment";
+                                    $shippingClass = "pending";
+                                } else if ($dbODstate == 2 || ($dbODstate > 2 && $dbODstate < 3)) {
+                                    $shippingStatus = "🚚 Shipped";
+                                    $shippingClass = "shipped";
+                                } else if ($dbODstate == 3 || ($dbODstate > 3 && $dbODstate < 4)) {
+                                    $shippingStatus = "🚚 Shipped";
+                                    $shippingClass = "shipped";
+                                } else if ($dbODstate == 4) {
+                                    $shippingStatus = "✅ Delivered";
+                                    $shippingClass = "done";
+                                }
+
+                                // 품목 수 조회
+                                $itemSql = "SELECT COUNT(*) AS item_count FROM 2011_orderProduct WHERE OIDX = " . $dbIDX;
+                                $itemRs = sql_fetch($itemSql);
+                                $itemCount = $itemRs['item_count'] ?? 0;
+                                ?>
+                                <tr>
+                                    <td>
+                                        <span class="order-number"><?=$dbOcode?></span>
+                                        <button type="button" class="btn-style btn-color-CTA btn-h32 btn-round" onclick="location.href='shippingDetail.html?Ocode=<?=$dbOcode?>'">View Details</button>
+                                    </td>
+                                    <td><?=$shippingDate?></td>
+                                    <td><?=$dbOname?></td>
+                                    <td>
+                                        <span class="order-price">
+                                            <span style="font-size: 16px; font-weight: 400;">USD</span> 
+                                            <?=number_format($dbAMT, 2)?>
+                                        </span>
+                                        <span class="order-items"><?=$itemCount?> Items</span>
+                                    </td>
+                                    <td><span class="<?=$paymentClass?>"><?=$paymentStatus?></span></td>
+                                    <td><span class="<?=$shippingClass?>"><?=$shippingStatus?></span></td>
+                                </tr>
+                                <?php
+                            }
+                        }
+                        ?>
+                    </tbody>
+                </table>
+                <div class="tooltip-container">
+                    <button type="button" class="btn-style btn-color-grey btn-h32" style="margin: 16px 0 0 auto;">
+                        <img src="/img/mypage/ico-my-ship.svg" alt="Details About Shipping">About Shipping
+                    </button>
+                    <div class="tooltip-box">
+                        <strong>This is how our shipping process works.</strong>
+                        <div class="process">
+                            <div class="step"><img src="/img/mypage/img-my-tooltip01.svg" alt=""><span>Browse<br>Products</span></div>
+                            <div class="step"><img src="/img/mypage/img-my-tooltip02.svg" alt=""><span>Add to Cart</span></div>
+                            <div class="step"><img src="/img/mypage/img-my-tooltip03.svg" alt=""><span>Payment<br>Complete</span></div>
+                            <div class="step"><img src="/img/mypage/img-my-tooltip04.svg" alt=""><span>Packing</span></div>
+                            <div class="step"><img src="/img/mypage/img-my-tooltip05.svg" alt=""><span>International<br>Shipping<br>Preparation</span></div>
+                            <div class="step"><img src="/img/mypage/img-my-tooltip06.svg" alt=""><span>In Transit</span></div>
+                            <div class="step"><img src="/img/mypage/img-my-tooltip07.svg" alt=""><span>Delivered!</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <div class="subTitle-B"><span>Sent to Cheonyu</span><span class="btn-seeMore"><a href="/mypage/qna.html">See more</a></span></div>
+            <div class="inquiry-list">
+                <?
+                    // 쿼리 (이전 코드와 동일, 문의 내용 필드 포함)
+                    $query = " SELECT IDX, IRgroup, IRkind, IRtitle, IRreply, IRregdate, IRcontent AS content FROM 2011_inquireInfo WHERE IRMID = '" . $MID . "' AND IRdeleted = 0 ";
+                    $query .= " UNION ALL SELECT IDX, 3 AS IRgroup, 1 AS IRkind, '체인문의' AS IRtitle, FCreply AS IRreply, FCregdate AS IRregdate, FCetc AS content FROM 2011_franchiseQNA WHERE FCMID = '" . $MID . "' AND FCdeleted = 0 ";
+                    $query .= " UNION ALL SELECT IDX, 4 AS IRgroup, 1 AS IRkind, '대량구매 문의' AS IRtitle, HBreply AS IRreply, HBregdate AS IRregdate, HBmemo AS content FROM 2011_heavyBuying WHERE HBMID = '" . $MID . "' AND HBdeleted = 0 ";
+                    $query .= " UNION ALL SELECT IDX, 5 AS IRgroup, 1 AS IRkind, '입점 문의' AS IRtitle, OQreply AS IRreply, OQregdate AS IRregdate, OQintroduce AS content FROM 2011_openingQNA WHERE MID = '" . $MID . "' AND OQdeleted = 0 ";
+                    $query .= " ORDER BY IRregdate DESC LIMIT 3";
+                    $result = sql_query($query);
+            
+                    // 쿼리 오류 확인
+                    if (!$result) {
+                        echo '<div style="width: 100%; text-align: center;">Error retrieving inquiries.</div>';
+                    } else {
+                        if (mysqli_num_rows($result) == 0) {
+                            echo '<div class="inquiry-item flex-row-spacer"><div style="width: 100%; text-align: center; color: #888888; font-size: 16px;">No inquiries found.</div></div>';
+                        } else {
+                            while ($rs = sql_fetch_array($result)) {
+                                foreach ($rs as $fieldName => $fieldValue) {
+                                    $fieldName = "db" . $fieldName;
+                                    $$fieldName = $fieldValue;
+                                }
+                                
+                                // 상태 처리
+                                $reState = $dbIRreply ? "<span class='status answered'>Answered</span>" : "<span class='status in-progress'>In Progress</span>";
+                                
+                                // 제목과 내용 처리
+                                $dbIRtitle = strcut_utf8($dbIRtitle, 55);
+                                $dbContent = strcut_utf8(strip_tags($dbcontent ?? ""), 100); // 내용 자르기, 없으면 빈 문자열
+                ?>
+                <div class="inquiry-item flex-row-spacer">
+                    <div class="inquiry-content">
+                        <div class="status-title">
+                            <?=$reState?>
+                            <a class="title" href="qnaView.html?idx=<?=$dbIDX?>&IRgroup=<?=$dbIRgroup?>"><?=$dbIRtitle?></a>
+                        </div>
+                        <? if ($dbContent) { ?>
+                            <div class="message"><?=$dbContent?></div>
+                        <? } ?>
+                    </div>
+                    <div class="date"><?=date("F j, Y", $dbIRregdate)?></div>
+                </div>
+                <? } ?>
+                <? } ?>
+                <? } ?>
+            </div>
+
+
+            <div>
+                <div class="subTitle-B"><span>Wishlist</span><span class="btn-seeMore"><a href="/mypage/wish.html">See more</a></span></div>
+                <div class="wishlist-container">
+                    <table class="wishlist-table">
+                        <colgroup>
+                            <col style="width: 112px;">
+                            <col>
+                            <col style="width: 256px;">
+                            <col style="width: 144px;">
+                            <col style="width: 144px;">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th>Group</th>
+                                <th>Item Info.</th>
+                                <th style="text-align: left;">Options & Stock Left</th>
+                                <th>Price</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?
+                                // 최신 3개 위시리스트 항목 조회
+                                $sql = "SELECT a.IDX AS FIDX, b.*, c.CTename AS categoryName 
+                                        FROM 2011_favoriteInfo AS a 
+                                        LEFT JOIN 2011_productInfo AS b ON a.FAIDX = b.IDX 
+                                        LEFT JOIN 2011_categoryInfo AS c ON b.Pcategory1 = c.IDX 
+                                        WHERE a.MID='" . $uid . "' AND a.FAtype=1 
+                                        ORDER BY a.IDX DESC 
+                                        LIMIT 3";
+                                $result = sql_query($sql);
+            
+                                while ($rs = sql_fetch_array($result)) {
+                                    # DB 필드를 변수로 변환
+                                    foreach ($rs as $fieldName => $fieldValue) {
+                                        $fieldName = "db" . $fieldName;
+                                        $$fieldName = $fieldValue;
+                                    }
+            
+                                    # 썸네일 이미지 경로 생성
+                                    $imgUrl = getImgUrl($dbPsaveFile1);
+                                    $pImg = "<img src='" . $imgUrl . "' alt='" . htmlspecialchars($dbPname) . "'>";
+            
+                                    # 가격 정보 계산
+                                    $priceInfo = fnCalPrice($dbPprice3, $rs);
+            
+                                    # 브랜드명
+                                    $brandName = isset($fnbrand[$dbBRIDX]) ? $fnbrand[$dbBRIDX] : 'Unknown Brand';
+            
+                                    # 아이콘 정보
+                                    $getInfo = getListInfo($rs, $dbPstockCount);
+                                    $icon = $getInfo['icon'] ?: '<img src="/image_3/boxinBG.svg" alt="Outer carton">';
+                                    $icon2 = $getInfo['icon2'] ?: '<img src="/image_3/boxinBG2.svg" alt="Inner carton">';
+            
+                                    # 옵션 및 옵션별 재고 정보
+                                    $optionStocks = [];
+                                    $firstOptionId = null; // 첫 번째 유효 옵션 ID 저장
+                                    if ($dbPoptionUse == 2) {
+                                        $optionSql = "SELECT IDX, OPvalue, OPvalueEng, OPstock 
+                                                    FROM 2011_productOption 
+                                                    WHERE PIDX = '$dbIDX' AND OPhidden = 0 
+                                                    ORDER BY IDX ASC";
+                                        $optionResult = sql_query($optionSql);
+                                        while ($opt = sql_fetch_array($optionResult)) {
+                                            # 예약 수량 계산
+                                            $readySql = "SELECT SUM(ORPcount) AS Pready 
+                                                        FROM 2011_orderProduct 
+                                                        WHERE ORPoption = '" . $opt['IDX'] . "' 
+                                                        AND ORPcountCheck = 1 AND ORPdeleted = 0 
+                                                        GROUP BY ORPoption";
+                                            $readyResult = sql_fetch_array(sql_query($readySql));
+                                            $stock = max(0, (int)($opt['OPstock'] - ($readyResult['Pready'] ?? 0)));
+            
+                                            # 첫 번째 유효 옵션(재고 > 0) 저장
+                                            if ($stock > 0 && $firstOptionId === null) {
+                                                $firstOptionId = $opt['IDX'];
+                                            }
+            
+                                            # 영문 옵션명 선택
+                                            $optionName = $opt['OPvalueEng'] ?: $opt['OPvalue'];
+            
+                                            # 재고 상태 포맷팅
+                                            if ($stock > 5) {
+                                                $status = '<span class="in-stock">In stock</span>';
+                                            } elseif ($stock > 0) {
+                                                $status = $stock . '<span class="low-stock">Almost sold out</span>';
+                                            } else {
+                                                $status = '0<span class="sold-out">Sold out</span>';
+                                            }
+                                            $optionStocks[] = htmlspecialchars($optionName) . ': ' . $status;
+                                        }
+                                    }
+                                    $optionText = !empty($optionStocks) ? implode('<br>', $optionStocks) : 'No options available';
+                            ?>
+                                <tr>
+                                    <td style="padding: 12px;"><?=$dbcategoryName ?: 'Unknown'?></td>
+                                    <td>
+                                        <div class="item-info">
+                                            <a href="/product/view.html?qIDX=<?=$dbIDX?>"><?=$pImg?></a>
+                                            <div>
+                                                <div class="features">
+                                                    <span><?=$dbIDX?></span>
+                                                    <span style="font-weight: 600;"><?=$brandName?></span>
+                                                    <? if ($dbPboxin2) { ?>
+                                                        <span><span class="tit"><span><?=$icon2?> <?=$dbPboxin2?> EA</span></span></span>
+                                                    <? } ?>
+                                                    <? if ($dbPboxin) { ?>
+                                                        <span><span class="tit"><span><?=$icon?> <?=$dbPboxin?> EA</span></span></span>
+                                                    <? } ?>
+                                                </div>
+                                                <div class="name"><?=htmlspecialchars($dbPengName)?></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="stock-status">
+                                        <?=$optionText?>
+                                    </td>
+                                    <td class="price-wrap">
+                                        <del style="font-size: 14px;">USD <?=$priceInfo["dollar_txt"]?></del>
+                                        <div class="price">USD <?=$priceInfo["dcDollar_txt"]?></div>
+                                        <span class="discount">Buy 2 or more<br><span style="color: #ff3838; font-weight: 600;"><?=$priceInfo["dcPer"]?>% Off</span></span>
+                                    </td>
+                                    <td>
+                                        <a href="javascript:void(0)" 
+                                            class="btn-style btn-color-CTA btn-h32 btn-round add-to-cart" 
+                                            data-pidx="<?=$dbIDX?>" 
+                                            data-opidx="<?=$firstOptionId ?: ''?>">Add to Cart</a>
+                                    </td>
+                                </tr>
+                            <? } ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- JavaScript for Add to Cart -->
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // 모든 Add to Cart 버튼에 클릭 이벤트 추가
+                document.querySelectorAll('.add-to-cart').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const pidx = this.getAttribute('data-pidx');
+                        const opidx = this.getAttribute('data-opidx');
+            
+                        // 옵션 여부 및 재고 확인
+                        if (opidx === '' || opidx === 'null') {
+                            // 옵션 있는 상품인데 재고 없음
+                            if (this.closest('tr').querySelector('.stock-status').textContent.includes('Sold out')) {
+                                alert('This item is out of stock.');
+                                return;
+                            }
+                            // 옵션 없는 상품
+                            addToCart(pidx, null);
+                        } else {
+                            // 옵션 있는 상품, 유효한 opidx
+                            addToCart(pidx, opidx);
+                        }
+                    });
+                });
+            
+                // 장바구니 추가 함수
+                function addToCart(pidx, opidx) {
+                    // fnCheckCartIn에 전달할 qStr 생성
+                    let inIDX = pidx;
+                    if (opidx) {
+                        inIDX += ',' + opidx; // 옵션 있는 경우 PIDX,OPIDX 형식
+                    }
+                    const qStr = 'inIDX=' + encodeURIComponent(inIDX) + '&inCount=1';
+            
+                    // 기존 fnCheckCartIn 호출
+                    fnCheckCartIn('', '', '', qStr);
+                }
+            });
+            </script>
+
         </div>
 
         <!-- //마이페이지 메인 -->
